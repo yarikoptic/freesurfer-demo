@@ -68,13 +68,13 @@ static void likelinessHistogram(MRI *mri, char *msg)
   printf("\n");
 }
 
+#ifndef __OPTIMIZE__
 static void DebugVoxel(char *msg, MRI *mri, int x, int y, int z)
 {
-#ifndef __OPTIMIZE__
   printf("=======================================================================\n");
   printf("%s (%d,%d,%d) = %d\n", msg, x, y, z, MRIvox(mri, x,y,z));
-#endif
 }
+#endif
 
 /* MRIribbon determines the space between the inner and outer MRI surfaces provided, */
 /* and creates a volume in mri_dst corresponding to the input format mri_src */
@@ -616,7 +616,6 @@ MRI *MRISpartialribbon(MRI_SURFACE *inner_mris_lh,MRI_SURFACE *outer_mris_lh,MRI
   MRISpartialshell(mri_src,outer_mris_rh,mri_inter1,0); /* partial shell in mri_inter1 */
   // so far inter2 not used and thus filled with 0
   MRISpartialfloodoutside(mri_inter1,mri_inter2); /* flooded outside shell in mri_inter2 */
-  printf("  - inverting flooded region...\n");
   MRIbitwisenot(mri_inter2,mri_inter2); /* flooded inside shell and shell in mri_inter2 */
 
   printf("Creating partial volume outside inner shell...\n");
@@ -627,11 +626,10 @@ MRI *MRISpartialribbon(MRI_SURFACE *inner_mris_lh,MRI_SURFACE *outer_mris_lh,MRI
   MRISpartialfloodoutside(mri_inter1,mri_dst);
   // save this results in inter3
   MRIcopy(mri_dst, mri_inter3);
-
-  printf("  - finding union of shells and filled volume...\n");
+  printf("  - finding union of inner shell and outward-filled volume...\n");
   MRIbitwiseor(mri_inter1,mri_dst,mri_dst);
 
-  printf("Finding intersection of volumes...\n");
+  printf("Finding intersection of outershell-inside volume and innershell-outside volume\n");
   /* Find bitwise and of volumes to create ribbon */
   MRIbitwiseand(mri_inter2,mri_dst,mri_dst);
   /* Clear up the partial edges. */
@@ -657,51 +655,56 @@ MRI *MRISpartialribbon(MRI_SURFACE *inner_mris_lh,MRI_SURFACE *outer_mris_lh,MRI
     // likelinessHistogram(mri_inter2, "full voxel white matter");
 
     /* Create white matter volume in mri_inter1, including shell */
-    printf("Creating full volume outside inner shells (subvoxels...) **************\n");
+    // printf("Creating full volume outside inner shells (subvoxels...) **************\n");
     //////////////////////////////////////////////////////////////////////////
     // we saved the previous calculation in inter3
     // MRISpartialshell(mri_src,inner_mris_lh,mri_inter1,1); // 1=clear, lh white matter surface
     // MRISpartialshell(mri_src,inner_mris_rh,mri_inter1,0); // rh white matter surface 
     // MRIclear(mri_inter2); // clear (needed)
     // MRISpartialfloodoutside(mri_inter1,mri_inter2); // src dst must be different
-    printf("  - inverting volume...\n");
+    // printf("  - inverting volume...\n");
+    printf("Creating the inner shell volume\n");
     MRIclear(mri_inter2);
     MRIbitwisenot(mri_inter3,mri_inter2);
 
     /* Create volume inside left outer surface as reference, mri_inter3 contains left reference. */
-    printf("Creating full reference volume outside 'left' outer shell...\n");
+    printf("Creating full reference 'left' volume...\n");
     MRISshell(mri_src,outer_mris_lh,mri_inter3,1); // clear flag
     MRISfloodoutside(mri_inter3,mri_inter3); // src is dummy
-    printf("  - inverting volume...\n");
+    // printf("  - inverting volume...\n");
     MRISaccentuate(mri_inter3,mri_inter3,1,254); // we really need this
     MRIbitwisenot(mri_inter3,mri_inter3);
 
     /* mri_dst contains cerebral cortex, mri_inter1 contains left side voxels, mri_inter2 contains white matter and some of the gray inner shell */
-    printf("Merging labelled volumes...\n");
+
     MRIcopy(mri_dst,mri_inter1);
     MRIclear(mri_dst); // clear
 
-    printf("Here are the values set for (%d,%d,%d)\n", checkx, checky, checkz);
-    DebugVoxel("before merge: cortex: ", mri_inter1, checkx, checky, checkz);
-    DebugVoxel("            : white : ", mri_inter2, checkx, checky, checkz);
-    DebugVoxel("            : lh    : ", mri_inter3, checkx, checky, checkz);
-    DebugVoxel("            : cma   : ", mri_mask, checkx, checky, checkz);
+    // printf("Here are the values set for (%d,%d,%d)\n", checkx, checky, checkz);
+    // DebugVoxel("before merge: cortex: ", mri_inter1, checkx, checky, checkz);
+    // DebugVoxel("            : white : ", mri_inter2, checkx, checky, checkz);
+    // DebugVoxel("            : lh    : ", mri_inter3, checkx, checky, checkz);
+    // DebugVoxel("            : cma   : ", mri_mask, checkx, checky, checkz);
+    printf("Initial classification of voxel likeliness\n");
     likelinessHistogram(mri_inter1, "cortex");
     likelinessHistogram(mri_inter2, "white matter");
-    likelinessHistogram(mri_inter3, "lh");
+    // likelinessHistogram(mri_inter3, "lh");
     //                        cortex   white      cma         lh     labeled out
+    printf("Merging labelled volumes...\n");
     MRImergecortexwhitecma(mri_inter1,mri_inter2,mri_mask,mri_inter3,mri_dst);
   }
-  printf("Eroding cortex...\n");
+
   MRIclear(mri_inter1);
   MRIcopy(mri_dst,mri_inter1);
-  DebugVoxel("after merge", mri_inter1, checkx, checky, checkz);
+  // DebugVoxel("after merge", mri_inter1, checkx, checky, checkz);
 
+  printf("Illegality check on cortex voxels...\n");
   MRIerodecerebralcortex(mri_inter1,mri_mask,mri_inter2,mri_inter3);
-  DebugVoxel("after erode", mri_inter1, checkx, checky, checkz);
+  // DebugVoxel("after erode", mri_inter1, checkx, checky, checkz);
 
+  printf("Illegality check on cortex voxels near hippocampus...\n");
   MRIcorrecthippocampus(mri_inter1,mri_dst);
-  DebugVoxel("after hippo", mri_dst, checkx, checky, checkz);
+  // DebugVoxel("after hippo", mri_dst, checkx, checky, checkz);
 
   MRIfree(&mri_inter1);
   MRIfree(&mri_inter2);
@@ -731,9 +734,16 @@ MRI *MRImergecortexwhitecma(MRI *mri_cortex,MRI *mri_white,MRI *mri_cma,MRI *mri
 
   int width,height,depth,i,j,k,vox;
   int countunknownwhite, countunknowncortex, countunknownunknown;
+  int countcortexunknown, countwhiteunknown;
+  int countBitsWhite;
+  int countBitsCortex;
+  int likelyCortex;
+  int likelyWhite;
   countunknownwhite=0;
   countunknowncortex=0;
   countunknownunknown=0;
+  countcortexunknown=0;
+  countwhiteunknown=0;
   width=mri_cma->width;
   height=mri_cma->height;
   depth=mri_cma->depth;
@@ -749,31 +759,56 @@ MRI *MRImergecortexwhitecma(MRI *mri_cortex,MRI *mri_white,MRI *mri_cma,MRI *mri
       {
         vox=MRIvox(mri_cma,i,j,k);
 	// first set the values, using cma
-        MRIvox(mri_dst,i,j,k)=vox; 
+        MRIvox(mri_dst,i,j,k)=vox;
+	// cache the values
+	countBitsCortex = countBits(mri_cortex, i,j,k);
+	countBitsWhite = countBits(mri_white, i,j,k);
+	likelyCortex = likely(mri_cortex, i,j,k);
+	likelyWhite = likely(mri_white, i,j,k);
         ///////////////////////////////////////////////////////////
         if ((vox==Left_Cerebral_Cortex)||(vox==Left_Cerebral_White_Matter)) 
         {
-	  if (countBits(mri_cortex, i,j,k) >= countBits(mri_white, i,j,k))
-	    MRIvox(mri_dst,i,j,k)=Left_Cerebral_Cortex;
-	  else if (likely(mri_white,i,j,k))
+	  if (likelyWhite && (countBitsWhite >= countBitsCortex))
 	    MRIvox(mri_dst,i,j,k)=Left_Cerebral_White_Matter;
+	  else if (likelyCortex)
+	    MRIvox(mri_dst,i,j,k)=Left_Cerebral_Cortex;
 	  else
+	  {
 	    MRIvox(mri_dst,i,j,k)=Unknown;
+	    if (vox == Left_Cerebral_Cortex)
+	      countcortexunknown++;
+	    else
+	      countwhiteunknown++;
+	  }
 	}
         else if ((vox==Right_Cerebral_Cortex)||(vox==Right_Cerebral_White_Matter)) 
         {
-	  if (countBits(mri_cortex, i,j,k) >= countBits(mri_white, i,j,k))
-	    MRIvox(mri_dst,i,j,k)=Right_Cerebral_Cortex;
-	  else if (likely(mri_white,i,j,k))
+	  if (likelyWhite && (countBitsWhite >= countBitsCortex))
 	    MRIvox(mri_dst,i,j,k)=Right_Cerebral_White_Matter;
+	  else if (likelyCortex)
+	    MRIvox(mri_dst,i,j,k)=Right_Cerebral_Cortex;
 	  else
+	  {
 	    MRIvox(mri_dst,i,j,k)=Unknown;
+	    if (vox == Right_Cerebral_Cortex)
+	      countcortexunknown++;
+	    else
+	      countwhiteunknown++;
+	  }
 	}
         else if (vox==Unknown) 
         {
-	  // change the algorithm
-	  // if more likely white than cortex, then set it that way
-	  if (countBits(mri_white,i,j,k) >= countBits(mri_cortex, i,j,k))
+	  // cases are
+	  //              countBitsWhite >= countBitsCortex >=0
+	  //              countBitsCortex > countBitsWhite >=0
+	  // But we make sure that the voxel must be likely one (i.e. > 4 bits set)
+	  //
+	  // is it white ?  more likely to be white than cortex?
+	  // if white and cortex has the same votes, then pick white (=)
+	  //
+	  // this cover the case of 1. likelyWhite >= likelyCortex
+	  //                        2. likelyWhite only
+	  if (likelyWhite && (countBitsWhite >= countBitsCortex))
 	  {
             switch (HemisphereVote(mri_cma,i,j,k,NEIGHBOURHALFSIDE)) 
             {
@@ -794,7 +829,9 @@ MRI *MRImergecortexwhitecma(MRI *mri_cortex,MRI *mri_white,MRI *mri_cma,MRI *mri
 	    countunknownwhite++;
 	  }
 	  // we checked white, is it cortex then?
-	  else if (likely(mri_cortex,i,j,k))
+	  // this covers the case of 1. likelyCortex > likelyWhite
+	  //                         2. likelyCortex only
+	  else if (likelyCortex)
           {
 	    // hemisphere vote returns only 1 (left) or 0 (right)
             switch (HemisphereVote(mri_cma,i,j,k,NEIGHBOURHALFSIDE)) 
@@ -820,10 +857,13 @@ MRI *MRImergecortexwhitecma(MRI *mri_cortex,MRI *mri_white,MRI *mri_cma,MRI *mri
 	  // we don't change unknown state
         } // vox unknown
       } // loop
-  
-  printf("After merge, cma unknown changed to white : %d\n", countunknownwhite);
-  printf("             cma unknown changed to cortex: %d\n", countunknowncortex);
-  printf("             cma unknwon remained unknown : %d\n", countunknownunknown);
+	
+  printf("After merge\n");
+  printf("\tcma cortex  changed to unknown: %8d\n", countcortexunknown);
+  printf("\tcma white   changed to unknown: %8d\n", countwhiteunknown);
+  printf("\tcma unknown changed to white  : %8d\n", countunknownwhite);
+  printf("\tcma unknown changed to cortex : %8d\n", countunknowncortex);
+  printf("\tcma unknwon remained unknown  : %8d\n", countunknownunknown);
   
   return mri_dst;
 }
@@ -935,11 +975,13 @@ void MRIerodecerebralcortex(MRI *mri_masked,MRI *mri_cma,MRI *mri_white,MRI *mri
 {
   int width,height,depth,i,j,k,vox,erodedvoxelcount,olderodedvoxelcount,unknowncount;
   int erodewhitecount;
+  int erodecortexcma;
   width=mri_cma->width;
   height=mri_cma->height;
   depth=mri_cma->depth;
 
   olderodedvoxelcount=0;
+  erodecortexcma = 0;
   erodedvoxelcount=-1;
   unknowncount=0;
   erodewhitecount=0;
@@ -961,9 +1003,11 @@ void MRIerodecerebralcortex(MRI *mri_masked,MRI *mri_cma,MRI *mri_white,MRI *mri
               if (MRIvox(mri_cma,i,j,k)!=Unknown) 
               {
                 MRIvox(mri_masked,i,j,k)=MRIvox(mri_cma,i,j,k);
+		erodecortexcma++; // illegal and thus take the cma value again
               }
               else 
-              { /* if the voxel needs to be eroded, but the CMA didn't label it, check if it's in the white matter volume. */
+              { /* if the voxel needs to be eroded, but the CMA didn't label it, 
+		   check if it's in the white matter volume. */
                 // if (MRIvox(mri_white,i,j,k)==255)
 		if (likely(mri_white,i,j,k))
                 {
@@ -997,10 +1041,13 @@ void MRIerodecerebralcortex(MRI *mri_masked,MRI *mri_cma,MRI *mri_white,MRI *mri
             }
           }
         }
-    printf("  %d voxels eroded.\n",erodedvoxelcount);
-    printf("  %d voxels unknown.\n",unknowncount);
-    printf("  %d voxels became white\n", erodewhitecount);
+    printf("After illegality check on cortex labelled voxels\n");
+    printf("\ttotal illegal voxels   : %8d\n", erodedvoxelcount);
   }
+  printf("\tcortex became cma value: %8d\n", erodecortexcma);
+  printf("\tcma unknown voxels changed as\n"); 
+  printf("\tcortex became white    : %8d\n", erodewhitecount);
+  printf("\tcortex became unknown  : %8d\n", unknowncount);
 }
 
 int IllegalCorticalNeighbour(MRI *mri_masked, MRI *mri_white, int i,int j,int k)
@@ -1137,5 +1184,6 @@ void MRIcorrecthippocampus(MRI *mri_masked,MRI *mri_dst)
           }
         }
       }
-  printf("  - added %d white matter voxels.\n",hippocount);
+  printf("After hippocampus check\n");
+  printf("\tcortex became white : %8d\n",hippocount);
 }
