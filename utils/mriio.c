@@ -1047,7 +1047,7 @@ if(x_r == 0.0 && x_a == 0.0 && x_s == 0.0 && y_r == 0.0 && y_a == 0.0 && y_s == 
       sprintf(xform_use, "%s/../transforms/talairach.xfm", fname);
 
       if(!FileExists(xform_use))
-        printf("can't find talairach file '%s'\n", xform_use);
+        fprintf(stderr, "\ncan't find talairach file '%s'\n", xform_use);
 
     }
 
@@ -1601,7 +1601,7 @@ br = (slice_in_mosaic - bc) / mos_r;
 /*-----------------------------------------------------------*/
 static MRI *mincRead(char *fname, int read_volume)
 {
-  // Real wx, wy, wz;
+  Real wx, wy, wz;
   MRI *mri;
   Volume vol;
   Status status;
@@ -1786,6 +1786,12 @@ static MRI *mincRead(char *fname, int read_volume)
     for(j=0;j<4;j++) printf("%7.4f ",pVox2WorldLin->m[j][i]);
     printf("\n");
   }
+  
+  printf("Testing .... ...\n");
+  convert_voxel_to_world(vol, voxel, &worldr, &worlda, &worlds);
+  MRIvoxelToWorld(mri, voxel[0], voxel[1], voxel[2], &wx, &wy, &wz);
+  printf("MNI calculated %.2f, %.2f, %.2f vs. MRIvoxelToWorld: %.2f, %.2f, %.2f\n",
+    	 worldr, worlda, worlds, wx, wy, wz);
 
   delete_volume_input(&input_info);
   delete_volume(vol);
@@ -2462,9 +2468,9 @@ static int mincWrite(MRI *mri, char *fname)
   dir_cos[2] = (Real)mri->z_s;
   set_volume_direction_cosine(minc_volume, di_z, dir_cos);
 
-  voxel[di_x] = (Real)(((float)(mri->width) - 1.0) / 2.0);
-  voxel[di_y] = (Real)(((float)(mri->height) - 1.0) / 2.0);
-  voxel[di_z] = (Real)(((float)(mri->depth) - 1.0) / 2.0);
+  voxel[di_x] = mri->width/2.0; // promoted to double
+  voxel[di_y] = mri->height/2.0;
+  voxel[di_z] = mri->depth/2.0;
   voxel[3] = 0.0;
   world[0] = (Real)(mri->c_r);
   world[1] = (Real)(mri->c_a);
