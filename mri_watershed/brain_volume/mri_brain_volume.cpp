@@ -5,11 +5,11 @@
 //
 // Warning: Do not edit the following four lines.  CVS maintains them.
 // Revision Author: $Author: tosa $
-// Revision Date  : $Date: 2003/03/14 20:41:25 $
-// Revision       : $Revision: 1.1.2.1 $
+// Revision Date  : $Date: 2003/03/14 22:48:03 $
+// Revision       : $Revision: 1.1.2.2 $
 //
 ////////////////////////////////////////////////////////////////////
-char *MRI_WATERSHED_VERSION = "$Revision: 1.1.2.1 $";
+char *MRI_WATERSHED_VERSION = "$Revision: 1.1.2.2 $";
 
 using namespace std;
 
@@ -456,6 +456,12 @@ get_option(int argc, char *argv[],STRIP_PARMS *parms)
   {
     parms->forceParam = atof(argv[2]);
     fprintf(stderr, "use forceParam = %.2f\n", parms->forceParam);
+  }
+  else if(!strcmp(option, "surf_debug"))
+  {
+    parms->surf_dbg=1;
+    fprintf(stderr,"Mode:          Writing out surfaces into output volume\n") ;
+    nargs = 0 ;
   }
   else
   {
@@ -2617,15 +2623,19 @@ static void Template_Deformation(STRIP_PARMS *parms,MRI_variables *MRI_var)
   char timeString[256];
   getTimeString(timeString);
   char filename[256];
-  sprintf(filename, "surface1-%s-%s-%.2f", "binarized", timeString, parms->forceParam); 
-  MRISwrite(MRI_var->mris, filename);
-
+  if (parms->surf_dbg)
+  {
+    sprintf(filename, "surface1-%s-%.2f", timeString, parms->forceParam); 
+    MRISwrite(MRI_var->mris, filename);
+  }
   fprintf(stderr, "\n      calcForceGM... ");
   init_direction(MRI_var);
   MRISfit(MRI_var, calcForceGM, parms->forceParam);
-  sprintf(filename, "surceFinal-%s-%s-%.2f", "binarized", timeString, parms->forceParam); 
-  MRISwrite(MRI_var->mris, filename);
-
+  if (parms->surf_dbg)
+  {
+    sprintf(filename, "surfaceFinal-%s-%.2f", timeString, parms->forceParam); 
+    MRISwrite(MRI_var->mris, filename);
+  }
   //
   FreeMem(MRI_var);  /*necessary to free the basins previously allocated*/
 }
