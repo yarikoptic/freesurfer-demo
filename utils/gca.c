@@ -2,9 +2,9 @@
 // originally written by Bruce Fischl
 //
 // Warning: Do not edit the following four lines.  CVS maintains them.
-// Revision Author: $Author: tosa $
-// Revision Date  : $Date: 2004/07/01 21:45:32 $
-// Revision       : $Revision: 1.149 $
+// Revision Author: $Author: kteich $
+// Revision Date  : $Date: 2004/07/16 19:55:59 $
+// Revision       : $Revision: 1.148.2.1 $
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -1660,6 +1660,7 @@ GCAread(char *fname)
   int       node_width, node_height, node_depth, prior_width, prior_height, prior_depth, 
     ninputs, flags ;
   int       tag;
+  int       nread;
 
   if (strstr(fname, ".gcz"))
   {
