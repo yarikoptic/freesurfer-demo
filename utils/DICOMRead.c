@@ -2,7 +2,7 @@
    DICOM 3.0 reading functions
    Author: Sebastien Gicquel and Douglas Greve
    Date: 06/04/2001
-   $Id: DICOMRead.c,v 1.54 2004/05/06 18:01:24 fischl Exp $
+   $Id: DICOMRead.c,v 1.54.2.1 2004/10/20 21:44:33 kteich Exp $
 *******************************************************/
 
 #include <stdio.h>
@@ -84,6 +84,8 @@ MRI * sdcmLoadVolume(char *dcmfile, int LoadVolume, int nthonly)
   int Maj, Min, MinMin;
   double xs,ys,zs,xe,ye,ze;
   double sign;
+  int nnlist;
+
   xs=ys=zs=xe=ye=ze=sign=0.; /* to avoid compiler warnings */
   slice = 0; frame = 0; /* to avoid compiler warnings */
 
@@ -105,6 +107,12 @@ MRI * sdcmLoadVolume(char *dcmfile, int LoadVolume, int nthonly)
   fprintf(stderr,"INFO: loading series header info.\n");
   sdfi_list = LoadSiemensSeriesInfo(SeriesList, nlist);
 
+  // free memory
+  nnlist = nlist;
+  while (nnlist--)
+    free(SeriesList[nnlist]);
+  free(SeriesList);
+  
   fprintf(stderr,"INFO: sorting.\n");
   SortSDCMFileInfo(sdfi_list,nlist);
   
@@ -328,6 +336,25 @@ MRI * sdcmLoadVolume(char *dcmfile, int LoadVolume, int nthonly)
 
   }/* for nthfile */
 
+  while (nlist--)
+  {
+    // free strings
+    free(sdfi_list[nlist]->FileName);
+    free(sdfi_list[nlist]->StudyDate);
+    free(sdfi_list[nlist]->StudyTime);
+    free(sdfi_list[nlist]->PatientName);
+    free(sdfi_list[nlist]->SeriesTime);
+    free(sdfi_list[nlist]->AcquisitionTime);
+    free(sdfi_list[nlist]->ScannerModel);
+    free(sdfi_list[nlist]->NumarisVer);
+    free(sdfi_list[nlist]->PulseSequence);
+    free(sdfi_list[nlist]->ProtocolName);
+    free(sdfi_list[nlist]->PhEncDir);
+    // free struct
+    free(sdfi_list[nlist]);
+  }
+  free(sdfi_list);
+
   return(vol);
 }
 /*---------------------------------------------------------------
@@ -337,11 +364,11 @@ MRI * sdcmLoadVolume(char *dcmfile, int LoadVolume, int nthonly)
 ---------------------------------------------------------------*/
 DCM_ELEMENT *GetElementFromFile(char *dicomfile, long grpid, long elid)
 {
-  DCM_OBJECT *object;
+  DCM_OBJECT *object=0;
   CONDITION cond;
   DCM_ELEMENT *element;
   DCM_TAG tag;
-  unsigned long rtnLength;
+  unsigned int rtnLength;
   void * Ctx = NULL;
 
   element = (DCM_ELEMENT *) calloc(1,sizeof(DCM_ELEMENT));
@@ -379,7 +406,7 @@ DCM_ELEMENT *GetElementFromFile(char *dicomfile, long grpid, long elid)
 DCM_OBJECT *GetObjectFromFile(char *fname, unsigned long options)
 {
   CONDITION cond;
-  DCM_OBJECT *object;
+  DCM_OBJECT *object=0;
   int ok;
   
   //printf("     GetObjectFromFile(): %s %ld\n",fname,options);
@@ -396,13 +423,22 @@ DCM_OBJECT *GetObjectFromFile(char *fname, unsigned long options)
 
   cond=DCM_OpenFile(fname, DCM_PART10FILE|options, &object);
   if (cond != DCM_NORMAL)
+  {
+    DCM_CloseObject(&object);
     cond=DCM_OpenFile(fname, DCM_ORDERLITTLEENDIAN|options, &object);
+  }
   if (cond != DCM_NORMAL)
+  {
+    DCM_CloseObject(&object);
     cond=DCM_OpenFile(fname, DCM_ORDERBIGENDIAN|options, &object);
+  }
   if (cond != DCM_NORMAL)
+  {
+    DCM_CloseObject(&object);
     cond=DCM_OpenFile(fname, DCM_FORMATCONVERSION|options, &object);
-
+  }
   if(cond != DCM_NORMAL){
+    DCM_CloseObject(&object);
     COND_DumpConditions();
     return(NULL);
   }
@@ -439,23 +475,23 @@ int AllocElementData(DCM_ELEMENT *e)
     e->d.string[e->length] = '\0'; /* add null terminator */
     break;
   case DCM_SS: 
-    e->d.ss = (short *) calloc(e->length,sizeof(short));
+    e->d.ss = (short *) calloc(1,sizeof(short));
     break;
   case DCM_SL:
-    e->d.sl = (long *) calloc(e->length,sizeof(long));
+    e->d.sl = (int *) calloc(1, sizeof(int));
     break;
   case DCM_SQ: 
     fprintf(stderr,"Element is of type dcm_sq, not supported\n");
     return(1);
     break;
   case DCM_UL: 
-    e->d.ul = (unsigned long *) calloc(e->length,sizeof(unsigned long));
+    e->d.ul = (unsigned int *) calloc(1,sizeof(unsigned int));
     break;
   case DCM_US:
-    e->d.us = (unsigned short *) calloc(e->length,sizeof(unsigned short));
+    e->d.us = (unsigned short *) calloc(1, sizeof(unsigned short)); // e->length is the byte count
     break;
   case DCM_AT: 
-    e->d.at = (DCM_TAG *) calloc(e->length,sizeof(DCM_TAG));
+    e->d.at = (DCM_TAG *) calloc(1, sizeof(DCM_TAG));
     break;
   case DCM_FD: 
     fprintf(stderr,"Element is of type double, not supported by CTN\n");
@@ -502,27 +538,33 @@ int FreeElementData(DCM_ELEMENT *e)
     e->d.string = NULL;
     break;
   case DCM_SS: 
-    free(&e->d.ss);
+    // free(&e->d.ss);
+    free(e->d.ss);
     e->d.ss = NULL;
     break;
   case DCM_SL:
-    free(&e->d.sl);
+    // free(&e->d.sl);
+    free(e->d.sl);
     e->d.sl = NULL;
     break;
   case DCM_SQ: 
-    free(&e->d.sq);
+    //free(&e->d.sq);
+    free(e->d.sq);
     e->d.sq = NULL;
     break;
   case DCM_UL: 
-    free(&e->d.ul);
+    // free(&e->d.ul);
+    free(e->d.ul);
     e->d.ul = NULL;
     break;
   case DCM_US:
-    free(&e->d.us);
+    // free(&e->d.us);
+    free(e->d.us);
     e->d.us = NULL;
     break;
   case DCM_AT: 
-    free(&e->d.at);
+    // free(&e->d.at);
+    free(e->d.at);
     e->d.at = NULL;
     break;
   case DCM_FD: 
@@ -562,8 +604,9 @@ int IsSiemensDICOM(char *dcmfile)
   
   e = GetElementFromFile(dcmfile, 0x8, 0x70);
   if(e == NULL){
-    printf("ERROR: reading dicom file %s\n",dcmfile);
-    exit(1);
+    printf("WARNING: searching dicom file %s for Manufacturer tag 0x8, 0x70\n",dcmfile);
+    printf("WARNING: the result could be a mess.\n");
+    return(0);
   }
   fflush(stdout);fflush(stderr);
 
@@ -934,6 +977,9 @@ int dcmGetNRows(char *dcmfile)
 
   NRows = *(e->d.us);
 
+  if (e->representation != DCM_US)
+    printf("bad element for %s\n", dcmfile);
+
   FreeElementData(e); 
   free(e);
 
@@ -1219,7 +1265,7 @@ int sdcmIsMosaic(char *dcmfile, int *pNcols, int *pNrows, int *pNslices, int *pN
   ----------------------------------------------------------------*/
 SDCMFILEINFO *GetSDCMFileInfo(char *dcmfile)
 {
-  DCM_OBJECT *object;
+  DCM_OBJECT *object=0;
   SDCMFILEINFO *sdcmfi;
   CONDITION cond;
   DCM_TAG tag;
@@ -1525,9 +1571,9 @@ char *sdcmExtractNumarisVer(char *e_18_1020, int *Maj, int *Min, int *MinMin)
   strncpy(ver,&e_18_1020[n],m);
 
   /* Now determine major and minor release numbers */
-  if(ver[1] != 'V' || ver[2] != 'A'){
+  if(ver[1] != 'V' || !(ver[2] == 'A' || ver[2] == 'B')){
     printf("ERROR: incorreclty formatted version string %s\n"
-	   "found in dicom tag 18,1020 (VA not in 2nd and 3rd)\n",
+	   "found in dicom tag 18,1020 (VA or VB not in 2nd and 3rd)\n",
 	   e_18_1020);
     return(NULL);
   }
@@ -1626,6 +1672,11 @@ SDCMFILEINFO **ScanSiemensDCMDir(char *PathName, int *NSDCMFiles)
   }
   fprintf(stderr,"\n");
 
+  // free memory
+  while(NFiles--) 
+  {
+    free(NameList[NFiles]);
+  }
   free(NameList);
 
   return( sdcmfi_list );
@@ -1822,10 +1873,18 @@ char **ScanSiemensSeries(char *dcmfile, int *nList)
   fprintf(stderr,"INFO: found %d files in series\n",*nList);
   fflush(stderr);
 
+  // free memory
+  while(NFiles--) 
+  {
+    free(NameList[NFiles]);
+  }
+  free(NameList);
+  
   if(*nList == 0){
     free(SeriesList);
     return(NULL);
   }
+  free(PathName);
 
   return( SeriesList );
 }
@@ -1952,16 +2011,17 @@ int sdfiAssignRunNo2(SDCMFILEINFO **sdfi_list, int nlist)
   SDCMFILEINFO *sdfi, *sdfitmp, *sdfi0;
   int nthfile, NRuns, nthrun, nthslice, nthframe;
   int nfilesperrun, firstpass, nframes;
-  char *FirstFileName;
-  int *RunList, *RunNoList;
+  char *FirstFileName = 0;
+  int *RunList=0, *RunNoList=0;
 
   nframes = 0; /* to stop compiler warnings */
 
   RunNoList = sdfiRunNoList(sdfi_list,nlist,&NRuns);
-  if(NRuns==0) return(NRuns);
+  if(NRuns==0) 
+    return(NRuns);
 
-  for(nthrun = 0; nthrun < NRuns; nthrun ++){
-
+  for(nthrun = 0; nthrun < NRuns; nthrun ++)
+  {
     FirstFileName = sdfiFirstFileInRun(RunNoList[nthrun], sdfi_list, nlist);
     RunList = sdfiRunFileList(FirstFileName,sdfi_list, nlist, &nfilesperrun);
 
@@ -1970,12 +2030,12 @@ int sdfiAssignRunNo2(SDCMFILEINFO **sdfi_list, int nlist)
     if(sdfi0->IsMosaic){ /* It is a mosaic */
       sdfi0->NFrames = nfilesperrun;
       if(nfilesperrun != (sdfi0->lRepetitions+1)){
-  fprintf(stderr,"WARNING: Run %d appears to be truncated\n",nthrun+1);
-  fprintf(stderr,"  Files Found: %d, Files Expected (lRep+1): %d\n",
-    nfilesperrun, (sdfi0->lRepetitions+1));
-  DumpSDCMFileInfo(stderr,sdfi0);
-  fflush(stderr);
-  sdfi0->ErrorFlag = 1;
+	fprintf(stderr,"WARNING: Run %d appears to be truncated\n",nthrun+1);
+	fprintf(stderr,"  Files Found: %d, Files Expected (lRep+1): %d\n",
+		nfilesperrun, (sdfi0->lRepetitions+1));
+	DumpSDCMFileInfo(stderr,sdfi0);
+	fflush(stderr);
+	sdfi0->ErrorFlag = 1;
       }
     }
 
@@ -1986,31 +2046,31 @@ int sdfiAssignRunNo2(SDCMFILEINFO **sdfi_list, int nlist)
       firstpass = 1;
 
       while(nthfile < nfilesperrun){
-  sdfi    = sdfi_list[RunList[nthfile]];
-  sdfitmp = sdfi_list[RunList[nthfile]];
-  nthframe = 0;
-  while(sdfiSameSlicePos(sdfi,sdfitmp)){
-    nthframe++;
-    nthfile++;
-    if(nthfile < nfilesperrun) 
-      sdfitmp = sdfi_list[RunList[nthfile]];
-    else                   
-      break;
-  }
-  if(firstpass){
-    firstpass = 0;
-    nframes = nthframe;
-  }
-  if(nthframe != nframes){
-    fprintf(stderr,"WARNING: Run %d appears to be truncated\n",
-      RunNoList[nthrun]);
-    fprintf(stderr,"  Slice = %d, nthframe = %d, nframes = %d, %d\n",
-      nthslice,nthframe,nframes,firstpass);
-    fflush(stderr);
-    sdfi0->ErrorFlag = 1;
-    break;
-  }
-  nthslice++;
+	sdfi    = sdfi_list[RunList[nthfile]];
+	sdfitmp = sdfi_list[RunList[nthfile]];
+	nthframe = 0;
+	while(sdfiSameSlicePos(sdfi,sdfitmp)){
+	  nthframe++;
+	  nthfile++;
+	  if(nthfile < nfilesperrun) 
+	    sdfitmp = sdfi_list[RunList[nthfile]];
+	  else                   
+	    break;
+	}
+	if(firstpass){
+	  firstpass = 0;
+	  nframes = nthframe;
+	}
+	if(nthframe != nframes){
+	  fprintf(stderr,"WARNING: Run %d appears to be truncated\n",
+		  RunNoList[nthrun]);
+	  fprintf(stderr,"  Slice = %d, nthframe = %d, nframes = %d, %d\n",
+		  nthslice,nthframe,nframes,firstpass);
+	  fflush(stderr);
+	  sdfi0->ErrorFlag = 1;
+	  break;
+	}
+	nthslice++;
       }/* end loop over files in the run */
       
       sdfi0->VolDim[2] = nthslice;
@@ -2025,10 +2085,19 @@ int sdfiAssignRunNo2(SDCMFILEINFO **sdfi_list, int nlist)
       sdfi->ErrorFlag = sdfi0->ErrorFlag;
     }
 
-    free(RunList);
-    free(FirstFileName);
+    if (RunList)
+    {
+      free(RunList); RunList = 0;
+    }
+    if (FirstFileName)
+    {
+      free(FirstFileName); FirstFileName = 0;
+    }
   } /* end loop over runs */
-
+  if (RunNoList)
+  {
+    free(RunNoList);  RunNoList = 0;
+  }
   return(NRuns);
 }
 /*-----------------------------------------------------------
@@ -2042,17 +2111,21 @@ int *sdfiRunNoList(SDCMFILEINFO **sdfi_list, int nlist, int *NRuns)
   int nthrun;
 
   *NRuns = sdfiCountRuns(sdfi_list, nlist);
-  if(*NRuns == 0) return(NULL);
+  if(*NRuns == 0) 
+    return(NULL);
 
   RunNoList = (int *) calloc(*NRuns, sizeof(int));
 
   nthrun = 0;
   PrevRunNo = -1;
-  for(nthfile = 0; nthfile < nlist; nthfile ++){
+  for(nthfile = 0; nthfile < nlist; nthfile ++)
+  {
     sdfi = sdfi_list[nthfile];
-    if(PrevRunNo == sdfi->RunNo) continue;
+    if(PrevRunNo == sdfi->RunNo) 
+      continue;
     PrevRunNo = sdfi->RunNo;
     RunNoList[nthrun] = sdfi->RunNo;
+    fprintf(stderr, "RunNo = %d\n", sdfi->RunNo);
     nthrun++;
   }
   return(RunNoList);
@@ -2067,9 +2140,11 @@ int sdfiCountRuns(SDCMFILEINFO **sdfi_list, int nlist)
 
   NRuns = 0;
   PrevRunNo = -1;
-  for(nthfile = 0; nthfile < nlist; nthfile ++){
+  for(nthfile = 0; nthfile < nlist; nthfile ++)
+  {
     sdfi = sdfi_list[nthfile];
-    if(PrevRunNo == sdfi->RunNo) continue;
+    if(PrevRunNo == sdfi->RunNo) 
+      continue;
     PrevRunNo = sdfi->RunNo;
     NRuns ++;
   }
@@ -3746,7 +3821,7 @@ int IsDICOM(char *fname)
   int d;
   FILE *fp;
   CONDITION cond;
-  DCM_OBJECT *object;
+  DCM_OBJECT *object = 0;
   static int yes = 0;          // statically initialized
   static char file[1024] = ""; // statically initialized
   
@@ -3786,27 +3861,33 @@ int IsDICOM(char *fname)
   }
 
   if (cond != DCM_NORMAL){
+    DCM_CloseObject(&object);
     if(d) printf("Opening as littleendian\n");
     cond=DCM_OpenFile(fname, DCM_ORDERLITTLEENDIAN|DCM_ACCEPTVRMISMATCH, 
 		      &object);
-    if (cond != DCM_NORMAL && d) DCMPrintCond(cond);
+    if (cond != DCM_NORMAL && d) 
+      DCMPrintCond(cond);
   }
 
   if (cond != DCM_NORMAL){
+    DCM_CloseObject(&object);
     if(d) printf("Opening as bigendian\n");
     cond=DCM_OpenFile(fname, DCM_ORDERBIGENDIAN|DCM_ACCEPTVRMISMATCH, 
 		      &object);
-    if (cond != DCM_NORMAL && d) DCMPrintCond(cond);
+    if (cond != DCM_NORMAL && d) 
+      DCMPrintCond(cond);
   }
 
   if (cond != DCM_NORMAL){
+    DCM_CloseObject(&object);
     if(d) printf("Opening as format conversion\n");
     cond=DCM_OpenFile(fname, DCM_FORMATCONVERSION|DCM_ACCEPTVRMISMATCH, 
 		      &object);
-    if (cond != DCM_NORMAL && d) DCMPrintCond(cond);
+    if (cond != DCM_NORMAL && d) 
+      DCMPrintCond(cond);
   }
-
-  if(cond == DCM_NORMAL) DCM_CloseObject(&object);
+  // if(cond == DCM_NORMAL) 
+  DCM_CloseObject(&object);
 
   fflush(stdout);fflush(stderr);
 
