@@ -5,11 +5,11 @@
 //
 // Warning: Do not edit the following four lines.  CVS maintains them.
 // Revision Author: $Author: tosa $
-// Revision Date  : $Date: 2003/03/14 22:48:03 $
-// Revision       : $Revision: 1.1.2.2 $
+// Revision Date  : $Date: 2003/03/14 23:44:11 $
+// Revision       : $Revision: 1.1.2.3 $
 //
 ////////////////////////////////////////////////////////////////////
-char *MRI_WATERSHED_VERSION = "$Revision: 1.1.2.2 $";
+char *MRI_WATERSHED_VERSION = "$Revision: 1.1.2.3 $";
 
 using namespace std;
 
@@ -73,9 +73,6 @@ extern "C" {
 
 
 #define MAX_MASK_VOLUMES  50
-static int nmask_volumes = 0 ;
-static char mask_in_fnames[MAX_MASK_VOLUMES][STRLEN] ;
-static char mask_out_fnames[MAX_MASK_VOLUMES][STRLEN] ;
 
 typedef struct Cell
 {
@@ -316,23 +313,33 @@ int main(int argc, char *argv[])
     argv += nargs ;
   }
 
-  if(argc<3)
+  if(argc<2)
   {
-    fprintf(stderr, "\nUsage: %s [options] input_file output_file", Progname); 
+    fprintf(stderr, "\nUsage: %s [options] input_file [output_file]", Progname); 
     fprintf(stderr, "\noptional command -forceParam val: change pushout force (default 1.0)");
     fprintf(stderr,"\noptional command --version : to show the current version\n\n");
 
     exit(1);
   };
 
-  in_fname = argv[argc-2];  
-  out_fname = argv[argc-1];
+  if (argc ==3)
+  {
+    in_fname = argv[argc-2];  
+    out_fname = argv[argc-1];
 
-  fprintf(stderr, "\n************************************************************"
-          "\nInput:\t%s"
-	  "\nOutput:\t%s\n", in_fname, out_fname);
-  
-  printf("\nInput:\t%s\n", in_fname);
+    fprintf(stderr, "\n************************************************************"
+	    "\nInput:\t%s"
+	    "\nOutput:\t%s\n", in_fname,out_fname);
+  }
+  else
+  {
+    in_fname = argv[argc-1];  
+    out_fname = 0;
+
+    fprintf(stderr, "\n************************************************************"
+	    "\nInput:\t%s", in_fname);
+  }
+  printf("\nInput:%s%s\n","\t", in_fname);
   /*************** PROG *********************/
 
 
@@ -358,12 +365,14 @@ int main(int argc, char *argv[])
   // binarize the image
   //                                      thresh low  high
   MRIbinarize(mri_with_skull, mri_with_skull, 1, 0, 128);
-  char timeString[256];
-  getTimeString(timeString);
-  char filename[256];
-  sprintf(filename, "%s-%s.mgh", "binarized", timeString); 
-  MRIwrite(mri_with_skull, filename);
-
+  if (parms->surf_dbg)
+  {
+    char timeString[256];
+    getTimeString(timeString);
+    char filename[256];
+    sprintf(filename, "%s-%s.mgh", "binarized", timeString); 
+    MRIwrite(mri_with_skull, filename);
+  }
   /* Main routine *********************/
   mri_without_skull=MRIstripSkull(mri_with_skull, mri_without_skull,parms);
   if (mri_without_skull == NULL)
@@ -388,27 +397,12 @@ int main(int argc, char *argv[])
 
   fprintf(stderr,"\n\n******************************\nSave...");
 
-  MRIwrite(mri_without_skull,out_fname);
+  if (out_fname)
+    MRIwrite(mri_without_skull,out_fname);
+
   MRIfree(&mri_with_skull) ;
      
   fprintf(stderr,"done\n");
-  
-  if (nmask_volumes > 0)
-  {
-    int i ;
-    
-    for (i = 0 ; i < nmask_volumes ; i++)
-    {
-      mri_with_skull = MRIread(mask_in_fnames[i]) ;
-      if (!mri_with_skull)
-        ErrorExit(ERROR_NOFILE, "%s: could not read volume %s", Progname, mask_in_fnames[i]) ;
-      mri_without_skull = MRImask(mri_with_skull, mri_mask, NULL, 0, 0) ;
-      printf("writing skull stripped volume to %s...\n", mask_out_fnames[i]) ;
-      MRIwrite(mri_without_skull, mask_out_fnames[i]) ;
-      MRIfree(&mri_with_skull) ; 
-      MRIfree(&mri_without_skull) ;
-    }
-  }
   
   MRIfree(&mri_mask) ;
 
@@ -456,6 +450,7 @@ get_option(int argc, char *argv[],STRIP_PARMS *parms)
   {
     parms->forceParam = atof(argv[2]);
     fprintf(stderr, "use forceParam = %.2f\n", parms->forceParam);
+    nargs = 1;
   }
   else if(!strcmp(option, "surf_debug"))
   {
@@ -645,10 +640,10 @@ MRI *MRIstripSkull(MRI *mri_with_skull, MRI *mri_without_skull,
     
     vol_elt=MRI_var->mri_src->xsize*MRI_var->mri_src->ysize*MRI_var->mri_src->zsize;
 
-    printf("\n\nforceParam:\t%.2f\n", parms->forceParam);
-    printf("Brain Size:\t%ld\tvoxels\n", MRI_var->brain_size);
-    printf("Normalized:\t%.2f\tmm3\n", ((double) MRI_var->brain_size)*vol_elt);
-    printf("voxel size:\t%.2f\tmm3\n", (double) vol_elt);
+    printf("\n\nforceParam:%s%.2f\n", "\t", parms->forceParam);
+    printf("Brain Size:%s%ld\tvoxels\n","\t", MRI_var->brain_size);
+    printf("Normalized:%s%.2f\tmm3\n", "\t", ((double) MRI_var->brain_size)*vol_elt);
+    printf("voxel size:%s%.2f\tmm3\n", "\t", (double) vol_elt);
 
    /*save the surface of the brain*/
     if(parms->brainsurf)
