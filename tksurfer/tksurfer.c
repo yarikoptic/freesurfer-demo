@@ -18342,7 +18342,7 @@ int main(int argc, char *argv[])   /* new main */
   /* end rkt */
   
   /* rkt: check for and handle version tag */
-  nargs = handle_version_option (argc, argv, "$Id: tksurfer.c,v 1.94.2.1 2005/03/31 20:08:18 kteich Exp $", "$Name:  $");
+  nargs = handle_version_option (argc, argv, "$Id: tksurfer.c,v 1.94.2.2 2005/05/23 20:21:28 kteich Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -23807,7 +23807,7 @@ int labl_send_info (int index)
 	       labl_labels[index].r, labl_labels[index].g, 
 	       labl_labels[index].b );
       Tcl_Eval (g_interp, tcl_command);
-
+	  
       /* if the fill dlog is open, this will update it. */
       sprintf (tcl_command, "UpdateCustomFillDlog");
       Tcl_Eval (g_interp, tcl_command);
@@ -23840,6 +23840,8 @@ int labl_add (LABEL* label, int* new_index)
   labl_labels[index].g = LABL_DEFAULT_COLOR_G;
   labl_labels[index].b = LABL_DEFAULT_COLOR_B;
   labl_labels[index].visible = 1;
+  labl_labels[index].border_vno = NULL;
+  labl_labels[index].num_border_vnos = 0;
   
   /* set the name using a global counter and increment the counter. */
   labl_num_labels_created++;
@@ -23934,6 +23936,9 @@ int labl_remove (int index)
   
   /* free the label here. */
   LabelFree (&labl_labels[index].label);
+
+  /* Free the border storage. */
+  free (labl_labels[index].border_vno);
   
   /* for every label above it, copy it one slot down. */
   next = index + 1;
