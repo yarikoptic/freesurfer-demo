@@ -4,7 +4,7 @@
   email:   analysis-bugs@nmr.mgh.harvard.edu
   Date:    2/27/02
   Purpose: Converts a label to a segmentation volume.
-  $Id: mri_label2vol.c,v 1.6.2.2 2005/05/24 22:52:31 greve Exp $
+  $Id: mri_label2vol.c,v 1.6.2.3 2005/05/24 23:16:05 greve Exp $
 */
 
 
@@ -52,7 +52,7 @@ static int load_annotation(char *annotfile, MRIS *Surf);
 
 int main(int argc, char *argv[]) ;
 
-static char vcid[] = "$Id: mri_label2vol.c,v 1.6.2.2 2005/05/24 22:52:31 greve Exp $";
+static char vcid[] = "$Id: mri_label2vol.c,v 1.6.2.3 2005/05/24 23:16:05 greve Exp $";
 char *Progname = NULL;
 
 char *LabelList[100];
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 
   /* rkt: check for and handle version tag */
   nargs = handle_version_option (argc, argv, 
-      "$Id: mri_label2vol.c,v 1.6.2.2 2005/05/24 22:52:31 greve Exp $", "$Name:  $");
+      "$Id: mri_label2vol.c,v 1.6.2.3 2005/05/24 23:16:05 greve Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -180,7 +180,7 @@ int main(int argc, char **argv)
 
   // Create hit volume based on template, one frame for each label
   HitVol = MRIallocSequence(TempVol->width, TempVol->height, 
-          TempVol->depth, MRI_INT, nlabels );
+          TempVol->depth, MRI_SHORT, nlabels );
   if(HitVol == NULL){
     printf("ERROR: could not alloc hit volume\n");
     exit(1);
@@ -230,7 +230,7 @@ int main(int argc, char **argv)
 		 ProjDepth,x,y,z,Surf->vertices[vtxno].curv,c,r,s,oob);
 
 	  // Accumulate hit volume
-	  if(!oob) MRIIseq_vox(HitVol,c,r,s,nthlabel) ++;
+	  if(!oob) MRISseq_vox(HitVol,c,r,s,nthlabel) ++;
 
 	  ProjDepth += ProjDelta;
 	  if(ProjDelta == 0) break; // only do once
@@ -245,7 +245,7 @@ int main(int argc, char **argv)
 	oob = get_crs(Tras2vox,x,y,z,&c,&r,&s,TempVol);
 	if(debug) printf("   %g %g %g   %d %d %d   %d\n",x,y,z,c,r,s,oob);
 	if(oob) continue; // Out of the volume
-	MRIIseq_vox(HitVol,c,r,s,nthlabel) ++;
+	MRISseq_vox(HitVol,c,r,s,nthlabel) ++;
       }
     } // end loop over label points
 
