@@ -4,7 +4,7 @@
   email:   analysis-bugs@nmr.mgh.harvard.edu
   Date:    2/27/02
   Purpose: Converts a label to a segmentation volume.
-  $Id: mri_label2vol.c,v 1.6.2.1 2005/01/25 23:02:47 greve Exp $
+  $Id: mri_label2vol.c,v 1.6.2.2 2005/05/24 22:52:31 greve Exp $
 */
 
 
@@ -52,7 +52,7 @@ static int load_annotation(char *annotfile, MRIS *Surf);
 
 int main(int argc, char *argv[]) ;
 
-static char vcid[] = "$Id: mri_label2vol.c,v 1.6.2.1 2005/01/25 23:02:47 greve Exp $";
+static char vcid[] = "$Id: mri_label2vol.c,v 1.6.2.2 2005/05/24 22:52:31 greve Exp $";
 char *Progname = NULL;
 
 char *LabelList[100];
@@ -102,7 +102,7 @@ int main(int argc, char **argv)
 
   /* rkt: check for and handle version tag */
   nargs = handle_version_option (argc, argv, 
-      "$Id: mri_label2vol.c,v 1.6.2.1 2005/01/25 23:02:47 greve Exp $", "$Name:  $");
+      "$Id: mri_label2vol.c,v 1.6.2.2 2005/05/24 22:52:31 greve Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -191,7 +191,7 @@ int main(int argc, char **argv)
   // Go through each label
   printf("nlabels = %d\n",nlabels);
   for(nthlabel = 0; nthlabel < nlabels; nthlabel++){
-    printf("nthlabel = %d\n",nthlabel);
+    if(debug) printf("nthlabel = %d\n",nthlabel);
 
     if(AnnotFile == NULL){
       srclabel = LabelRead(NULL, LabelList[nthlabel]);
@@ -281,7 +281,10 @@ int main(int argc, char **argv)
 	    nhitsmax_label = nthlabel;
 	  }
 	}
-	MRIIseq_vox(OutVol,c,r,s,0) = nhitsmax_label + 1;
+	if(AnnotFile == NULL)
+	  MRIIseq_vox(OutVol,c,r,s,0) = nhitsmax_label + 1;
+	else
+	  MRIIseq_vox(OutVol,c,r,s,0) = nhitsmax_label;
 
       }
     }
@@ -488,8 +491,7 @@ static void print_help(void)
 "input to mri_label2vol using --label. Or, the annotation file can be\n"
 "read in directly using --annot. The map of annotation numbers to \n"
 "annotation names can be found at Simple_surface_labels2002.txt \n"
-"in $FREESURFER_HOME. Note that you have to add 1 to the number in \n"
-"this file to get the number stored in the output volume.\n"
+"in $FREESURFER_HOME. \n"
 "\n"
 "--temp tempvolid\n"
 "\n"
