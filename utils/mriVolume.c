@@ -1270,6 +1270,9 @@ Volm_tErr Volm_SetSampleType ( mriVolumeRef     this,
   
   /* Set the sample type. */
   this->mSampleType = iType;
+
+  fprintf (stderr, "SAMPLE TYPE SET TO %s\n",
+	   (iType==0?"nearest":(iType==1?"trilinear":"sinc")) );
   
   DebugCatch;
   DebugCatchError( eResult, Volm_tErr_NoErr, Volm_GetErrorString );
