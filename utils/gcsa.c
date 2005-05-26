@@ -848,8 +848,7 @@ GCSANclassify(GCSA_NODE *gcsan, CP_NODE *cpn, double *v_inputs, int ninputs,
     gcs = getGC(gcsan, cpn->labels[n], NULL) ;
     if (!gcs)
       {
-	ErrorPrintf(ERROR_BADPARM, "GCSANclassify: could not find GCS for
-node %d!",n) ;
+	ErrorPrintf(ERROR_BADPARM, "GCSANclassify: could not find GCS for node %d!",n) ;
 	continue ;
       }
 
