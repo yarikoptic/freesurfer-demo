@@ -615,6 +615,7 @@ int ignorezeroesinhistogramflag = FALSE; /* if true, don't count 0s in
 int lastignorezeroesinhistogramflag = FALSE; /* this is done to see if
 						we need to recalc the
 						freqs */
+int labels_before_overlay_flag = FALSE; /* draw labels under overlay or not */
 
 Tcl_Interp *g_interp = NULL;
 
@@ -12750,6 +12751,11 @@ fill_color_array(MRI_SURFACE *mris, float *colors)
 	  g = g_base;
 	  b = b_base;
 
+	  if (labels_before_overlay_flag)
+	    /* get any label color for this vertex. this will not apply
+	       any color if there is no label. */
+	    labl_apply_color_to_vertex (n, &r, &g, &b );
+
 	  /* if overlay flag is on... */
 	  if (overlayflag)
 	    {
@@ -12787,9 +12793,10 @@ fill_color_array(MRI_SURFACE *mris, float *colors)
 		}
 	    } 
 	  
-	  /* get any label color for this vertex. this will not apply
+	  if (!labels_before_overlay_flag)
+	    /* get any label color for this vertex. this will not apply
 	     any color if there is no label. */
-	  labl_apply_color_to_vertex (n, &r, &g, &b );
+	    labl_apply_color_to_vertex (n, &r, &g, &b );
 	  
 	  /* let the boundary code color this vertex, if it wants to. */
 	  fbnd_apply_color_to_vertex (n, &r, &g, &b);
@@ -18342,7 +18349,7 @@ int main(int argc, char *argv[])   /* new main */
   /* end rkt */
   
   /* rkt: check for and handle version tag */
-  nargs = handle_version_option (argc, argv, "$Id: tksurfer.c,v 1.94.2.2 2005/05/23 20:21:28 kteich Exp $", "$Name:  $");
+  nargs = handle_version_option (argc, argv, "$Id: tksurfer.c,v 1.94.2.3 2005/05/26 22:27:18 kteich Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -19166,6 +19173,9 @@ int main(int argc, char *argv[])   /* new main */
 	      TCL_LINK_BOOLEAN);
   Tcl_LinkVar(interp,"ignorezeroesinhistogramflag",
 	      (char *)&ignorezeroesinhistogramflag,
+	      TCL_LINK_BOOLEAN);
+  Tcl_LinkVar(interp,"labels_before_overlay_flag",
+	      (char *)&labels_before_overlay_flag,
 	      TCL_LINK_BOOLEAN);
   /* end rkt */
   /*=======================================================================*/

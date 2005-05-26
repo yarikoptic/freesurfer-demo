@@ -1,6 +1,6 @@
 #! /usr/bin/tixwish
 
-# $Id: tksurfer.tcl,v 1.66.2.2 2005/04/07 17:04:11 kteich Exp $
+# $Id: tksurfer.tcl,v 1.66.2.3 2005/05/26 22:27:19 kteich Exp $
 
 package require BLT;
 
@@ -199,7 +199,7 @@ array set gaLinkedVarGroups {
     overlay { falpha colscale truncphaseflag invphaseflag revphaseflag 
 	complexvalflag foffset fthresh fmid foffset fslope fmin fmax 
 	fnumtimepoints fnumconditions ftimepoint fcondition 
-	ignorezeroesinhistogramflag}
+	ignorezeroesinhistogramflag labels_before_overlay_flag}
     curvature { cslope cmid cmin cmax forcegraycurvatureflag }
     phase { angle_offset angle_cycles }
     inflate { sulcflag }
@@ -210,7 +210,7 @@ array set gaLinkedVarGroups {
     all { light0 light1 light2 light3 offset colscale truncphaseflag invphaseflag revphaseflag complexvalflag ignorezeroesinhistogramflag currentvaluefield falpha  fthresh fmid foffset fthreshmax fslope  fnumconditions fnumtimepoints ftimepoint fcondition fmin fmax cslope cmid cmin cmax forcegraycurvatureflag angle_cycles angle_offset sulcflag surfcolor vertexset overlayflag funcmin funcmax scalebarflag colscalebarflag verticesflag cmid dipavg curvflag mouseoverflag redrawlockflag drawlabelflag labelstyle timeresolution numprestimpoints colortablename }
     redrawlock { redrawlockflag }
     graph { timeresolution numprestimpoints }
-    label { colortablename drawlabelflag labelstyle }
+    label { colortablename drawlabelflag labelstyle labels_before_overlay_flag}
 }
 
 proc SendLinkedVarGroup { iGroup } {
@@ -2546,6 +2546,12 @@ proc CreateMenuBar { ifwMenuBar } {
 	    { SendLinkedVarGroup label
 		UpdateAndRedraw }
 	    gaLinkedVars(drawlabelflag) 
+	    mg_LabelLoaded }
+	{ check
+	    "Labels under Overlay"
+	    { SendLinkedVarGroup label
+		UpdateAndRedraw }
+	    gaLinkedVars(labels_before_overlay_flag)
 	    mg_LabelLoaded }
 	{ check 
 	    "Scale Bar"
