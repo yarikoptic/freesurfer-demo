@@ -1,6 +1,6 @@
 #! /usr/bin/tixwish
 
-# $Id: tkm_functional.tcl,v 1.24.2.2 2005/04/07 17:04:10 kteich Exp $
+# $Id: tkm_functional.tcl,v 1.24.2.3 2005/06/27 19:51:08 kteich Exp $
 
 package require BLT;
 
@@ -712,13 +712,14 @@ proc Overlay_SaveConfiguration {} {
 
 proc Overlay_RestoreConfiguration {} {
 
-    global gnTimePoint gnCondition gbTruncateNegative gbReverse gfThreshold
-    global gbOverlayOffset gbTruncatePositive gbIgnoreThreshold gbGrayscale
-    global gbOpaque gOverlaySampleType
-    global gnSavedTimePoint gnSavedCondition gbSavedTruncateNegative
-    global gbSavedTruncatePositive gbSavedGrayscale gbSavedIgnoreThreshold
+    global gnTimePoint gnCondition gbTruncateNegative gbReverse
+    global gbIgnoreThreshold gfThreshold gbGrayscale gbOpaque
+    global gbOverlayOffset gbTruncatePositive gfOverlayAlpha
+    global gOverlaySampleType
+    global gnSavedTimePoint gnSavedCondition gbSavedTruncateNegative 
+    global gbSavedGrayscale gbSavedIgnoreThreshold gbSavedTruncatePositive
     global gbSavedReverse gfSavedThreshold gbSavedOverlayOffset gbSavedOpaque
-    global gfOverlayAlpha gSavedOverlaySampleType
+    global gfSavedOverlayAlpha gSavedOverlaySampleType
     
     set gnTimePoint $gnSavedTimePoint
     set gnCondition $gnSavedCondition
