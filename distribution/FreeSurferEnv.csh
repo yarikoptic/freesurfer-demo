@@ -30,10 +30,10 @@
 #   script.
 #
 #
-# $Id: FreeSurferEnv.csh,v 1.3.6.5 2005/04/14 16:00:28 kteich Exp $
+# $Id: FreeSurferEnv.csh,v 1.3.6.6 2005/07/29 17:40:57 kteich Exp $
 #############################################################################
 
-set VERSION = '$Id: FreeSurferEnv.csh,v 1.3.6.5 2005/04/14 16:00:28 kteich Exp $'
+set VERSION = '$Id: FreeSurferEnv.csh,v 1.3.6.6 2005/07/29 17:40:57 kteich Exp $'
 
 ## Get the name of the operating system
 set os = `uname -s`
@@ -117,11 +117,6 @@ foreach d ($FSFAST_HOME $SUBJECTS_DIR)
       endif
   endif
 end
-
-## Set the Tcl/Tk and Tix library locations.
-setenv TCL_LIBRARY   $LOCAL_DIR/lib/tcl8.3
-setenv TK_LIBRARY    $LOCAL_DIR/lib/tk8.3
-setenv TIX_LIBRARY   $LOCAL_DIR/lib/tix4.1
 
 if( $output ) then
     echo "FREESURFER_HOME $FREESURFER_HOME"
