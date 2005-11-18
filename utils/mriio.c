@@ -1881,7 +1881,7 @@ static MRI *mincRead(char *fname, int read_volume)
   // Real wx, wy, wz;
   MRI *mri;
   Volume vol;
-  Status status;
+  VIO_Status status;
   char *dim_names[4];
   int dim_sizes[4];
   int ndims;
@@ -2093,7 +2093,7 @@ static MRI *mincRead2(char *fname, int read_volume)
 
   MRI *mri;
   Volume vol;
-  Status status;
+  VIO_Status status;
   char *dim_names[4];
   int dim_sizes[4];
   int ndims;
@@ -2465,7 +2465,7 @@ static int mincWrite2(MRI *mri, char *fname)
   int r,c,s,f;
   Real VoxVal = 0.0;
   int return_value;
-  Status status;
+  VIO_Status status;
   MATRIX *T;
   Transform *pVox2WorldLin;
   General_transform *pVox2WorldGen;
@@ -2600,7 +2600,7 @@ static int mincWrite(MRI *mri, char *fname)
   int vi[4];
 /*   int r, a, s; */
 /*   float r_max; */
-  Status status;
+  VIO_Status status;
 
 /* di gives the bogus minc index 
    di[0] is width, 1 is height, 2 is depth, 3 is time if 
