@@ -3,10 +3,10 @@
 # Purpose: Setup the environment to run FreeSurfer/FS-FAST (and FSL)
 # Usage:   See help section below  
 #
-# $Id: FreeSurferEnv.csh,v 1.3.6.7 2005/08/25 20:01:59 nicks Exp $
+# $Id: FreeSurferEnv.csh,v 1.3.6.8 2005/11/18 19:23:26 nicks Exp $
 #############################################################################
 
-set VERSION = '$Id: FreeSurferEnv.csh,v 1.3.6.7 2005/08/25 20:01:59 nicks Exp $'
+set VERSION = '$Id: FreeSurferEnv.csh,v 1.3.6.8 2005/11/18 19:23:26 nicks Exp $'
 
 ## Print help if --help or -help is specified
 if (("$1" == "--help") || ("$1" == "-help")) then
@@ -29,6 +29,7 @@ if (("$1" == "--help") || ("$1" == "-help")) then
     echo "       FUNCTIONALS_DIR"
     echo "       MINC_BIN_DIR"
     echo "       MINC_LIB_DIR"
+    echo "       GSL__DIR"
     echo "       FSL_DIR"
     echo "4. If NO_MINC is set (to anything), "
     echo "   then all the MINC stuff is ignored."
@@ -145,18 +146,34 @@ if((! $?NO_MINC) && (! $?MINC_LIB_DIR  || $FS_OVERRIDE)) then
         setenv MINC_LIB_DIR $FREESURFER_HOME/minc/lib
     endif
 endif
+if((! $?NO_MINC) && (! $?MNI_DATAPATH  || $FS_OVERRIDE)) then
+    # try to find minc toolkit data (MNI::DataDir)
+    if ( $?MNI_INSTALL_DIR) then
+        setenv MNI_DATAPATH $MNI_INSTALL_DIR/data
+    else if ( -e $FREESURFER_HOME/lib/mni/data) then
+        setenv MNI_DATAPATH $FREESURFER_HOME/lib/mni/data
+    else if ( -e /usr/pubsw/packages/mni/current/data) then
+        setenv MNI_DATAPATH /usr/pubsw/packages/mni/current/data
+    else if ( -e /usr/local/mni/data) then
+        setenv MNI_DATAPATH /usr/local/mni/data
+    else if ( -e $FREESURFER_HOME/minc/data) then
+        setenv MNI_DATAPATH $FREESURFER_HOME/minc/data
+    endif
+endif
 
 if(! $?FSL_DIR  || $FS_OVERRIDE) then
+    # FSLDIR is the FSL declared location, use that.
+    # else try find an installation.
     if ( $?FSLDIR ) then
-	setenv FSL_DIR $FSL_DIR
-    else if ( -e $FREESURFER_HOME/fsl) then
-        setenv FSL_DIR $FREESURFER_HOME/fsl
+        setenv FSL_DIR $FSLDIR
+    else if ( -e /usr/pubsw/packages/fsl/current) then
+        setenv FSL_DIR /usr/pubsw/packages/fsl/current
     else if ( -e /usr/local/fsl) then
         setenv FSL_DIR /usr/local/fsl
+    else if ( -e $FREESURFER_HOME/fsl) then
+        setenv FSL_DIR $FREESURFER_HOME/fsl
     else if ( -e /Users/Shared/fsl) then
         setenv FSL_DIR /Users/Shared/fsl
-    else if ( -e /usr/pubsw/packages/fsl/current) then
-	setenv FSL_DIR /usr/pubsw/packages/fsl/current
     endif
 endif
 
@@ -266,30 +283,40 @@ if(! $?NO_MINC) then
         endif
     else
         if ( $?MINC_LIB_DIR) then        
-            setenv LD_LIBRARY_PATH  "$LD_LIBRARY_PATH":"$MINC_LIB_DIR"
+            setenv LD_LIBRARY_PATH "$MINC_LIB_DIR":"$LD_LIBRARY_PATH"
         endif
     endif
-    ## nu_correct and other MINC tools require a path to perl
-    if (! $?PERL5LIB) then
-        if ( -e $MINC_LIB_DIR/../System/Library/Perl/5.8.6 ) then
-            # Max OS X Tiger default:
-            setenv PERL5LIB       "$MINC_LIB_DIR/../System/Library/Perl/5.8.6"
-        else if ( -e $MINC_LIB_DIR/../System/Library/Perl/5.8.1 ) then
-            # Max OS X Panther default:
-            setenv PERL5LIB       "$MINC_LIB_DIR/../System/Library/Perl/5.8.1"
-        else if ( -e $MINC_LIB_DIR/perl5/5.8.5) then
+    ## nu_correct and other MINC tools require a path to mni perl scripts
+    if (! $?MNI_PERL5LIB) then
+        if ( -e $MINC_LIB_DIR/perl5/5.8.5) then
             # Linux CentOS4:
-            setenv PERL5LIB       "$MINC_LIB_DIR/perl5/5.8.5"
+            setenv MNI_PERL5LIB       "$MINC_LIB_DIR/perl5/5.8.5"
         else if ( -e $MINC_LIB_DIR/perl5/5.8.3) then
             # Linux FC2:
-            setenv PERL5LIB       "$MINC_LIB_DIR/perl5/5.8.3"
+            setenv MNI_PERL5LIB       "$MINC_LIB_DIR/perl5/5.8.3"
         else if ( -e $MINC_LIB_DIR/perl5/site_perl/5.8.3) then
             # Linux:
-            setenv PERL5LIB       "$MINC_LIB_DIR/perl5/site_perl/5.8.3"
+            setenv MNI_PERL5LIB       "$MINC_LIB_DIR/perl5/site_perl/5.8.3"
+        else if ( -e $MINC_LIB_DIR/perl5/5.8.0) then
+            # Linux RH9:
+            setenv MNI_PERL5LIB       "$MINC_LIB_DIR/perl5/5.8.0"
         else if ( -e $MINC_LIB_DIR/5.6.0) then
             # Linux RH7 and RH9:
-            setenv PERL5LIB       "$MINC_LIB_DIR/5.6.0"
+            setenv MNI_PERL5LIB       "$MINC_LIB_DIR/5.6.0"
+        else if ( -e $MINC_LIB_DIR/../System/Library/Perl/5.8.6 ) then
+            # Max OS X Tiger default:
+            setenv MNI_PERL5LIB       "$MINC_LIB_DIR/../System/Library/Perl/5.8.6"
+        else if ( -e $MINC_LIB_DIR/../System/Library/Perl/5.8.1 ) then
+            # Max OS X Panther default:
+            setenv MNI_PERL5LIB       "$MINC_LIB_DIR/../System/Library/Perl/5.8.1"
+        else
+            setenv MNI_PERL5LIB       ""
         endif
+    endif
+    if (! $?PERL5LIB) then
+        setenv PERL5LIB       $MNI_PERL5LIB
+    else if ( "$PERL5LIB" != "$MNI_PERL5LIB" ) then
+        setenv PERL5LIB      "$MNI_PERL5LIB":"$PERL5LIB"
     endif
     if( $output && $?PERL5LIB ) then
         echo "PERL5LIB        $PERL5LIB"
@@ -299,6 +326,107 @@ if(! $?NO_MINC) then
     if ( $?MINC_BIN_DIR) then
         set path = ( $MINC_BIN_DIR $path )
     endif
+endif
+
+
+### ----------- GSL (Gnu Scientific Library)  ------------ ####
+if ( -e $FREESURFER_HOME/lib/gsl) then
+    setenv GSL_DIR    $FREESURFER_HOME/lib/gsl
+else if ( -e /usr/pubsw/packages/gsl/current) then
+    setenv GSL_DIR    /usr/pubsw/packages/gsl/current
+endif
+if ( $?GSL_DIR ) then
+    setenv PATH     $GSL_DIR/bin:$PATH
+    if (! $?LD_LIBRARY_PATH) then
+        setenv LD_LIBRARY_PATH  $GSL_DIR/lib
+    else
+        setenv LD_LIBRARY_PATH  "$GSL_DIR/lib":"$LD_LIBRARY_PATH"
+    endif
+    if (! $?DYLD_LIBRARY_PATH) then
+        setenv DYLD_LIBRARY_PATH  $GSL_DIR/lib
+    else
+        setenv DYLD_LIBRARY_PATH  "$GSL_DIR/lib":"$DYLD_LIBRARY_PATH"
+    endif
+endif
+if( $output && $?GSL_DIR ) then
+    echo "GSL_DIR         $GSL_DIR"
+endif
+
+
+### ----------- Qt (scuba2 support libraries)  ------------ ####
+# look for Qt in common NMR locations, overriding any prior setting
+if ( -e $FREESURFER_HOME/lib/qt) then
+    setenv QTDIR    $FREESURFER_HOME/lib/qt
+else if ( -e /usr/pubsw/packages/qt/current) then
+    setenv QTDIR    /usr/pubsw/packages/qt/current
+endif
+if ( $?QTDIR ) then
+    setenv PATH     $QTDIR/bin:$PATH
+    if (! $?LD_LIBRARY_PATH) then
+        setenv LD_LIBRARY_PATH  $QTDIR/lib
+    else
+        setenv LD_LIBRARY_PATH  "$QTDIR/lib":"$LD_LIBRARY_PATH"
+    endif
+    if (! $?DYLD_LIBRARY_PATH) then
+        setenv DYLD_LIBRARY_PATH  $QTDIR/lib
+    else
+        setenv DYLD_LIBRARY_PATH  "$QTDIR/lib":"$DYLD_LIBRARY_PATH"
+    endif
+endif
+if( $output && $?QTDIR ) then
+    echo "QTDIR           $QTDIR"
+endif
+
+
+### ----------- Tcl/Tk/Tix/BLT  ------------ ####
+if ( -e $FREESURFER_HOME/lib/tcltktixblt/bin ) then
+    set path = ( $FREESURFER_HOME/lib/tcltktixblt/bin \
+                 $path \
+                )
+endif
+if ( -e $FREESURFER_HOME/lib/tcltktixblt/lib ) then
+    setenv TCLLIBPATH  $FREESURFER_HOME/lib/tcltktixblt/lib
+    setenv TCL_LIBRARY $TCLLIBPATH/tcl8.4
+    setenv TK_LIBRARY  $TCLLIBPATH/tk8.4
+    setenv TIX_LIBRARY $TCLLIBPATH/tix8.1
+    setenv BLT_LIBRARY $TCLLIBPATH/blt2.4
+    if(! $?LD_LIBRARY_PATH ) then
+        setenv LD_LIBRARY_PATH $TCLLIBPATH
+    else
+        setenv LD_LIBRARY_PATH "$TCLLIBPATH":"$LD_LIBRARY_PATH"
+    endif
+    if(! $?DYLD_LIBRARY_PATH ) then
+        setenv DYLD_LIBRARY_PATH $TCLLIBPATH
+    else
+        setenv DYLD_LIBRARY_PATH "$TCLLIBPATH":"$DYLD_LIBRARY_PATH"
+    endif
+endif
+if( $output && $?TCLLIBPATH ) then
+    echo "TCLLIBPATH      $TCLLIBPATH"
+endif
+
+
+### - Miscellaneous support libraries (tiff/jpg/glut - Mac OS only) - ###
+if ( -e $FREESURFER_HOME/lib/misc/bin ) then
+    set path = ( $FREESURFER_HOME/lib/misc/bin \
+                 $path \
+                )
+endif
+if ( -e $FREESURFER_HOME/lib/misc/lib ) then
+    setenv MISC_LIB  $FREESURFER_HOME/lib/misc/lib
+    if(! $?LD_LIBRARY_PATH ) then
+        setenv LD_LIBRARY_PATH $MISC_LIB
+    else
+        setenv LD_LIBRARY_PATH "$MISC_LIB":"$LD_LIBRARY_PATH"
+    endif
+    if(! $?DYLD_LIBRARY_PATH ) then
+        setenv DYLD_LIBRARY_PATH $MISC_LIB
+    else
+        setenv DYLD_LIBRARY_PATH "$MISC_LIB":"$DYLD_LIBRARY_PATH"
+    endif
+endif
+if( $output && $?MISC_LIB ) then
+    echo "MISC_LIB        $MISC_LIB"
 endif
 
 
@@ -323,55 +451,13 @@ if( $output && $?FSL_DIR ) then
 endif
 
 
-### ----------- Qt (scuba2 support libraries)  ------------ ####
-if ( ! $?QTDIR ) then
-    # look for Qt in common NMR locations
-    if ( -e $FREESURFER_HOME/lib/qt) then
-        setenv QTDIR    $FREESURFER_HOME/lib/qt
-    else if ( -e /usr/pubsw/packages/qt/current) then
-        setenv QTDIR    /usr/pubsw/packages/qt/current
-    endif
-endif
-if ( $?QTDIR ) then
-    setenv PATH     $QTDIR/bin:$PATH
-    if (! $?MANPATH) then
-        setenv MANPATH    $QTDIR/doc/man:
-    else
-        setenv MANPATH    $QTDIR/doc/man:$MANPATH   
-    endif
-    if (! $?LD_LIBRARY_PATH) then
-        setenv LD_LIBRARY_PATH  $QTDIR/lib
-    else
-        setenv LD_LIBRARY_PATH  $QTDIR/lib:$LD_LIBRARY_PATH
-    endif
-    if (! $?DYLD_LIBRARY_PATH) then
-        setenv DYLD_LIBRARY_PATH  $QTDIR/lib
-    else
-        setenv DYLD_LIBRARY_PATH  $QTDIR/lib:$DYLD_LIBRARY_PATH
-    endif
-endif
-if( $output && $?QTDIR ) then
-    echo "QTDIR           $QTDIR"
-endif
-
-### ----------- Freesurfer Support Libraries  ------------ ####
-if ( -e $FREESURFER_HOME/lib/misc ) then
-    source $FREESURFER_HOME/lib/misc/SetupLibsEnv.csh
-endif
-if ( -e $FREESURFER_HOME/lib/tcltktixblt/lib ) then
-    if(! $?LD_LIBRARY_PATH ) then
-        setenv LD_LIBRARY_PATH  $FREESURFER_HOME/lib/tcltktixblt/lib
-    else
-        setenv LD_LIBRARY_PATH  "$LD_LIBRARY_PATH":"$FREESURFER_HOME/lib/tcltktixblt/lib"
-    endif
-endif
-
-### ----------- Freesurfer Bin and  Lib Paths  ------------ ####
+### ----------- Freesurfer Bin and Lib Paths  ------------ ####
 set path = ( $FSFAST_HOME/bin     \
              $FREESURFER_HOME/bin/noarch      \
              $FREESURFER_HOME/bin/         \
              $path \
             )
+
 ## Add path to OS-specific static and dynamic libraries.
 if(! $?LD_LIBRARY_PATH ) then
     setenv LD_LIBRARY_PATH  $FREESURFER_HOME/lib/
@@ -384,6 +470,7 @@ else
     setenv DYLD_LIBRARY_PATH  "$DYLD_LIBRARY_PATH":"$FREESURFER_HOME/lib/"
 endif
 
+# cause OS to build new bin path cache:
 rehash;
 
 exit 0;
