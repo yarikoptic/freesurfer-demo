@@ -713,7 +713,10 @@ AC_SUBST(LIBS_TCL_OPENGL)
 AC_SUBST(TCL_CFLAGS)
 
 # check whether needs Itcl_Init() and Itk_Init()
-AX_TIX_INITCHECK($TCL_CFLAGS, $LDFLAGS_TCL, $LIBS_TCL)
+# except when using Tcl8.4, which doesn't contain Itcl_Init or Itk_Init
+if ! test "$LIB_TCL" = "-ltcl8.4"; then
+  AX_TIX_INITCHECK($TCL_CFLAGS, $LDFLAGS_TCL, $LIBS_TCL)
+fi
 
 ###########################################################################################
 # Checks for header files.
