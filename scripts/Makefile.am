@@ -171,6 +171,7 @@ SEDFLAGS = -e 's,xEXEC_PREFIXx,$(exec_prefix),g' \
 	   -e 's,xTIXWISHx,$(TIXWISH),g'
 
 csurf: csurf.in
+	rm -f $@
 	sed < $< $(SEDFLAGS) > $@ 
 	chmod +x $@
 
