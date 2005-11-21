@@ -162,6 +162,7 @@ fsgdfPlot.tcl
 
 
 recon-all: recon-all-nmr
+	rm -f ./recon-all
 	cat ./recon-all-nmr | grep -v dASEGd > ./recon-all
 	chmod a+x ./recon-all
 
