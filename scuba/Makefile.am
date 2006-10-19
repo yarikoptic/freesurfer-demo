@@ -635,6 +635,12 @@ scuba_bundle: scuba2
 
 .PHONY: scuba_bundle
 
+install-exec-hook:
+	mv $(srcdir)/scuba $(bindir)/scuba.bin
+	cp scuba_wrapper $(bindir)/scuba
+	chmod a+x $(bindir)/scuba
+
+EXTRA_DIST="scuba_wrapper"
 
 # Our release target. Include files to be excluded here. They will be
 # found and removed after 'make install' is run during the 'make

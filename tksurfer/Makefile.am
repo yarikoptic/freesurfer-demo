@@ -20,7 +20,7 @@ tksurfer_LDADD= $(addprefix $(top_srcdir)/,$(LIBS_MGH)) \
 tksurfer_LDFLAGS=
 
 install-exec-hook:
-	mv $(bindir)/tksurfer $(bindir)/tksurfer.bin
+	mv $(srcdir)/tksurfer $(bindir)/tksurfer.bin
 	cp tksurfer_wrapper $(bindir)/tksurfer
 	chmod a+x $(bindir)/tksurfer
 

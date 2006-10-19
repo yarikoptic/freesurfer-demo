@@ -23,7 +23,7 @@ tkmedit_LDADD= $(addprefix $(top_srcdir)/,$(LIBS_MGH)) \
 tkmedit_LDFLAGS=
 
 install-exec-hook:
-	mv $(bindir)/tkmedit $(bindir)/tkmedit.bin
+	mv $(srcdir)/tkmedit $(bindir)/tkmedit.bin
 	cp tkmedit_wrapper $(bindir)/tkmedit
 	chmod a+x $(bindir)/tkmedit
 

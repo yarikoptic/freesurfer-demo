@@ -17,7 +17,7 @@ tkregister2_LDADD= $(addprefix $(top_srcdir)/,$(LIBS_MGH)) \
 tkregister2_LDFLAGS=
 
 install-exec-hook:
-	mv $(bindir)/tkregister2 $(bindir)/tkregister2.bin
+	mv $(srcdir)/tkregister2 $(bindir)/tkregister2.bin
 	cp tkregister_wrapper $(bindir)/tkregister2
 	chmod a+x $(bindir)/tkregister2
 
