@@ -3,7 +3,7 @@
 #
 umask 002;
 
-set VERSION = '$Id: recon-all,v 1.17.2.13 2006/10/25 20:56:00 nicks Exp $';
+set VERSION = '$Id: recon-all,v 1.17.2.14 2006/11/10 01:28:52 nicks Exp $';
 set ProgName = `basename $0`;
 
 set inputargs = ($argv);
@@ -67,6 +67,12 @@ set NoThicken = 0 # if 1, add '-thicken 0' to mri_segment
 set NoCortexLabel = 0 # if 1, add '-cortex 0' to mris_make_surfaces
 set NoBigVentricles = 1 # if 1, add -nobigventricles to mri_ca_label and reg.
 set DoSecondPassRenorm = 0 # if 1, add -secondpassrenorm to mri_ca_register
+set NoRandomness = 0 # if 1, seed critical binaries with identical seeds, to
+                     # ensure consistency in surface creation. otherwise, the
+                     # default is to seed with current time and date, 
+                     # resulting in slightly different surfaces each run. 
+                     # affects: mris_smooth, mris_sphere, mris_topology_fixer,
+                     # mris_topo_fixer, mris_ca_label 
 
 # For defacing, as found in:
 # $FREESURFER_HOME/average/
@@ -937,8 +943,10 @@ foreach hemi ($hemilist)
     cd $subjdir/scripts > /dev/null
     set xopts = `fsr-getxopts mris_smooth $XOptsFile`;
     # -nw prevents it from writing curv and area
-    set cmd = (mris_smooth -nw $xopts \
-       ../surf/$hemi.orig.nofix ../surf/$hemi.smoothwm.nofix)
+    set cmd = (mris_smooth -nw)
+    if ($NoRandomness) set cmd = ($cmd -seed 1234)
+    set cmd = ($cmd $xopts \
+        ../surf/$hemi.orig.nofix ../surf/$hemi.smoothwm.nofix)
     echo "\n $cmd \n"|& tee -a $LF |& tee -a $CF
     $PWD |& tee -a $LF
     if($RunIt) $cmd |& tee -a $LF
@@ -971,6 +979,7 @@ foreach hemi ($hemilist)
     cd $subjdir/scripts > /dev/null
     set xopts = `fsr-getxopts mris_sphere $XOptsFile`;
     set cmd = (mris_sphere -q)
+    if($NoRandomness) set cmd = ($cmd -seed 1234)
     if($UseNoNeg) set cmd = ($cmd -remove_negative 1)
     set cmd = ($cmd $xopts)
     set cmd = ($cmd ../surf/$hemi.inflated.nofix ../surf/$hemi.qsphere.nofix)
@@ -998,6 +1007,7 @@ foreach hemi ($hemilist)
     # Now can run fixer
     set xopts = `fsr-getxopts mris_fix_topology $XOptsFile`;
     set cmd = (mris_fix_topology -mgz -sphere qsphere.nofix)
+    if($NoRandomness) set cmd = ($cmd -seed 1234)
     if($FixWithGA) set cmd = ($cmd -ga)
     if($FixDiagOnly) set cmd = ($cmd -diagonly)
     set cmd = ($cmd $xopts $subjid $hemi)
@@ -1050,7 +1060,9 @@ foreach hemi ($hemilist)
     set xopts = `fsr-getxopts mris_smooth $XOptsFile`;
     # Use -nw to keep from writing out curv and area
     # Default number of iterations is 10, but use 3 here
-    set cmd = (mris_smooth -n 3 -nw $xopts)
+    set cmd = (mris_smooth -n 3 -nw)
+    if ($NoRandomness) set cmd = ($cmd -seed 1234)
+    set cmd = ($cmd $xopts)
     set cmd = ($cmd ../surf/$hemi.white ../surf/$hemi.smoothwm)
     echo "\n $cmd \n"|& tee -a $LF |& tee -a $CF
     $PWD |& tee -a $LF
@@ -1103,6 +1115,7 @@ foreach hemi ($hemilist)
     cd $subjdir/scripts > /dev/null
     set xopts = `fsr-getxopts mris_sphere $XOptsFile`;
     set cmd = (mris_sphere)
+    if($NoRandomness) set cmd = ($cmd -seed 1234)
     if($UseNoNeg) set cmd = ($cmd -remove_negative 1)
     set cmd = ($cmd $xopts)
     set cmd = ($cmd ../surf/$hemi.inflated ../surf/$hemi.sphere)
@@ -1203,7 +1216,9 @@ foreach hemi ($hemilist)
     set xopts = `fsr-getxopts mris_ca_label $XOptsFile`;
     set CPAtlas = $FREESURFER_HOME/average/$hemi.$GCS
     set annot = ../label/$hemi.aparc.annot
-    set cmd = (mris_ca_label $xopts $subjid $hemi \
+    set cmd = (mris_ca_label)
+    if($NoRandomness) set cmd = ($cmd -seed 1234)
+    set cmd = ($cmd $xopts $subjid $hemi \
                ../surf/$hemi.sphere.reg $CPAtlas $annot)
     $PWD |& tee -a $LF
     echo "\n $cmd \n" |& tee -a $LF |& tee -a $CF
@@ -1242,7 +1257,9 @@ foreach hemi ($hemilist)
     set xopts = `fsr-getxopts mris_ca_label $XOptsFile`;
     set CPAtlas = $FREESURFER_HOME/average/$hemi.atlas2005_simple.gcs
     set annot = ../label/$hemi.aparc.a2005s.annot
-    set cmd = (mris_ca_label $xopts $subjid $hemi \
+    set cmd = (mris_ca_label)
+    if($NoRandomness) set cmd = ($cmd -seed 1234)
+    set cmd = ($cmd $xopts $subjid $hemi \
                ../surf/$hemi.sphere.reg $CPAtlas $annot)
     $PWD |& tee -a $LF
     echo "\n $cmd \n" |& tee -a $LF |& tee -a $CF
@@ -1718,6 +1735,10 @@ while( $#argv != 0 )
       set DoFix = 1;
       set FixWithGA = 1;
       set FixDiagOnly = 1;
+      breaksw
+
+    case "-norandomness":
+      set NoRandomness = 1;
       breaksw
 
     case "-smooth2":
@@ -2854,6 +2875,10 @@ segmentation, such as baby brains, or non-human primates.
 
 Does not use aseg.mgz for the second mri_normalize step.
 
+-norandomness
+
+The random number generator used by certain binaries is seeded with the
+same number, thus producing identical results from run to run. 
 
 EXPERT OPTIONS FILE
 
