@@ -5,7 +5,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 #
-# "$Id: configure.in,v 1.165.2.11 2006/11/29 17:35:57 nicks Exp $"
+# "$Id: configure.in,v 1.165.2.12 2006/11/29 20:28:12 nicks Exp $"
 #
 AC_PREREQ(2.57)
 AC_INIT(Freesurfer, stable3, freesurfer@nmr.mgh.harvard.edu)
@@ -283,11 +283,11 @@ case "$CPUTYPE" in
      CPUFLAGS="-m64"
      ;;
   G4)
-     CPUFLAGS="-fast -mtune=G4 -mcpu=G4 -faltivec"
+     CPUFLAGS="-mtune=G4 -mcpu=G4 -faltivec"
      ;;
   G5)
      # maintain G4 backwards compatibility
-     CPUFLAGS="-fast -mtune=G4 -mcpu=G4 -faltivec"
+     CPUFLAGS="-mtune=G4 -mcpu=G4 -faltivec"
      ;;
   power4)
      CPUFLAGS="-mtune=power4 -mcpu=power4"

@@ -2,7 +2,7 @@
    DICOM 3.0 reading functions
    Author: Sebastien Gicquel and Douglas Greve
    Date: 06/04/2001
-   $Id: DICOMRead.c,v 1.81.2.5 2006/08/27 23:09:37 greve Exp $
+   $Id: DICOMRead.c,v 1.81.2.6 2006/11/29 20:28:15 nicks Exp $
 *******************************************************/
 
 #include <stdio.h>
@@ -1333,8 +1333,8 @@ SDCMFILEINFO *GetSDCMFileInfo(char *dcmfile)
   CONDITION cond;
   DCM_TAG tag;
   int l;
-  unsigned short ustmp;
-  double dtmp;
+  unsigned short ustmp=0;
+  double dtmp=0.;
   char *strtmp;
   int retval;
   double xr,xa,xs,yr,ya,ys, zr,za,zs;

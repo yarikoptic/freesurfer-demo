@@ -3,9 +3,9 @@
 // written by Bruce Fischl
 //
 // Warning: Do not edit the following three lines.  CVS maintains them.
-// Revision Author: $Author: greve $
-// Revision Date  : $Date: 2006/08/24 03:40:49 $
-// Revision       : $Revision: 1.441.2.4 $
+// Revision Author: $Author: nicks $
+// Revision Date  : $Date: 2006/11/29 20:28:16 $
+// Revision       : $Revision: 1.441.2.5 $
 //////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
@@ -577,7 +577,7 @@ int (*gMRISexternalReduceSSEIncreasedGradients)(MRI_SURFACE *mris,
  MRISurfSrcVersion() - returns CVS version of this file.
  ---------------------------------------------------------------*/
 const char *MRISurfSrcVersion(void) {
-  return("$Id: mrisurf.c,v 1.441.2.4 2006/08/24 03:40:49 greve Exp $"); }
+  return("$Id: mrisurf.c,v 1.441.2.5 2006/11/29 20:28:16 nicks Exp $"); }
 
 /*-----------------------------------------------------
   ------------------------------------------------------*/
@@ -27105,7 +27105,7 @@ MRISexpandSurface(MRI_SURFACE *mris, float distance, INTEGRATION_PARMS *parms, i
   int    vno, n, niter, avgs, done ;
   VERTEX *v ;
   MHT    *mht = NULL, *mht_white = NULL, *mht_pial = NULL ;
-	double dist, dx, dy, dz ;
+	double dist, dx=0., dy=0., dz=0. ;
 
   if (parms == NULL)
 	{
