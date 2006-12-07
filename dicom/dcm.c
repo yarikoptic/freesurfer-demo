@@ -86,17 +86,42 @@
 **  and convert the object to and from its "stream" representation.
 **  In addition, the package can parse a file which contains a stream
 **  and create its internal object.
-** Last Update:   $Author: nicks $, $Date: 2006/02/02 21:46:54 $
+** Last Update:   $Author: nicks $, $Date: 2006/12/07 01:12:21 $
 ** Source File:   $RCSfile: dcm.c,v $
-** Revision:    $Revision: 1.23 $
+** Revision:    $Revision: 1.23.2.1 $
 ** Status:    $State: Exp $
 */
 
 #include <sys/fcntl.h>
 #include <ctype.h>
 
-#include "ctn_os.h"
+#ifdef SunOS
+  #include <sys/types.h>
+  #include <sys/stat.h>
+  #include <fcntl.h>
+#endif
 
+#define BYTEORDER_SAME      1
+#define BYTEORDER_REVERSE   2
+#define NATIVE_ORDER      BYTEORDER_SAME
+
+#include "dicom_platform.h"
+#ifdef BIG_ENDIAN_ARCHITECTURE
+#define LITTLE_ORDER  BYTEORDER_REVERSE
+#define BIG_ORDER BYTEORDER_SAME
+#endif
+#ifdef LITTLE_ENDIAN_ARCHITECTURE
+#define LITTLE_ORDER  BYTEORDER_SAME
+#define BIG_ORDER BYTEORDER_REVERSE
+#endif
+#ifndef LITTLE_ORDER
+#error LITTLE_ORDER not defined!
+#endif
+#ifndef BIG_ORDER
+#error BIG_ORDER not defined!
+#endif
+
+#include "ctn_os.h"
 #include "dicom.h"
 #include "condition.h"
 #include "lst.h"
@@ -104,25 +129,13 @@
 #include "dicom_objects.h"
 #include "dcmprivate.h"
 
-#define BYTEORDER_SAME      1
-#define BYTEORDER_REVERSE   2
-#define NATIVE_ORDER      BYTEORDER_SAME
-
-#ifdef BIG_ENDIAN_ARCHITECTURE
-#define LITTLE_ORDER  BYTEORDER_REVERSE
-#define BIG_ORDER BYTEORDER_SAME
-#endif
-
-#ifdef LITTLE_ENDIAN_ARCHITECTURE
-#define LITTLE_ORDER  BYTEORDER_SAME
-#define BIG_ORDER BYTEORDER_REVERSE
-#endif
-
 static CTNBOOLEAN debug = FALSE;/* Flag for debugging messages to stdout */
 
 // undeclared ones 
 #ifndef Darwin
+#ifndef SunOS
 extern void swab(const void *from, void *to, size_t n);
+#endif
 #endif
 
 /* Prototypes for internal functions
