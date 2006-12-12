@@ -1,8 +1,8 @@
-#!/bin/csh -f
+#!/bin/tcsh -f
 # dcmdir-info-mgh
-# '$Id: dcmdir-info-mgh,v 1.6 2005/09/20 00:33:44 greve Exp $'
+# '$Id: dcmdir-info-mgh,v 1.6.2.1 2006/12/12 18:28:06 nicks Exp $'
 
-set VERSION = '$Id: dcmdir-info-mgh,v 1.6 2005/09/20 00:33:44 greve Exp $';
+set VERSION = '$Id: dcmdir-info-mgh,v 1.6.2.1 2006/12/12 18:28:06 nicks Exp $';
 
 if($#argv != 1 && $#argv != 2) then
   echo "dcmdir-info-mgh dicomdir"
@@ -59,14 +59,25 @@ if($#argv == 2) then
   pwd  | tee -a $LF
   echo $argv | tee -a $LF
   date | tee -a $LF
+  pushd $unpackdir > /dev/null
+  set unpackdir = `pwd`;
+  popd > /dev/null
 else
   set unpackdir = ();
 endif
 
-set serlist = `ls $dcmdir/*.dcm | sed 's/-/ /g' | awk '{a=NF-1;print $a}' | sort -n | uniq`;
+pushd $dcmdir > /dev/null
+
+# Get a list of the series numbers
+# find -- hopefully only get files that end in .dcm (cannot do ls *.dcm)
+# sed  -- replace dashes with spaces
+# awk  -- print the 2nd to last field, should be series number
+# sort -- sort series numbers numerically
+# uniq -- keep only unique series numbers
+set serlist = (`find $dcmdir -name '*.dcm' | sed 's/-/ /g' | awk '{a=NF-1;print $a}' | sort -n | uniq`);
 
 set series = $serlist[1];
-set flist = `ls $dcmdir/*-$series-*.dcm`
+set flist = `ls *-$series-*.dcm`
 set dcm0 = $flist[1];
 set Patient = `mri_probedicom --i $dcm0 | grep PatientName`;
 set Date    = `mri_probedicom --i $dcm0 | grep StudyDate`;
@@ -76,7 +87,7 @@ echo $Date
 echo $Time
 
 foreach series ($serlist)
-  set flist = `ls $dcmdir/*-$series-*.dcm`
+  set flist = `ls *-$series-*.dcm`
   set dcm = $flist[1];
   #echo $dcm0
 
