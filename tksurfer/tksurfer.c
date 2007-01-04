@@ -18972,7 +18972,7 @@ int main(int argc, char *argv[])   /* new main */
   nargs = 
     handle_version_option 
     (argc, argv, 
-     "$Id: tksurfer.c,v 1.183.2.10 2006/06/30 22:00:46 nicks Exp $", "$Name:  $");
+     "$Id: tksurfer.c,v 1.183.2.11 2007/01/04 22:30:38 nicks Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -20966,7 +20966,7 @@ update_labels(int label_set, int vno, float dmin)
   int r, g, b;
   float x_mni, y_mni, z_mni;
   float x_tal, y_tal, z_tal;
-  float value;
+  float value=0.0;
   char fname[NAME_LENGTH];
   float x, y, z, sx, sy, sz, rr, dd, phi, theta;
   int field;
