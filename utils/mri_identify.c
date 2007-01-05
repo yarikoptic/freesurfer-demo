@@ -499,7 +499,7 @@ int is_analyze(char *fname)
   }
 
   dot = '\0';
-  sprintf(hfname, "%s.hdr", hfname);
+  strcat(hfname, ".hdr");
 
   if((fp = fopen(hfname, "r")) == NULL)
   {

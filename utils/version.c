@@ -1,8 +1,8 @@
 /**
  * @file   version.c
  * @author $Author: nicks $
- * @date   $Date: 2006/03/15 20:59:09 $
- *         $Revision: 1.21.2.1 $
+ * @date   $Date: 2007/01/05 19:12:35 $
+ *         $Revision: 1.21.2.2 $
  * @brief  freesurfer version functions defined here
  *
  *
@@ -134,7 +134,14 @@ make_cmd_version_string (int argc, char** argv,  char* id_string,
     {
       strcpy (arguments, argv[1]);
       for (nnarg = 2; nnarg < argc; nnarg++)
-        sprintf (arguments, "%s %s", arguments, argv[nnarg]);
+        {
+          // on Slackware Linux, libc does not support having the same 
+          // source and destination, like this:
+          //sprintf (arguments, "%s %s", arguments, argv[nnarg]);
+          // the correct way to do this is:
+          strcat (arguments, " ");
+          strcat (arguments, argv[nnarg]);
+        }
     }
 
   /* Find the time string. */
@@ -285,7 +292,14 @@ handle_version_option (int argc, char** argv,
             {
               strcpy (arguments, argv[1]);
               for (nnarg = 2; nnarg < argc; nnarg++)
-                sprintf (arguments, "%s %s", arguments, argv[nnarg]);
+              {
+                // on Slackware Linux, libc does not support having the same 
+                // source and destination, like this:
+                //sprintf (arguments, "%s %s", arguments, argv[nnarg]);
+                // the correct way to do this is:
+                strcat (arguments, " ");
+                strcat (arguments, argv[nnarg]);
+              }
             }
 
           /* Find the time string. */

@@ -13,8 +13,8 @@
 
   // Warning: Do not edit the following three lines.  CVS maintains them.
   // Revision Author: $Author: nicks $
-  // Revision Date  : $Date: 2006/03/23 22:09:49 $
-  // Revision       : $Revision: 1.51.2.1 $
+  // Revision Date  : $Date: 2007/01/05 19:12:35 $
+  // Revision       : $Revision: 1.51.2.2 $
 
   ------------------------------------------------------------------------*/
 
@@ -927,7 +927,7 @@ char *AppendString(char *src, char *app)
     fprintf(stderr,"%s:%d\n",__FILE__,__LINE__);
     exit(1);
   }
-  sprintf(tmp,"%s%s",tmp,app);
+  strcat(tmp,app);
 
   return(tmp);
 }
