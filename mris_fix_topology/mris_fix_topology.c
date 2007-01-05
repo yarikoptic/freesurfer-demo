@@ -18,7 +18,7 @@
 #include "version.h"
 
 static char vcid[] =
-"$Id: mris_fix_topology.c,v 1.41 2006/02/06 19:41:59 nicks Exp $";
+"$Id: mris_fix_topology.c,v 1.41.2.1 2007/01/05 16:58:33 nicks Exp $";
 
 int main(int argc, char *argv[]) ;
 
@@ -70,7 +70,7 @@ main(int argc, char *argv[])
   make_cmd_version_string
     (argc,
      argv,
-     "$Id: mris_fix_topology.c,v 1.41 2006/02/06 19:41:59 nicks Exp $",
+     "$Id: mris_fix_topology.c,v 1.41.2.1 2007/01/05 16:58:33 nicks Exp $",
      "$Name:  $",
      cmdline);
 
@@ -79,7 +79,7 @@ main(int argc, char *argv[])
     handle_version_option
     (argc,
      argv,
-     "$Id: mris_fix_topology.c,v 1.41 2006/02/06 19:41:59 nicks Exp $",
+     "$Id: mris_fix_topology.c,v 1.41.2.1 2007/01/05 16:58:33 nicks Exp $",
      "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
@@ -182,7 +182,7 @@ main(int argc, char *argv[])
   MRISsaveVertexPositions(mris, CANONICAL_VERTICES) ;
 
   sprintf(fname, "%s/%s/mri/%s", sdir, sname, brain_name) ;
-  if(MGZ) sprintf(fname, "%s.mgz", fname);
+  if(MGZ) strcat(fname,".mgz");
   printf("reading brain volume from %s...\n", brain_name) ;
   mri = MRIread(fname) ;
   if (!mri)
@@ -190,7 +190,7 @@ main(int argc, char *argv[])
               "%s: could not read brain volume from %s", Progname, fname) ;
 
   sprintf(fname, "%s/%s/mri/%s", sdir, sname, wm_name) ;
-  if(MGZ) sprintf(fname, "%s.mgz", fname);
+  if(MGZ) strcat(fname,".mgz");
   printf("reading wm segmentation from %s...\n", wm_name) ;
   mri_wm = MRIread(fname) ;
   if (!mri_wm)
