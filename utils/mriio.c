@@ -10380,8 +10380,8 @@ static int niftiSformToMri(MRI *mri, struct nifti_1_header *hdr)
                     + hdr->srow_y[0]*hdr->srow_y[0] \
                     + hdr->srow_z[0]*hdr->srow_z[0]);
   mri->x_r = hdr->srow_x[0] / mri->xsize;
-  mri->x_a = hdr->srow_y[0] / mri->ysize;
-  mri->x_s = hdr->srow_z[0] / mri->zsize;
+  mri->x_a = hdr->srow_y[0] / mri->xsize;
+  mri->x_s = hdr->srow_z[0] / mri->xsize;
 
   mri->ysize = sqrt(hdr->srow_x[1]*hdr->srow_x[1] \
                     + hdr->srow_y[1]*hdr->srow_y[1] \
