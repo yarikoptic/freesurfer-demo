@@ -26,7 +26,7 @@
 #include "version.h"
 #include "label.h"
 
-static char vcid[] = "$Id: mris_exvivo_surfaces.c,v 1.1 2006/02/02 15:59:53 xhan Exp $";
+static char vcid[] = "$Id: mris_exvivo_surfaces.c,v 1.1.2.1 2007/01/09 19:15:32 nicks Exp $";
 
 int main(int argc, char *argv[]) ;
 
@@ -157,10 +157,10 @@ main(int argc, char *argv[])
 
   char cmdline[CMD_LINE_LEN] ;
 	
-  make_cmd_version_string (argc, argv, "$Id: mris_exvivo_surfaces.c,v 1.1 2006/02/02 15:59:53 xhan Exp $", "$Name:  $", cmdline);
+  make_cmd_version_string (argc, argv, "$Id: mris_exvivo_surfaces.c,v 1.1.2.1 2007/01/09 19:15:32 nicks Exp $", "$Name:  $", cmdline);
 
   /* rkt: check for and handle version tag */
-  nargs = handle_version_option (argc, argv, "$Id: mris_exvivo_surfaces.c,v 1.1 2006/02/02 15:59:53 xhan Exp $", "$Name:  $");
+  nargs = handle_version_option (argc, argv, "$Id: mris_exvivo_surfaces.c,v 1.1.2.1 2007/01/09 19:15:32 nicks Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -226,7 +226,7 @@ main(int argc, char *argv[])
   strcpy(mdir, cp) ;
   
   sprintf(fname, "%s/%s/mri/filled", sdir, sname) ;
-  if(MGZ) sprintf(fname, "%s.mgz",fname);
+  if(MGZ) strcat(fname, ".mgz");
   fprintf(stderr, "reading volume %s...\n", fname) ;
   mri_filled = MRIread(fname) ;
   if (!mri_filled)
@@ -241,7 +241,7 @@ main(int argc, char *argv[])
   { label_val = rh_label ; replace_val = lh_label ; }
 
   sprintf(fname, "%s/%s/mri/%s", sdir, sname, T1_30_name) ;
-  if(MGZ) sprintf(fname, "%s.mgz",fname);
+  if(MGZ) strcat(fname, ".mgz");
   fprintf(stderr, "reading volume %s...\n", fname) ;
   mri_T1_30 = MRIread(fname) ; 
 
@@ -250,7 +250,7 @@ main(int argc, char *argv[])
               Progname, fname) ;
 
   sprintf(fname, "%s/%s/mri/%s", sdir, sname, T1_5_name) ;
-  if(MGZ) sprintf(fname, "%s.mgz",fname);
+  if(MGZ) strcat(fname, ".mgz");
   fprintf(stderr, "reading volume %s...\n", fname) ;
   mri_T1_5 = MRIread(fname) ; 
 
@@ -260,7 +260,7 @@ main(int argc, char *argv[])
 
 #if 0
   sprintf(fname, "%s/%s/mri/%s", sdir, sname, em_name) ;
-  if(MGZ) sprintf(fname, "%s.mgz",fname);
+  if(MGZ) strcat(fname, ".mgz");
   fprintf(stderr, "reading volume %s...\n", fname) ;
   mri_em_seg = MRIread(fname) ; 
 

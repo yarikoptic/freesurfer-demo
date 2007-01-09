@@ -4,8 +4,8 @@
 //
 // Warning: Do not edit the following four lines.  CVS maintains them.
 // Revision Author: $Author: nicks $
-// Revision Date  : $Date: 2006/04/12 02:03:00 $
-// Revision       : $Revision: 1.8.2.1 $
+// Revision Date  : $Date: 2007/01/09 19:15:32 $
+// Revision       : $Revision: 1.8.2.2 $
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,7 +26,7 @@
 #include "version.h"
 #include "label.h"
 
-static char vcid[] = "$Id: mris_refine_surfaces.c,v 1.8.2.1 2006/04/12 02:03:00 nicks Exp $";
+static char vcid[] = "$Id: mris_refine_surfaces.c,v 1.8.2.2 2007/01/09 19:15:32 nicks Exp $";
 
 int debug__ = 0; /// tosa debug
 
@@ -162,7 +162,7 @@ main(int argc, char *argv[])
   LT            *lt =0;
 
   /* rkt: check for and handle version tag */
-  nargs = handle_version_option (argc, argv, "$Id: mris_refine_surfaces.c,v 1.8.2.1 2006/04/12 02:03:00 nicks Exp $", "$Name:  $");
+  nargs = handle_version_option (argc, argv, "$Id: mris_refine_surfaces.c,v 1.8.2.2 2007/01/09 19:15:32 nicks Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -258,7 +258,7 @@ main(int argc, char *argv[])
   // read hires volume
   ///////////////////////////////////////////////////////////////////////
   sprintf(fname, "%s/%s/mri/%s", sdir, sname, argv[3]) ;
-  if(MGZ) sprintf(fname, "%s.mgz",fname);
+  if(MGZ) strcat(fname, ".mgz");
   fprintf(stderr, "reading hires volume %s...\n", fname) ;
   mri_hires = mri_hires_pial = MRIread(fname); 
   if (!mri_hires)
@@ -320,7 +320,7 @@ main(int argc, char *argv[])
   // read filled volume (rh = 127 and lh = 255)
   ///////////////////////////////////////////////////////////////////////
   sprintf(fname, "%s/%s/mri/filled", sdir, sname) ;
-  if(MGZ) sprintf(fname, "%s.mgz",fname);
+  if(MGZ) strcat(fname, ".mgz");
   fprintf(stderr, "reading mri/filled %s...\n", fname) ;
   mri_filled = MRIread(fname) ;
   if (!mri_filled)
@@ -339,7 +339,7 @@ main(int argc, char *argv[])
   // read mri_wm 
   ///////////////////////////////////////////////////////////////
   sprintf(fname, "%s/%s/mri/wm", sdir, sname) ;
-  if(MGZ) sprintf(fname, "%s.mgz",fname);
+  if(MGZ) strcat(fname, ".mgz");
   fprintf(stderr, "reading wm volume %s...\n", fname) ;
   mri_wm = MRIread(fname) ;
   if (!mri_wm)
