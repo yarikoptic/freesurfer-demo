@@ -435,7 +435,7 @@ static int SmoothSurfOrVol(MRIS *surf, MRI *mri, MRI *mask, double SmthLevel);
 
 int main(int argc, char *argv[]) ;
 
-static char vcid[] = "$Id: mri_glmfit.c,v 1.78.2.6 2006/05/11 22:00:37 nicks Exp $";
+static char vcid[] = "$Id: mri_glmfit.c,v 1.78.2.7 2007/01/23 21:37:47 greve Exp $";
 char *Progname = NULL;
 
 int SynthSeed = -1;
@@ -598,7 +598,7 @@ int main(int argc, char **argv)
   if(! DontSave){
     if(GLMDir != NULL){
       printf("Creating output directory %s\n",GLMDir);
-      err = mkdir(GLMDir,(mode_t)-1);
+      err = mkdir(GLMDir,(mode_t)0777);
       if(err != 0 && errno != EEXIST){
 	printf("ERROR: creating directory %s\n",GLMDir);
 	perror(NULL);    
@@ -1197,7 +1197,7 @@ int main(int argc, char **argv)
     
     // Create output directory for contrast
     sprintf(tmpstr,"%s/%s",GLMDir,mriglm->glm->Cname[n]);
-    mkdir(tmpstr,(mode_t)-1);
+    mkdir(tmpstr,0777);
     
     // Dump contrast matrix
     sprintf(tmpstr,"%s/%s/C.dat",GLMDir,mriglm->glm->Cname[n]);
@@ -1263,7 +1263,7 @@ int main(int argc, char **argv)
   if(pcaSave){
     printf("Computing PCA (%d)\n",npca);
     sprintf(tmpstr,"%s/pca-eres",GLMDir);
-    mkdir(tmpstr,(mode_t)-1);
+    mkdir(tmpstr,0777);
     err=MRIpca(mriglm->eres, &Upca, &Spca, &Vpca, mriglm->mask);
     if(err) exit(1);
     sprintf(tmpstr,"%s/pca-eres/v.mgh",GLMDir);
