@@ -60,7 +60,7 @@ am_libutils_a_OBJECTS = $(libutils_a_SOURCES:%.c=%.o) \
 	$(NrrdIO_dir)/formatText.o \
 	$(NrrdIO_dir)/formatVTK.o
 
-
+if HAVE_MAC_OSX
 # mrisurf must be compiled w/o optimization enabled, in order 
 # to mask a segfault appearing on the Mac when running mris_fix_topology
 mrisurf.o: mrisurf.c
@@ -69,6 +69,7 @@ mrisurf.o: mrisurf.c
 	depfile='$(DEPDIR)/$*.Po' tmpdepfile='$(DEPDIR)/$*.TPo' \
 	$(CCDEPMODE) $(depcomp) \
 	$(COMPILE) -O0 -c `test -f '$<' || echo '$(srcdir)/'`$<
+endif
 
 # nr_tqli must be compiled w/o optimization enabled, in order 
 # to prevent bad curv data on the rh9/7.3 platforms, due to the tqli routine

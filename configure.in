@@ -5,7 +5,7 @@
 #                                               -*- Autoconf -*-
 # Process this file with autoconf to produce a configure script.
 #
-# "$Id: configure.in,v 1.165.2.12 2006/11/29 20:28:12 nicks Exp $"
+# "$Id: configure.in,v 1.165.2.13 2007/01/23 17:32:38 nicks Exp $"
 #
 AC_PREREQ(2.57)
 AC_INIT(Freesurfer, stable3, freesurfer@nmr.mgh.harvard.edu)
@@ -178,6 +178,8 @@ AC_SUBST(SHARED_CFLAGS)
 AC_SUBST(SHARED_LDFLAGS)
 
 AC_MSG_NOTICE(OS is $OS)
+
+AM_CONDITIONAL(HAVE_MAC_OSX, test "x$OS" = "xDarwin" )
 
 ##############################################################
 # cpu optimization
