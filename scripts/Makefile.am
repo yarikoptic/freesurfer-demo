@@ -10,6 +10,7 @@ aseg2feat \
 bblabel \
 browse-minc-header.tcl \
 browse-sessions \
+bugr \
 check_subject \
 cor_to_minc \
 csurf \
