@@ -1,4 +1,4 @@
-% $Id: convert_unwarp_resample.m,v 1.10 2005/04/13 21:33:30 greve Exp $
+% $Id: convert_unwarp_resample.m,v 1.10.2.1 2007/01/30 21:23:23 nicks Exp $
 %
 %% convert_unwarp_resample.m contains: 
 % convert_unwarp_resample()
@@ -259,7 +259,7 @@ if isfield(dcminfo(1),'StationName')
   SN = dcminfo(1).StationName;
 else SN = ''; end
 
-gradfilename = header2map(dcminfo(1).Manufacturer,dcminfo(1).ManufacturersModelName,SSN,IN,SN);
+gradfilename = header2map(dcminfo(1).Manufacturer,dcminfo(1).ManufacturerModelName,SSN,IN,SN);
 fprintf('load_dicom_and_stuff: INFO: gradwarpfile is %s\n',gradfilename); %EDEBUG%
 
 return;
