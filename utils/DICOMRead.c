@@ -2,7 +2,7 @@
    DICOM 3.0 reading functions
    Author: Sebastien Gicquel and Douglas Greve
    Date: 06/04/2001
-   $Id: DICOMRead.c,v 1.81.2.6 2006/11/29 20:28:15 nicks Exp $
+   $Id: DICOMRead.c,v 1.81.2.7 2007/02/12 22:54:53 greve Exp $
 *******************************************************/
 
 #include <stdio.h>
@@ -2724,24 +2724,26 @@ int sdfiIsSliceOrderReversed(SDCMFILEINFO *sdfi)
     trarev = 1;
     free(strtmp);
   }
+  printf("sagrev = %d, correv =%d, trarev = %d\n",sagrev,correv,trarev);
+  printf("Vs = %g %g %g\n",sdfi->Vs[0],sdfi->Vs[1],sdfi->Vs[2]);
 
-  if(!sagrev && !correv && !trarev) return(0);
+  // No reversal if none of the ImageNumb flags are set
+  if (!sagrev && !correv && !trarev) return(0);
 
-  //printf("Vs = %g %g %g\n",sdfi->Vs[0],sdfi->Vs[1],sdfi->Vs[2]);
-  //printf("%d %d %d\n",sagrev,correv,trarev);
+  // Slices are primarily Sag and there is a sag reversal
+  if ((fabs(sdfi->Vs[0]) > fabs(sdfi->Vs[1])) &&
+      (fabs(sdfi->Vs[0]) > fabs(sdfi->Vs[2])) && sagrev) return(1);
 
-  if((fabs(sdfi->Vs[0]) > fabs(sdfi->Vs[1])) &&
-     (fabs(sdfi->Vs[0]) > fabs(sdfi->Vs[2])) && sagrev) return(1);
+  // Slices are primarily Cor and there is a cor reversal
+  if ((fabs(sdfi->Vs[1]) > fabs(sdfi->Vs[0])) &&
+      (fabs(sdfi->Vs[1]) > fabs(sdfi->Vs[2])) && correv) return(1);
 
-  if((fabs(sdfi->Vs[1]) > fabs(sdfi->Vs[0])) &&
-     (fabs(sdfi->Vs[1]) > fabs(sdfi->Vs[2])) && correv) return(1);
+  // Slices are primarily Axial and there is an axial reversal
+  if ((fabs(sdfi->Vs[2]) > fabs(sdfi->Vs[0])) &&
+      (fabs(sdfi->Vs[2]) > fabs(sdfi->Vs[1])) && trarev) return(1);
 
-  if((fabs(sdfi->Vs[2]) > fabs(sdfi->Vs[0])) &&
-     (fabs(sdfi->Vs[2]) > fabs(sdfi->Vs[1])) && trarev) return(1);
-
-  printf("\n\nWARNING: Proper slice order not detected! "
-         "Suggestion: use -siemens_dicom flag instead of -dicom\n\n");
-  return(0); // should never get here
+  // If it gets here, there is no reversal
+  return(0); 
 }
 
 /*--------------------------------------------------------------*/
