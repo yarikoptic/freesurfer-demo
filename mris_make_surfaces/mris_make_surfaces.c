@@ -21,7 +21,7 @@
 #include "version.h"
 #include "label.h"
 
-static char vcid[] = "$Id: mris_make_surfaces.c,v 1.70.2.6 2007/01/09 19:15:32 nicks Exp $";
+static char vcid[] = "$Id: mris_make_surfaces.c,v 1.70.2.7 2007/02/13 16:40:49 nicks Exp $";
 
 int main(int argc, char *argv[]) ;
 
@@ -169,10 +169,10 @@ main(int argc, char *argv[])
 
   char cmdline[CMD_LINE_LEN] ;
 	
-  make_cmd_version_string (argc, argv, "$Id: mris_make_surfaces.c,v 1.70.2.6 2007/01/09 19:15:32 nicks Exp $", "$Name:  $", cmdline);
+  make_cmd_version_string (argc, argv, "$Id: mris_make_surfaces.c,v 1.70.2.7 2007/02/13 16:40:49 nicks Exp $", "$Name:  $", cmdline);
 
   /* rkt: check for and handle version tag */
-  nargs = handle_version_option (argc, argv, "$Id: mris_make_surfaces.c,v 1.70.2.6 2007/01/09 19:15:32 nicks Exp $", "$Name:  $");
+  nargs = handle_version_option (argc, argv, "$Id: mris_make_surfaces.c,v 1.70.2.7 2007/02/13 16:40:49 nicks Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -534,7 +534,7 @@ main(int argc, char *argv[])
     fprintf(stderr, "smoothing T1 volume with sigma = %2.3f\n", 
             current_sigma) ;
     if (!mri_smooth)
-      mri_smooth = MRIclone(mri_T1, NULL) ;
+      mri_smooth = MRIcopy(mri_T1, NULL) ;
 #if 0
     MRIconvolveGaussian(mri_T1, mri_smooth, mri_kernel) ;
 #endif
