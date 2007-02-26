@@ -4,8 +4,8 @@
 //
 // Warning: Do not edit the following three lines.  CVS maintains them.
 // Revision Author: $Author: nicks $
-// Revision Date  : $Date: 2006/11/29 20:28:16 $
-// Revision       : $Revision: 1.441.2.5 $
+// Revision Date  : $Date: 2007/02/26 00:58:45 $
+// Revision       : $Revision: 1.441.2.6 $
 //////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
@@ -577,7 +577,7 @@ int (*gMRISexternalReduceSSEIncreasedGradients)(MRI_SURFACE *mris,
  MRISurfSrcVersion() - returns CVS version of this file.
  ---------------------------------------------------------------*/
 const char *MRISurfSrcVersion(void) {
-  return("$Id: mrisurf.c,v 1.441.2.5 2006/11/29 20:28:16 nicks Exp $"); }
+  return("$Id: mrisurf.c,v 1.441.2.6 2007/02/26 00:58:45 nicks Exp $"); }
 
 /*-----------------------------------------------------
   ------------------------------------------------------*/
@@ -27744,6 +27744,8 @@ mrisPlaceVertexInOrigFace(MRI_SURFACE *mris, VERTEX *v, int fno)
     l1_len, l_len, P[3], theta1, theta2, dot, theta_ratio, len_scale,
     e1[3], e2[3], etmp[3], x, y ;
   int     ret ;
+
+  e2[0]=e2[1]=e2[2]=0.0;
 
   /* first compute point where normal to vertex intersects face */
   dir[0] = v->nx ; dir[1] = v->ny ; dir[2] = v->nz ;
