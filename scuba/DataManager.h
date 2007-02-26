@@ -2,9 +2,9 @@
 // DataManager.h
 //
 // Warning: Do not edit the following four lines.  CVS maintains them.
-// Revision Author: $Author: kteich $
-// Revision Date  : $Date: 2005/03/22 19:23:27 $
-// Revision       : $Revision: 1.8 $
+// Revision Author: $Author: nicks $
+// Revision Date  : $Date: 2007/02/26 00:54:56 $
+// Revision       : $Revision: 1.8.2.1 $
 
 #ifndef DataManager_h
 #define DataManager_h
@@ -53,6 +53,7 @@ class DataLoader : public DebugReporter {
   // Returns the number of references to this data.
   int CountReferences( T iData );
 
+  virtual ~DataLoader() {};
  protected:
   DataLoader();
 
