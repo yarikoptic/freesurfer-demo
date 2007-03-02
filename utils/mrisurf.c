@@ -4,8 +4,8 @@
 //
 // Warning: Do not edit the following three lines.  CVS maintains them.
 // Revision Author: $Author: nicks $
-// Revision Date  : $Date: 2007/02/26 00:58:45 $
-// Revision       : $Revision: 1.441.2.6 $
+// Revision Date  : $Date: 2007/03/02 21:26:34 $
+// Revision       : $Revision: 1.441.2.7 $
 //////////////////////////////////////////////////////////////////
 
 #include <stdio.h>
@@ -294,7 +294,7 @@ static SMALL_SURFACE *mrisReadTriangleFileVertexPositionsOnly(char *fname) ;
 
 /*static int   mrisReadFieldsign(MRI_SURFACE *mris, char *fname) ;*/
 static double mrisComputeNonlinearAreaSSE(MRI_SURFACE *mris) ;
-static double mrisComputeNonlinearDistanceSSE(MRI_SURFACE *mris) ;
+//static double mrisComputeNonlinearDistanceSSE(MRI_SURFACE *mris) ;
 static double mrisComputeSpringEnergy(MRI_SURFACE *mris) ;
 static double mrisComputeThicknessSmoothnessEnergy(MRI_SURFACE *mris,
                                                    double l_repulse) ;
@@ -577,7 +577,7 @@ int (*gMRISexternalReduceSSEIncreasedGradients)(MRI_SURFACE *mris,
  MRISurfSrcVersion() - returns CVS version of this file.
  ---------------------------------------------------------------*/
 const char *MRISurfSrcVersion(void) {
-  return("$Id: mrisurf.c,v 1.441.2.6 2007/02/26 00:58:45 nicks Exp $"); }
+  return("$Id: mrisurf.c,v 1.441.2.7 2007/03/02 21:26:34 nicks Exp $"); }
 
 /*-----------------------------------------------------
   ------------------------------------------------------*/
@@ -6503,7 +6503,7 @@ MRIScomputeSSE(MRI_SURFACE *mris, INTEGRATION_PARMS *parms)
   area_scale = 1.0 ;
 #endif
 
-  sse_repulse = sse_nl_area = sse_corr =
+  sse_repulse = sse_repulsive_ratio = sse_tsmooth = sse_nl_area = sse_corr =
     sse_angle = sse_neg_area = sse_val = sse_sphere =
     sse_shrinkwrap = sse_expandwrap = sse_area =
     sse_spring = sse_curv = sse_dist = sse_tspring = sse_grad = 0.0;
@@ -6546,8 +6546,8 @@ MRIScomputeSSE(MRI_SURFACE *mris, INTEGRATION_PARMS *parms)
   sse_tsmooth = mrisComputeThicknessSmoothnessEnergy(mris, parms->l_tsmooth) ;
   if (!FZERO(parms->l_nlarea))
     sse_nl_area = mrisComputeNonlinearAreaSSE(mris) ;
-  if (!FZERO(parms->l_nldist))
-    sse_nl_area = mrisComputeNonlinearDistanceSSE(mris) ;
+  //if (!FZERO(parms->l_nldist))
+  //sse_nl_area = mrisComputeNonlinearDistanceSSE(mris) ;
   if (!FZERO(parms->l_dist))
     sse_dist = mrisComputeDistanceError(mris) ;
   if (!FZERO(parms->l_spring))
@@ -14951,6 +14951,8 @@ mrisComputeDistanceError(MRI_SURFACE *mris)
   /*fprintf(stdout, "max_del = %f at v %d, n %d\n", max_del, max_v, max_n) ;*/
   return(sse_dist) ;
 }
+
+#if 0
 /*-----------------------------------------------------
   Parameters:
 
@@ -15006,6 +15008,8 @@ mrisComputeNonlinearDistanceSSE(MRI_SURFACE *mris)
 
   return(sse_dist) ;
 }
+#endif
+
 /*-----------------------------------------------------
   Parameters:
 
@@ -15144,7 +15148,7 @@ mrisComputeRepulsiveEnergy(MRI_SURFACE *mris, double l_repulse, MHT *mht)
                  min_d, v_sse) ;
         }
     }
-  return(sse_repulse) ;
+  return(l_repulse * sse_repulse) ;
 }
 #endif
 /*-----------------------------------------------------
@@ -24956,7 +24960,7 @@ mrisComputeIntensityError(MRI_SURFACE *mris, INTEGRATION_PARMS *parms)
 		sse += (del0 * del0) ;
 	}
 
-  return(parms->l_intensity * sse) ;
+  return(sse) ;
 }
 /*-----------------------------------------------------
   Parameters:
@@ -24996,7 +25000,7 @@ mrisComputeIntensityGradientError(MRI_SURFACE *mris, INTEGRATION_PARMS *parms)
       sse += (del0 * del0) ;
     }
 
-  return(parms->l_grad * sse) ;
+  return(sse) ;
 }
 /*-----------------------------------------------------
   Parameters:
@@ -25158,7 +25162,7 @@ mrisComputeSphereError(MRI_SURFACE *mris, double l_sphere, double r0)
 #endif
     }
 
-  return(l_sphere * sse) ;
+  return(sse) ;
 }
 /*-----------------------------------------------------
   Parameters:
