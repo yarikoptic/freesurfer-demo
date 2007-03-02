@@ -3,7 +3,7 @@
 #
 umask 002;
 
-set VERSION = '$Id: recon-all,v 1.17.2.16 2006/12/12 19:44:21 nicks Exp $';
+set VERSION = '$Id: recon-all,v 1.17.2.17 2007/03/02 20:10:29 nicks Exp $';
 set ProgName = `basename $0`;
 
 set inputargs = ($argv);
@@ -242,6 +242,7 @@ echo "########################################" >> $LF
 echo "program versions used" >> $LF
 echo $VERSION                >> $LF
 mri_motion_correct.fsl -version >> $LF
+flirt -version >> $LF
 talairach --version >> $LF
 nu_correct -version >> $LF
 mri_normalize -all-info >> $LF
