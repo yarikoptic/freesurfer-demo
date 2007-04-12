@@ -9,9 +9,9 @@
 
 // Warning: Do not edit the following four lines.  CVS maintains them.
 // Revision Author: $Author: nicks $
-// Revision Date  : $Date: 2006/04/15 00:13:10 $
-// Revision       : $Revision: 1.274.2.3 $
-char *VERSION = "$Revision: 1.274.2.3 $";
+// Revision Date  : $Date: 2007/04/12 18:57:41 $
+// Revision       : $Revision: 1.274.2.4 $
+char *VERSION = "$Revision: 1.274.2.4 $";
 
 #define TCL
 #define TKMEDIT
@@ -987,6 +987,7 @@ void ParseCmdLineArgs ( int argc, char *argv[] ) {
   int          bFatalError                = FALSE;
   char         sArg[tkm_knPathLen]        = "";
   char         sError[tkm_knErrStringLen] = "";
+  char*        pEnvVar                    = NULL;
 
   tBoolean     bSubjectDeclared = FALSE;
   tBoolean     bUsingMRIRead    = FALSE;
@@ -1108,7 +1109,7 @@ void ParseCmdLineArgs ( int argc, char *argv[] ) {
   nNumProcessedVersionArgs =
     handle_version_option
     (argc, argv,
-     "$Id: tkmedit.c,v 1.274.2.3 2006/04/15 00:13:10 nicks Exp $",
+     "$Id: tkmedit.c,v 1.274.2.4 2007/04/12 18:57:41 nicks Exp $",
      "$Name:  $");
   if (nNumProcessedVersionArgs && argc - nNumProcessedVersionArgs == 1)
     exit (0);
@@ -1653,18 +1654,38 @@ void ParseCmdLineArgs ( int argc, char *argv[] ) {
                  MATCH( sArg, "-parc" ) ) {
 
         /* make sure there are enough args */
-        if( argc > nCurrentArg + 2 &&
-            '-' != argv[nCurrentArg+1][0] &&
-            '-' != argv[nCurrentArg+2][0] ) {
+        if ( argc > nCurrentArg + 1 &&
+             '-' != argv[nCurrentArg+1][0] ) {
 
-          /* copy path and color file */
+          /* copy the filename */
           DebugNote( ("Parsing -segmentation option") );
           xUtil_strncpy( sSegmentationPath, argv[nCurrentArg+1],
                          sizeof(sSegmentationPath) );
-          xUtil_strncpy( sSegmentationColorFile, argv[nCurrentArg+2],
-                         sizeof(sSegmentationColorFile) );
+          nCurrentArg += 2;
+
+          /* Check for the additional LUT filename. */
+          if ( argc > nCurrentArg &&
+               '-' != argv[nCurrentArg][0] ) {
+
+            /* Get the LUT from the command line. */
+            xUtil_strncpy( sSegmentationColorFile, argv[nCurrentArg],
+                           sizeof(sSegmentationColorFile) );
+            nCurrentArg += 1;
+
+          } else {
+
+            /* If not, use a default color table name. */
+            pEnvVar = getenv("FREESURFER_HOME");
+            if ( NULL != pEnvVar ) {
+              sprintf( sSegmentationColorFile,
+                       "%s/FreeSurferColorLUT.txt", pEnvVar );
+            } else {
+              xUtil_strncpy( sSegmentationColorFile,"./FreeSurferColorLUT.txt",
+                             sizeof(sSegmentationColorFile) );
+            }
+          }
+
           bLoadingSegmentation = TRUE;
-          nCurrentArg += 3;
 
         } else {
 
@@ -5544,7 +5565,7 @@ int main ( int argc, char** argv ) {
   DebugPrint
     (
      (
-      "$Id: tkmedit.c,v 1.274.2.3 2006/04/15 00:13:10 nicks Exp $ $Name:  $\n"
+      "$Id: tkmedit.c,v 1.274.2.4 2007/04/12 18:57:41 nicks Exp $ $Name:  $\n"
       )
      );
 
