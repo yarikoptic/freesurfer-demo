@@ -18,7 +18,7 @@
 #include "colortab.h"
 
 static char vcid[] =
-"$Id: mris_anatomical_stats.c,v 1.35.2.4 2006/11/29 20:28:13 nicks Exp $";
+"$Id: mris_anatomical_stats.c,v 1.35.2.5 2007/04/16 21:07:51 nicks Exp $";
 
 int main(int argc, char *argv[]) ;
 static int  get_option(int argc, char *argv[]) ;
@@ -87,7 +87,7 @@ main(int argc, char *argv[])
   /* rkt: check for and handle version tag */
   nargs = handle_version_option
     (argc, argv,
-     "$Id: mris_anatomical_stats.c,v 1.35.2.4 2006/11/29 20:28:13 nicks Exp $",
+     "$Id: mris_anatomical_stats.c,v 1.35.2.5 2007/04/16 21:07:51 nicks Exp $",
      "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
@@ -1085,6 +1085,7 @@ MRISmeasureCorticalGrayMatterVolume(MRI_SURFACE *mris)
   else
     mean = 0 ;
   MRISrestoreVertexPositions(mris, TMP_VERTICES) ;
+  MRIScomputeMetricProperties(mris);
   return(total) ;
 }
 
