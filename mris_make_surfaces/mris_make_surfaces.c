@@ -21,7 +21,7 @@
 #include "version.h"
 #include "label.h"
 
-static char vcid[] = "$Id: mris_make_surfaces.c,v 1.70.2.7 2007/02/13 16:40:49 nicks Exp $";
+static char vcid[] = "$Id: mris_make_surfaces.c,v 1.70.2.8 2007/04/17 19:52:41 nicks Exp $";
 
 int main(int argc, char *argv[]) ;
 
@@ -169,10 +169,10 @@ main(int argc, char *argv[])
 
   char cmdline[CMD_LINE_LEN] ;
 	
-  make_cmd_version_string (argc, argv, "$Id: mris_make_surfaces.c,v 1.70.2.7 2007/02/13 16:40:49 nicks Exp $", "$Name:  $", cmdline);
+  make_cmd_version_string (argc, argv, "$Id: mris_make_surfaces.c,v 1.70.2.8 2007/04/17 19:52:41 nicks Exp $", "$Name:  $", cmdline);
 
   /* rkt: check for and handle version tag */
-  nargs = handle_version_option (argc, argv, "$Id: mris_make_surfaces.c,v 1.70.2.7 2007/02/13 16:40:49 nicks Exp $", "$Name:  $");
+  nargs = handle_version_option (argc, argv, "$Id: mris_make_surfaces.c,v 1.70.2.8 2007/04/17 19:52:41 nicks Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -1119,6 +1119,7 @@ get_option(int argc, char *argv[])
   else if (!stricmp(option, "pial"))
   {
     strcpy(pial_name, argv[2]) ;
+    nargs = 1 ;
     fprintf(stderr,  "writing pial surface to file named %s\n", pial_name) ;
   }
   else if (!stricmp(option, "write_vals"))
