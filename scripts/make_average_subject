@@ -10,7 +10,7 @@
 # increase number of allowable open files to maximum:
 limit descriptors unlimited
 
-set VERSION = '$Id: make_average_subject,v 1.7.2.2 2007/02/23 01:01:25 nicks Exp $'
+set VERSION = '$Id: make_average_subject,v 1.7.2.3 2007/05/15 17:17:05 nicks Exp $'
 set PrintHelp = 0;
 set sdout = ();
 set average_subject = average;
@@ -88,6 +88,7 @@ while( $#argv != 0 )
       breaksw
 
     case "--sd":
+    case "--sdir":
       if ( $#argv == 0) goto arg1err;
       setenv SUBJECTS_DIR $argv[1]; shift;
       breaksw
