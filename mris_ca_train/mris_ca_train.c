@@ -16,7 +16,7 @@
 #include "version.h"
 
 static char vcid[] = 
-"$Id: mris_ca_train.c,v 1.12 2005/12/06 00:37:15 nicks Exp $";
+"$Id: mris_ca_train.c,v 1.12.2.1 2007/05/15 10:11:02 nicks Exp $";
 
 #define MAX_LABELS  1000
 #if 0
@@ -484,8 +484,8 @@ add_to_ptable(MRI_SURFACE *mris, int *ptable, int nparcs)
       i = find_parc_index(v->annotation, ptable, nparcs) ;
       if (i < 0 || i >= nparcs)
         {
-          ptable[i] = v->annotation ;
           i = nparcs++ ;
+          ptable[i] = v->annotation ;
         }
     }
   return(nparcs) ;
