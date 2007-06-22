@@ -1,6 +1,6 @@
 #! /usr/pubsw/bin/tixwish
 
-# $Id: tkmedit.tcl,v 1.108 2006/02/01 22:00:33 kteich Exp $
+# $Id: tkmedit.tcl,v 1.108.2.1 2007/06/22 18:19:14 kteich Exp $
 
 
 source $env(FREESURFER_HOME)/lib/tcl/tkm_common.tcl
@@ -1694,9 +1694,9 @@ proc DoEditBrushInfoDlog {} {
 	    tkm_MakeRadioButtons $fwMode y "Mode" gEditBrush($tool,mode) \
 		[list \
 		     [list text "New Value" $DspA_tBrushMode(set) \
-			  "SetBrushInfoModeParamsState set $fwCloneSrc $fwNewValue"] \
+			  "SetBrushInfoModeParamsState set $fwCloneSrc $fwNewValue; SetEditBrushConfiguration"] \
 		     [list text "Clone" $DspA_tBrushMode(clone) \
-			  "SetBrushInfoModeParamsState clone $fwCloneSrc $fwNewValue"]]
+			  "SetBrushInfoModeParamsState clone $fwCloneSrc $fwNewValue; SetEditBrushConfiguration"]]
 	    
 	    tkm_MakeEntry $fwNewValue "New Value" gEditBrush($tool,new) \
 		6 "SetEditBrushConfiguration"
