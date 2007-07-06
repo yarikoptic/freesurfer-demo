@@ -3,8 +3,8 @@
 //
 // Warning: Do not edit the following four lines.  CVS maintains them.
 // Revision Author: $Author: kteich $
-// Revision Date  : $Date: 2006/01/24 21:21:40 $
-// Revision       : $Revision: 1.129 $
+// Revision Date  : $Date: 2007/07/06 17:46:29 $
+// Revision       : $Revision: 1.129.2.1 $
 
 #include "tkmDisplayArea.h"
 #include "tkmMeditWindow.h"
@@ -200,6 +200,7 @@ DspA_tErr DspA_New ( tkmDisplayAreaRef* oppWindow,
   }
   for( nSegVolume = 0; nSegVolume < tkm_knNumSegTypes; nSegVolume++ ) {
     this->mSegmentationVolume[nSegVolume] = NULL;
+    this->mSegmentationColorTable[nSegVolume] = NULL;
   }
   for( nSurface = 0; nSurface < tkm_knNumSurfaceTypes; nSurface++ ) {
     this->mpSurface[nSurface]       = NULL;
@@ -7717,7 +7718,8 @@ DspA_tErr DspA_SendPointInformationToTcl_ ( tkmDisplayAreaRef this,
 
   
   /* and the seg label if we have one */
-  if( NULL != this->mSegmentationVolume[tkm_tSegType_Main] ) {
+  if( NULL != this->mSegmentationVolume[tkm_tSegType_Main] &&
+      NULL != this->mSegmentationColorTable[tkm_tSegType_Main] ) {
 
     /* Get the value in ana idx space (this was messing up for some
        volumes with weird CRAS transforms) and get the corresponding
