@@ -1553,7 +1553,7 @@ FunD_tErr FunD_GetNumTimePoints ( mriFunctionalDataRef this,
   
   FunD_tErr eResult = FunD_tErr_NoError;
 
-  DebugEnterFunction( ("FunD_GetNumTimePoints( this=%p, oNumTimePoints=%d)",
+  DebugEnterFunction( ("FunD_GetNumTimePoints( this=%p, oNumTimePoints=%p)",
 		       this, oNumTimePoints) );
 
   DebugNote( ("Checking parameters") );
@@ -1582,7 +1582,7 @@ FunD_tErr FunD_GetNumConditions ( mriFunctionalDataRef this,
   
   FunD_tErr eResult = FunD_tErr_NoError;
 
-  DebugEnterFunction( ("FunD_GetNumConditions( this=%p, oNumConditions=%d)",
+  DebugEnterFunction( ("FunD_GetNumConditions( this=%p, oNumConditions=%p)",
 		       this, oNumConditions) );
 
   DebugNote( ("Checking parameters") );
@@ -1612,7 +1612,7 @@ FunD_tErr FunD_GetTimeResolution ( mriFunctionalDataRef this,
   
   FunD_tErr eResult = FunD_tErr_NoError;
 
-  DebugEnterFunction( ("FunD_Get( this=%p, oTimeResolution=%f)",
+  DebugEnterFunction( ("FunD_Get( this=%p, oTimeResolution=%p)",
 		       this, oTimeResolution) );
 
   DebugNote( ("Checking parameters") );
@@ -1642,7 +1642,7 @@ FunD_tErr FunD_GetNumPreStimTimePoints ( mriFunctionalDataRef this,
   
   FunD_tErr eResult = FunD_tErr_NoError;
 
-  DebugEnterFunction( ("FunD_GetNumPreStimTimePoints( this=%p, oNumPoints=%d)",
+  DebugEnterFunction( ("FunD_GetNumPreStimTimePoints( this=%p, oNumPoints=%p)",
 		       this, oNumPoints) );
 
   DebugNote( ("Checking parameters") );
@@ -1672,7 +1672,7 @@ FunD_tErr FunD_GetValueRange ( mriFunctionalDataRef this,
   
   FunD_tErr eResult = FunD_tErr_NoError;
 
-  DebugEnterFunction( ("FunD_GetValueRange( this=%p, oMin=%f, oMax=%f)",
+  DebugEnterFunction( ("FunD_GetValueRange( this=%p, oMin=%p, oMax=%p)",
 		       this, oMin, oMax) );
 
   DebugNote( ("Checking parameters") );
