@@ -13,9 +13,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2009/07/30 21:46:41 $
- *    $Revision: 1.231.2.17 $
+ *    $Author: mreuter $
+ *    $Date: 2009/08/22 23:54:13 $
+ *    $Revision: 1.231.2.18 $
  *
  * Copyright (C) 2002-2009,
  * The General Hospital Corporation (Boston, MA). 
@@ -15841,8 +15841,9 @@ GCAmapRenormalizeWithAlignment(GCA *gca,
                                                 NULL, NULL, NULL, NULL));
 }
 
+
 /* Sequential routine adjusts the former scales,offsets,peaks */
-int 
+int
 GCAseqRenormalizeWithAlignment(GCA *gca,
                                MRI *mri,
                                TRANSFORM *transform,
@@ -15855,46 +15856,45 @@ GCAseqRenormalizeWithAlignment(GCA *gca,
                                float *old_label_peaks,
                                int *old_label_computed)
 {
+
   if (old_label_scales == NULL || old_label_offsets == NULL || 
-      old_label_peaks == NULL || old_label_computed == NULL)
-  {
-    ErrorExit(
-      ERROR_BADPARM, 
-      "%s ERROR:  GCA seqRenormalize old_label needs to be set "
-      "for sequential call.\n",
-      Progname) ;
-  }
+        old_label_peaks == NULL || old_label_computed == NULL)
+    ErrorExit(ERROR_BADPARM, "%s ERROR:  GCA seqRenormalize old_label needs to be set for sequential call.\n",
+                Progname) ;
     
-  float plabel_scales[MAX_CMA_LABELS], 
-    plabel_offsets[MAX_CMA_LABELS],plabel_peaks[MAX_CMA_LABELS];
+
+  float plabel_scales[MAX_CMA_LABELS], plabel_offsets[MAX_CMA_LABELS],plabel_peaks[MAX_CMA_LABELS];
   int plabel_computed[MAX_CMA_LABELS];
-  int ret = GCAcomputeRenormalizationWithAlignment
-    (gca, mri, transform, 
-     logfp, base_name, plta, 
-     handle_expanded_ventricles,
-     plabel_scales, plabel_offsets,
-     plabel_peaks, plabel_computed);
+  int ret = GCAcomputeRenormalizationWithAlignment(gca, mri, transform, 
+                                                logfp, base_name, plta, 
+                                                handle_expanded_ventricles,
+                                                plabel_scales, plabel_offsets,
+                                                plabel_peaks, plabel_computed);
 
   // merge plabel with old_label results
   int l;
   for (l = 0 ; l < MAX_CMA_LABELS ; l++)
   {
-    if (plabel_computed[l] != old_label_computed[l])
-      ErrorExit(
-        ERROR_BADPARM, 
-        "%s GCA sequential renormalization: "
-        "label %d not consistently computed.\n",
-        Progname, l) ;
 
-    if (plabel_computed[l] != 0)
+    if (plabel_computed[l] != 0) // we computed this label
     {
-      //printf("%d   old: %f   new: %f   final: ",l,old_label_scales[l], plabel_scales[l]);
-      old_label_offsets[l] = plabel_scales[l] * old_label_offsets[l] + 
-        plabel_offsets[l];
-      old_label_scales[l] *= plabel_scales[l];
-      old_label_peaks[l] = plabel_peaks[l];
+      if (old_label_computed[l] != 0) // merge offsets and scales
+      {
+        //printf("%d   old: %f   new: %f   final: ",l,old_label_scales[l], plabel_scales[l]);
+        old_label_offsets[l] = plabel_scales[l] * old_label_offsets[l] + plabel_offsets[l];
+        old_label_scales[l] *= plabel_scales[l];
+		  }
+      else //no old label info -> coyp offsets and scales
+      {
+        old_label_offsets[l] = plabel_offsets[l];
+        old_label_scales[l]  = plabel_scales[l];
+      }
+      // in any case
+      old_label_peaks[l]    = plabel_peaks[l];
+      old_label_computed[l] = plabel_computed[l];
       //printf("%f \n",old_label_scales[l]);
     }
+    // else: if not computed in this call, just keep old_label info
   }
 
   if (logfp)
@@ -15902,10 +15902,9 @@ GCAseqRenormalizeWithAlignment(GCA *gca,
     fprintf(logfp, " Labels after sequential adjustment:\n");
     for (l = 0 ; l < MAX_CMA_LABELS ; l++)
       if (old_label_computed[l] != 0)
-        fprintf(
-          logfp, "label %s: scaling by %2.2f  + %2.1f to %2.0f\n",
-          cma_label_to_name(l),
-          old_label_scales[l], old_label_offsets[l], old_label_peaks[l]) ;
+        fprintf(logfp, "label %s: scaling by %2.2f  + %2.1f to %2.0f\n",
+                cma_label_to_name(l),
+                old_label_scales[l], old_label_offsets[l], old_label_peaks[l]) ;
     fflush(logfp) ;
   }
   if (DIAG_VERBOSE_ON)
@@ -15914,8 +15913,7 @@ GCAseqRenormalizeWithAlignment(GCA *gca,
     fp = fopen("norm_offset.plt", "w") ;
     for (l = 0 ; l < MAX_CMA_LABELS ; l++)
       if (old_label_computed[l] != 0)
-        fprintf(fp, "%d %f %f\n", 
-                l, old_label_scales[l], old_label_offsets[l]) ;
+        fprintf(fp, "%d %f %f\n", l, old_label_scales[l], old_label_offsets[l]) ;
     fclose(fp) ;
   }
 
@@ -15928,18 +15926,12 @@ GCAseqRenormalizeWithAlignment(GCA *gca,
     printf("saving sequentially combined intensity scales to %s\n", fname) ;
     fp = fopen(fname, "w") ;
     if (fp == NULL)
-      ErrorExit(
-        ERROR_NOFILE, 
-        "%s: could not open intensity tracking file %s", 
-        Progname,fname) ;
+      ErrorExit(ERROR_NOFILE, "%s: could not open intensity tracking file %s", Progname,fname) ;
 
     for (l = 0 ; l < MAX_CMA_LABELS ; l++)
       if (old_label_computed[l] != 0)
-        fprintf(
-          fp, 
-          "%d %s %2.2f %2.1f %2.0f\n",
-          l, cma_label_to_name(l), 
-          old_label_scales[l], old_label_offsets[l], old_label_peaks[l]) ;
+        fprintf(fp, "%d %s %2.2f %2.1f %2.0f\n",
+                l, cma_label_to_name(l), old_label_scales[l], old_label_offsets[l], old_label_peaks[l]) ;
           
     fflush(fp) ;
     fclose(fp) ;
@@ -15948,6 +15940,7 @@ GCAseqRenormalizeWithAlignment(GCA *gca,
   }
   return ret;
 }
+
 
 int
 GCAcomputeRenormalizationWithAlignment(
