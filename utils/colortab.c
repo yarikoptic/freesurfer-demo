@@ -12,8 +12,8 @@
  * Original Authors: Kevin Teich, Bruce Fischl
  * CVS Revision Info:
  *    $Author: krish $
- *    $Date: 2009/07/08 20:20:29 $
- *    $Revision: 1.26.2.3 $
+ *    $Date: 2009/09/01 17:14:54 $
+ *    $Revision: 1.26.2.4 $
  *
  * Copyright (C) 2002-2007,
  * The General Hospital Corporation (Boston, MA). 
@@ -508,6 +508,7 @@ CTABreadFromBinaryV1(FILE *fp, int nentries)
     fread(name, sizeof(char), len, fp);
     strncpy (ct->entries[structure]->name, name,
              sizeof(ct->entries[structure]->name));
+    ct->entries[structure]->name[len] = 0 ;
 
     ct->entries[structure]->ri = freadInt(fp);
     ct->entries[structure]->gi = freadInt(fp);
