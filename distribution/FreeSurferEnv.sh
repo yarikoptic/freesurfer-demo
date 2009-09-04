@@ -7,10 +7,10 @@
 # Note:    The csh/tcsh equivalent script is FreeSurferEnv.csh, and should
 #          be maintained to operate the same way.
 #
-# $Id: FreeSurferEnv.sh,v 1.41.2.3 2008/03/21 21:02:05 nicks Exp $
+# $Id: FreeSurferEnv.sh,v 1.41.2.4 2009/09/04 19:28:40 nicks Exp $
 #############################################################################
 
-VERSION='$Id: FreeSurferEnv.sh,v 1.41.2.3 2008/03/21 21:02:05 nicks Exp $'
+VERSION='$Id: FreeSurferEnv.sh,v 1.41.2.4 2009/09/04 19:28:40 nicks Exp $'
 
 ## Print help if --help or -help is specified
 if [[ "$1" == "--help" || "$1" == "-help" ]]; then
@@ -300,7 +300,10 @@ if [ -z "$NO_MINC" ]; then
     fi
     ## nu_correct and other MINC tools require a path to perl
     if [ -z "$MNI_PERL5LIB" ]; then
-        if [ -e $MINC_LIB_DIR/../System/Library/Perl/5.8.6 ]; then
+        if [ -e $MINC_LIB_DIR/perl5/5.8.8 ]; then
+            # Linux CentOS5:
+            export MNI_PERL5LIB="$MINC_LIB_DIR/perl5/5.8.8"
+        elif [ -e $MINC_LIB_DIR/../System/Library/Perl/5.8.6 ]; then
             # Max OS X Tiger default:
             export MNI_PERL5LIB="$MINC_LIB_DIR/../System/Library/Perl/5.8.6"
         elif [ -e $MINC_LIB_DIR/../System/Library/Perl/5.8.1 ]; then
@@ -368,6 +371,10 @@ if [[ $output == 1 && -n "$MISC_LIB" ]]; then
     echo "MISC_LIB        $MISC_LIB"
 fi
 
+### - Freeview directory should be in the path - MacOS only - ### 
+if [ -d $FREESURFER_HOME/bin/freeview.app ]; then
+    PATH=$FREESURFER_HOME/bin/freeview.app/Contents/MacOS/:$PATH
+fi
 
 ### ----------- VXL (shared lib support) ------------ ####
 if [ -n "$VXL_LIB" ]; then

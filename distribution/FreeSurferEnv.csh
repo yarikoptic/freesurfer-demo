@@ -5,10 +5,10 @@
 # Note:    The bash equivalent script is FreeSurferEnv.sh, and should
 #          be maintained to operate the same way.
 #
-# $Id: FreeSurferEnv.csh,v 1.74.2.1 2008/01/14 21:54:15 nicks Exp $
+# $Id: FreeSurferEnv.csh,v 1.74.2.2 2009/09/04 19:28:40 nicks Exp $
 #############################################################################
 
-set VERSION = '$Id: FreeSurferEnv.csh,v 1.74.2.1 2008/01/14 21:54:15 nicks Exp $'
+set VERSION = '$Id: FreeSurferEnv.csh,v 1.74.2.2 2009/09/04 19:28:40 nicks Exp $'
 
 ## Print help if --help or -help is specified
 if (("$1" == "--help") || ("$1" == "-help")) then
@@ -291,7 +291,10 @@ if(! $?NO_MINC) then
     endif
     ## nu_correct and other MINC tools require a path to mni perl scripts
     if (! $?MNI_PERL5LIB) then
-        if ( -e $MINC_LIB_DIR/perl5/5.8.5) then
+        if ( -e $MINC_LIB_DIR/perl5/5.8.8) then
+            # Linux CentOS5:
+            setenv MNI_PERL5LIB       "$MINC_LIB_DIR/perl5/5.8.8"
+        else if ( -e $MINC_LIB_DIR/perl5/5.8.5) then
             # Linux CentOS4:
             setenv MNI_PERL5LIB       "$MINC_LIB_DIR/perl5/5.8.5"
         else if ( -e $MINC_LIB_DIR/perl5/5.8.3) then
@@ -361,6 +364,12 @@ if( $output && $?MISC_LIB ) then
     echo "MISC_LIB        $MISC_LIB"
 endif
 
+### - freeview binary should be in the path - Mac OS only - ### 
+if ( -e $FREESURFER_HOME/bin/freeview.app ) then
+    set path = ( $FREESURFER_HOME/bin/freeview.app/Contents/MacOS/ \
+                 $path \
+                )
+endif
 
 ### ----------- VXL (shared lib support)  ------------ ####
 if ( $?VXL_LIB ) then
