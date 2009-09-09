@@ -7,8 +7,8 @@
  * Original Author: Bruce Fischl
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2009/08/05 17:12:37 $
- *    $Revision: 1.395.2.12 $
+ *    $Date: 2009/09/09 21:45:26 $
+ *    $Revision: 1.395.2.13 $
  *
  * Copyright (C) 2002-2009,
  * The General Hospital Corporation (Boston, MA). 
@@ -24,7 +24,7 @@
  *
  */
 
-const char *MRI_C_VERSION = "$Revision: 1.395.2.12 $";
+const char *MRI_C_VERSION = "$Revision: 1.395.2.13 $";
 extern const char* Progname;
 
 /*-----------------------------------------------------
@@ -2406,6 +2406,7 @@ MRIboundingBox(MRI *mri, int thresh, MRI_REGION *box)
   BUFTYPE  *psrc ;
   float    *pfsrc ;
   short    *pssrc ;
+  int      *pisrc ;
 
   box->dx = width = mri->width ;
   box->dy = height = mri->height ;
@@ -2415,6 +2416,7 @@ MRIboundingBox(MRI *mri, int thresh, MRI_REGION *box)
   box->x = width-1 ;
   box->y = height-1 ;
   box->z = depth-1 ;
+
   switch (mri->type)
   {
   case MRI_UCHAR:
@@ -2495,6 +2497,25 @@ MRIboundingBox(MRI *mri, int thresh, MRI_REGION *box)
               z1 = z ;
           }
         }
+      }
+    }
+    break ;
+  case MRI_INT:
+    for (z = 0 ; z < depth ; z++){
+      for (y = 0 ; y < height ; y++){
+
+        pisrc = &MRIIvox(mri, 0, y, z);
+        for (x = 0 ; x < width ; x++)  {
+          if(*pisrc++ > thresh) {
+            if (x < box->x)          box->x = x ;
+            if (y < box->y)          box->y = y ;
+            if (z < box->z)          box->z = z ;
+            if (x > x1)              x1 = x ;
+            if (y > y1)              y1 = y ;
+            if (z > z1)              z1 = z ;
+          }
+        }
+
       }
     }
     break ;
