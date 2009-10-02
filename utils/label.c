@@ -8,8 +8,8 @@
  * Original Author: REPLACE_WITH_FULL_NAME_OF_CREATING_AUTHOR 
  * CVS Revision Info:
  *    $Author: greve $
- *    $Date: 2008/12/19 23:52:52 $
- *    $Revision: 1.74.2.3 $
+ *    $Date: 2009/10/02 18:44:34 $
+ *    $Revision: 1.74.2.4 $
  *
  * Copyright (C) 2002-2007,
  * The General Hospital Corporation (Boston, MA). 
@@ -115,14 +115,16 @@ LABEL *LabelRead(char *subject_name, char *label_name)
                        Progname, fname)) ;
 
 
-  cp = fgetl(line, 199, fp) ;
+  cp = fgetl(line, STRLEN, fp) ;
   if (!cp)
     ErrorReturn(NULL,
                 (ERROR_BADFILE, "%s: empty label file %s", Progname, fname)) ;
-  if (!sscanf(cp, "%d", &area->n_points))
+  if (!sscanf(cp, "%d", &area->n_points)){
+    printf("\n%s\n",cp);
     ErrorReturn(NULL,
                 (ERROR_BADFILE, "%s: could not scan # of lines from %s",
                  Progname, fname)) ;
+  }
   area->max_points = area->n_points ;
   area->lv = (LABEL_VERTEX *)calloc(area->n_points, sizeof(LABEL_VERTEX)) ;
   if (!area->lv)
@@ -130,7 +132,7 @@ LABEL *LabelRead(char *subject_name, char *label_name)
               "%s: LabelRead(%s) could not allocate %d-sized vector",
               Progname, label_name, sizeof(LV)*area->n_points) ;
   nlines = 0 ;
-  while ((cp = fgetl(line, 199, fp)) != NULL)
+  while ((cp = fgetl(line, STRLEN, fp)) != NULL)
   {
     if (sscanf(cp, "%d %f %f %f %f", &vno, &x, &y, &z, &stat) != 5)
       ErrorReturn(NULL, (ERROR_BADFILE, "%s: could not parse %dth line in %s",
