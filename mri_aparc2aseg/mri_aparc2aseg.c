@@ -20,9 +20,9 @@
 /*
  * Original Author: Doug Greve
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2009/07/29 21:52:30 $
- *    $Revision: 1.27.2.9 $
+ *    $Author: krish $
+ *    $Date: 2009/10/29 20:40:17 $
+ *    $Revision: 1.27.2.10 $
  *
  * Copyright (C) 2002-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -76,7 +76,7 @@ int CCSegment(MRI *seg, int segid, int segidunknown);
 int main(int argc, char *argv[]) ;
 
 static char vcid[] =
-  "$Id: mri_aparc2aseg.c,v 1.27.2.9 2009/07/29 21:52:30 nicks Exp $";
+  "$Id: mri_aparc2aseg.c,v 1.27.2.10 2009/10/29 20:40:17 krish Exp $";
 char *Progname = NULL;
 static char *SUBJECTS_DIR = NULL;
 static char *subject = NULL;
@@ -497,7 +497,7 @@ int main(int argc, char **argv) {
           annot = rhwhite->vertices[rhwvtx].annotation;
           hemi = 2;
           if (rhwhite->ct)
-            CTABfindAnnotation(lhwhite->ct, annot, &annotid);
+            CTABfindAnnotation(rhwhite->ct, annot, &annotid);
           else
             annotid = annotation_to_index(annot);
           dmin = drhw;
@@ -506,7 +506,7 @@ int main(int argc, char **argv) {
           annot = rhwhite->vertices[rhpvtx].annotation;
           hemi = 2;
           if (rhwhite->ct)
-            CTABfindAnnotation(lhwhite->ct, annot, &annotid);
+            CTABfindAnnotation(rhwhite->ct, annot, &annotid);
           else
             annotid = annotation_to_index(annot);
           dmin = drhp;
