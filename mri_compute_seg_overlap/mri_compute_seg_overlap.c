@@ -10,10 +10,10 @@
  * Original Authors: Xiao Han, Nick Schmansky 
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2007/07/16 19:46:26 $
- *    $Revision: 1.7 $
+ *    $Date: 2010/01/12 19:48:37 $
+ *    $Revision: 1.7.2.1 $
  *
- * Copyright (C) 2006-2007,
+ * Copyright (C) 2006-2010,
  * The General Hospital Corporation (Boston, MA). 
  * All rights reserved.
  *
@@ -71,7 +71,7 @@ static const int labels_of_interest[24] = {
       Left_Inf_Lat_Vent, Right_Inf_Lat_Vent
     };
 
-/* Note: these are the labels not included in the
+/* Note: these are the labels included in the
      'overall subcortical Dice coefficient' calculations.
      It excludes:
      Left/Right-Cerebral-White-Matter (labels 2 and 41),
@@ -128,7 +128,7 @@ int main(int argc, char *argv[]) {
   nargs = 
     handle_version_option
     (argc, argv,
-     "$Id: mri_compute_seg_overlap.c,v 1.7 2007/07/16 19:46:26 nicks Exp $",
+     "$Id: mri_compute_seg_overlap.c,v 1.7.2.1 2010/01/12 19:48:37 nicks Exp $",
      "$Name:  $");
   argc -= nargs ;
   if (1 == argc)
@@ -315,7 +315,16 @@ static void usage(int exit_val) {
   fprintf(fout, "usage: %s <seg vol1> <seg vol2>\n", Progname);
   fprintf(fout, "This program compares two segmentation volumes and \n"
           "computes the Dice and Jaccard Coefficients. \n"
-          "It considers only 9 major structures. \n") ;
+          "It considers only 9 major structures:\n"
+          "  L/R Hippocampus\n"
+          "  L/R Caudate\n"
+          "  L/R Putamen\n"
+          "  L/R Pallidum\n"
+          "  L/R Amygdala\n"
+          "  L/R Thalamus_Proper\n"
+          "  L/R Lateral_Ventricle\n"
+          "  Third and Fourth Ventricles\n"
+          "  L/R Inf_Lat_Vent\n");
   fprintf(fout, "Options:\n");
   fprintf(fout, "   -log %%s   log_file for individual Dice \n");
   fprintf(fout, "   -mlog %%s  log_file for mean Dice \n");
