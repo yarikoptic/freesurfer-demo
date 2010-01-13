@@ -8,8 +8,8 @@
 # Original Author: Doug Greve
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2010/01/12 20:24:53 $
-#    $Revision: 1.133.2.61 $
+#    $Date: 2010/01/13 14:48:30 $
+#    $Revision: 1.133.2.62 $
 #
 # Copyright (C) 2002-2010,
 # The General Hospital Corporation (Boston, MA).
@@ -27,7 +27,7 @@
 #
 umask 002;
 
-set VERSION = '$Id: recon-all,v 1.133.2.61 2010/01/12 20:24:53 nicks Exp $';
+set VERSION = '$Id: recon-all,v 1.133.2.62 2010/01/13 14:48:30 nicks Exp $';
 set ProgName = `basename $0`;
 
 set inputargs = ($argv);
@@ -184,6 +184,7 @@ set AvgCurvTif = average.curvature.filled.buckner40.tif
 set OLD_OLD_GCS = curvature.buckner40.filled.desikan_killiany.2005-6-6.gcs
 set OLD_GCS = curvature.buckner40.filled.desikan_killiany.2007-06-20.gcs
 set GCS = curvature.buckner40.filled.desikan_killiany.2009-03-04.gcs
+set GCSDIR   = "${FREESURFER_HOME}/average"
 
 # Christophe Destrieux cortical parcellation atlas (-cortparc2):
 set OLD_OLD_DESTRIEUX_GCS = atlas2002_simple.gcs
