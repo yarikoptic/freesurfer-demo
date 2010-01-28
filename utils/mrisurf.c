@@ -7,8 +7,8 @@
  * Original Author: Bruce Fischl 
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2009/08/05 22:10:21 $
- *    $Revision: 1.557.2.19 $
+ *    $Date: 2010/01/28 16:28:50 $
+ *    $Revision: 1.557.2.20 $
  *
  * Copyright (C) 2002-2009,
  * The General Hospital Corporation (Boston, MA). 
@@ -627,7 +627,7 @@ int (*gMRISexternalReduceSSEIncreasedGradients)(MRI_SURFACE *mris,
   ---------------------------------------------------------------*/
 const char *MRISurfSrcVersion(void)
 {
-  return("$Id: mrisurf.c,v 1.557.2.19 2009/08/05 22:10:21 nicks Exp $");
+  return("$Id: mrisurf.c,v 1.557.2.20 2010/01/28 16:28:50 nicks Exp $");
 }
 
 /*-----------------------------------------------------
@@ -25484,7 +25484,10 @@ MRISmeasureCorticalThickness(MRI_SURFACE *mris, int nbhd_size, float max_thick)
       fprintf(stdout, "%d of %d vertices processed\n", vno,mris->nvertices) ;
     v = &mris->vertices[vno] ;
     if (v->ripflag)
+    {
+      v->curv = 0;
       continue ;
+    }
     nx = v->nx ;
     ny = v->ny ;
     nz = v->nz ;
