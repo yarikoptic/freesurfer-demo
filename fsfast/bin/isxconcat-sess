@@ -6,8 +6,8 @@
 # Original Author: Doug Greve
 # CVS Revision Info:
 #    $Author: greve $
-#    $Date: 2009/04/17 21:12:18 $
-#    $Revision: 1.25.2.7 $
+#    $Date: 2010/06/29 20:52:28 $
+#    $Revision: 1.25.2.8 $
 #
 # Copyright (C) 2002-2007,
 # The General Hospital Corporation (Boston, MA). 
@@ -23,7 +23,7 @@
 #
 
 
-set VERSION = '$Id: isxconcat-sess,v 1.25.2.7 2009/04/17 21:12:18 greve Exp $'
+set VERSION = '$Id: isxconcat-sess,v 1.25.2.8 2010/06/29 20:52:28 greve Exp $'
 
 set inputargs = ($argv);
 
@@ -314,8 +314,8 @@ foreach hemi ($hemilist)
       echo $cmd       |& tee -a $LF
       $cmd            |& tee -a $LF
       if($status) exit 1;
-      if($ToVol)  cp $analysis/h.dat $outdir/tal.h.dat
-      if($ToSurf) cp $analysis/h.dat $outdir/$hemi.h.dat
+      if($ToVol)  cp $SessList[1]/$fsd/$analysis/h.dat $outdir/tal.h.dat
+      if($ToSurf) cp $SessList[1]/$fsd/$analysis/h.dat $outdir/$hemi.h.dat
     endif
 
   end
