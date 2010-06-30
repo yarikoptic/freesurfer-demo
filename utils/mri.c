@@ -6,9 +6,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: mreuter $
- *    $Date: 2010/05/28 20:18:31 $
- *    $Revision: 1.459 $
+ *    $Author: nicks $
+ *    $Date: 2010/06/30 21:21:56 $
+ *    $Revision: 1.459.2.1 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -24,7 +24,7 @@
  */
 
 extern const char* Progname;
-const char *MRI_C_VERSION = "$Revision: 1.459 $";
+const char *MRI_C_VERSION = "$Revision: 1.459.2.1 $";
 
 
 /*-----------------------------------------------------
@@ -3616,6 +3616,9 @@ MRIextractInto(MRI *mri_src, MRI *mri_dst, int x0, int y0, int z0,
   bytes = dx ;
   switch (mri_src->type)
   {
+  default:
+    ErrorExit(ERROR_UNSUPPORTED, "MRIextractInto: unsupported source type %d", mri_src->type) ;
+    break ;
   case MRI_FLOAT:
     bytes *= sizeof(float) ;
     break ;
@@ -3628,8 +3631,7 @@ MRIextractInto(MRI *mri_src, MRI *mri_dst, int x0, int y0, int z0,
   case MRI_SHORT:
     bytes *= sizeof(short) ;
     break ;
-  default:
-    break ;
+  case MRI_UCHAR: break ;
   }
 
   for (frame = 0 ; frame < mri_src->nframes ; frame++)
@@ -3640,6 +3642,9 @@ MRIextractInto(MRI *mri_src, MRI *mri_dst, int x0, int y0, int z0,
       {
         switch (mri_src->type)
         {
+        default:
+          ErrorExit(ERROR_UNSUPPORTED, "MRIextractInto: unsupported source type %d", mri_src->type) ;
+          break ;
         case MRI_UCHAR:
           memmove(&MRIseq_vox(mri_dst, x1, yd, zd,frame),
                  &MRIseq_vox(mri_src,x0,ys,zs,frame), bytes);
@@ -3655,6 +3660,10 @@ MRIextractInto(MRI *mri_src, MRI *mri_dst, int x0, int y0, int z0,
         case MRI_LONG:
           memmove(&MRILseq_vox(mri_dst, x1, yd, zd,frame),
                  &MRILseq_vox(mri_src,x0,ys,zs,frame), bytes);
+          break ;
+        case MRI_INT:
+          memmove(&MRIIseq_vox(mri_dst, x1, yd, zd,frame),
+                 &MRIIseq_vox(mri_src,x0,ys,zs,frame), bytes);
           break ;
         }
       }
@@ -10815,8 +10824,10 @@ MRIsampleVolumeGradient(MRI *mri, double x, double y, double z,
   Interpolate the volume gradient to cubic voxels.
   ------------------------------------------------------*/
 int
-MRIsampleVolumeGradientFrame(MRI *mri, double x, double y, double z,
-                             double *pdx, double *pdy, double *pdz, int frame)
+MRIsampleVolumeGradientFrame( const MRI *mri,
+			      double x, double y, double z,
+			      double *pdx, double *pdy, double *pdz,
+			      int frame )
 {
   int  width, height, depth ;
   double xp1, xm1, yp1, ym1, zp1, zm1 ;
@@ -15929,6 +15940,7 @@ int MRInormalizeFramesMean(MRI *mri)
           mean += val;
         }
         mean /= mri->nframes ;
+				if (fabs(mean) < 0.000001) mean = 1;
         for (f = 0 ; f < mri->nframes ; f++)
         {
           val = MRIgetVoxVal(mri, c, r, s, f);
