@@ -12,82 +12,31 @@ TDR_FILES=\
 	tdr-recon
 
 FSF_FILES=\
-	acfseg-sess \
-	acorfunc-sess \
 	addmcparams \
-	afni2bvol \
 	aseg2funcmask-sess \
-	autoreg-fsl \
-	autoreg-sess \
-	avgraw \
-	bfile2afni \
-	bfileconvert \
-	bfvcheck \
 	bgmask-sess \
-	bvol2afni \
-	cat-bvolume \
-	checkmincdir \
-	check-sliceres-sess \
-	clusterspec2mask \
-	cmpanalyses-sess \
-	cmpsesssnr-sess \
-	cmpsnr-sess \
-	compress-sess \
-	concat-bvolumes \
-	conmask-sess \
-	cordiff \
-	countncond \
-	cp-bvolume \
 	crossrun.ffx.fsf \
 	df-sess \
-	diag-fmri \
-	diag-optseq \
-	difffsfast \
 	du-sess \
-	editmask \
-	evfunc \
-	evfunc-jk-sess \
-	evfunc-sess \
-	evpve-sess \
-	evspatfil \
-	evspatfil-jk-sess \
-	evspatfil-sess \
-	extract-roi-tc-sess \
 	fast_getext \
 	fast-log-preamble.csh \
 	fcreg-sess \
 	feat.fsfast-patch \
 	feat.fsfast-patch.tcl \
-	fftfunc-sess \
 	fieldsign-sess \
 	fixseqinfo-sess \
-	flacproc-sess \
-	fmreigen \
-	fmreigen-jk \
 	fsfast-version \
-	fsfast-gui-bug \
 	fsfeat \
 	fsfeatffx \
 	fsfeat-sess \
-	fsf-glmfit \
-	fsf-kmnacf \
-	fsf-kmracf \
 	fslregister-sess \
         fsl2par \
-	func2acf \
 	func2label \
 	func2roi-sess \
-	func2roi-sess-mrun \
-	func2sph-sess \
-	func2sph-sess-new \
-	func2sph-sess-vss \
 	func2tal \
 	func2tal-sess \
-	functcvm \
-	functcvm-sess \
 	functwf-sess \
 	fwhmest \
-	fwhmest-sess \
 	getana \
 	getbext \
 	getbfvdim \
@@ -109,23 +58,128 @@ FSF_FILES=\
 	getsesspath \
 	getsliceno \
 	getslicestr \
-	getspacetype \
 	getstem \
 	gettalres \
 	ghostdet \
 	ghostdet-sess \
+	inorm \
+	inorm2 \
+	inorm3 \
+	inorm-sess \
+	ipfsl \
+	isargflag \
+	isxconcat0-sess \
+	isxconcat-sess \
+	mc-afni \
+	mc-afni2 \
+	mcdat2mcextreg \
+	mcparams2extreg \
+	mc-sess \
+	mkanalysis-sess \
+	mkblockpar \
+	mkbrainmask \
+	mkbrainmask-sess \
+	mkcontrast \
+	mkcontrast-sess \
+	mkfeat-sess \
+	mkfieldsign \
+	mktemplate-sess \
+	optseq \
+	optseq.matlab \
+	par2fsl \
+	par2schedule \
+	par2stf \
+	plot-twf-sess \
+	preproc-sess \
+	qmedit \
+	qsurfer \
+	rawfunc2surf-sess \
+	rawfunc2tal \
+	rawfunc2tal-sess \
+	register-sess \
+	rocview \
+	roiavg \
+	roiavgraw \
+	roisummary-sess \
+	roitxt2tbl \
+	roixrunsum-sess \
+	selxavg3-sess \
+	seqefficiency \
+	spatialsmooth-sess \
+	spikedet \
+	spikedet-sess \
+	splitstr \
+	spmregister-sess \
+	stc.fsl \
+	stc-sess \
+	stem2fmt \
+	stripsessargs \
+	subject-sess \
+	tar-sess \
+	tkmedit-sess \
+	tkregister-sess \
+	tksurfer-sess \
+	zpadfmri
+
+OTHER_EXCLUDE=\
+	acfseg-sess \
+	acorfunc-sess \
+	afni2bvol \
+	autoreg-fsl \
+	autoreg-sess \
+	avgraw \
+	bfile2afni \
+	bfileconvert \
+	bfvcheck \
+	bvol2afni \
+	cat-bvolume \
+	checkmincdir \
+	check-sliceres-sess \
+	clusterspec2mask \
+	cmpanalyses-sess \
+	cmpsesssnr-sess \
+	cmpsnr-sess \
+	compress-sess \
+	concat-bvolumes \
+	conmask-sess \
+	cordiff \
+	countncond \
+	cp-bvolume \
+	diag-fmri \
+	diag-optseq \
+	difffsfast \
+	editmask \
+	evfunc \
+	evfunc-jk-sess \
+	evfunc-sess \
+	evpve-sess \
+	evspatfil \
+	evspatfil-jk-sess \
+	evspatfil-sess \
+	extract-roi-tc-sess \
+	fftfunc-sess \
+	flacproc-sess \
+	fmreigen \
+	fmreigen-jk \
+	fsfast-gui-bug \
+	fsf-glmfit \
+	fsf-kmnacf \
+	fsf-kmracf \
+	func2acf \
+	func2roi-sess-mrun \
+	func2sph-sess \
+	func2sph-sess-new \
+	func2sph-sess-vss \
+	functcvm \
+	functcvm-sess \
+	fwhmest-sess \
+	getspacetype \
 	glmest \
 	glmfourier \
 	glmfourier-sess \
 	glmstats \
 	groupreg-sess \
-	inorm \
-	inorm2 \
-	inorm3 \
-	inorm-sess \
 	intergroupavg-sess \
-	ipfsl \
-	isargflag \
 	isroiavg \
 	isxavg-fe \
 	isxavg-fe-abb-sess \
@@ -134,8 +188,6 @@ FSF_FILES=\
 	isxavg-re \
 	isxavg-re-abb-sess \
 	isxavg-re-sess \
-	isxconcat0-sess \
-	isxconcat-sess \
 	kmacfcond-sess \
 	kmacf-sess \
 	kmacfwht-sess \
@@ -145,71 +197,37 @@ FSF_FILES=\
 	latgroup-sess \
 	lrst-blk \
 	lrst-blk-sess \
-	mc-afni \
-	mc-afni2 \
-	mcdat2mcextreg \
-	mcparams2extreg \
-	mc-sess \
 	meanimg \
 	mergeanalyses-sess \
 	mergecontrasts-sess \
 	mergecontrasts-xsess \
-	mkanalysis-sess \
-	mkblockpar \
-	mkbrainmask \
-	mkbrainmask-sess \
 	mkcmanova-sess \
-	mkcontrast \
-	mkcontrast-sess \
 	mkdesignmtx \
 	mkdesmtx-sess \
-	mkfeat-sess \
-	mkfieldsign \
 	mkmosaic \
 	mkprestimcon \
 	mktalreg \
 	mktalxfm-sess \
-	mktemplate-sess \
 	mkvoxshiftmap \
 	mris_glm-sess \
-	optseq \
-	optseq.matlab \
 	paint-fieldsign-sess \
 	paint-sess \
 	paint-sess-new \
-	par2fsl \
 	par2kspar \
-	par2schedule \
-	par2stf \
 	parse-measasc \
 	plot-pve \
-	plot-twf-sess \
 	ppcheck-sess \
-	preproc-sess \
-	qmedit \
-	qsurfer \
 	rawavg-sess \
-	rawfunc2surf-sess \
-	rawfunc2tal \
-	rawfunc2tal-sess \
 	reg2subj \
-	register-sess \
-	rocview \
-	roiavg \
-	roiavgraw \
-	roisummary-sess \
-	roitxt2tbl \
-	roixrunsum-sess \
 	segregister-sess \
 	selfreqavg \
 	selfreqavg-sess \
 	selfreqcomb \
 	selxavg2 \
-	selxavg3-sess \
 	selxavg-jk-sess \
 	selxavg-sess \
 	selxavg-sess-perrun \
-	seqefficiency \
+	sxacfg-get \
 	sfa-sess \
 	sliceview-sess \
 	spatev \
@@ -217,46 +235,31 @@ FSF_FILES=\
 	spatevfilter-sess \
 	spatev-sess \
 	spatfil \
-	spatialsmooth-sess \
 	sphsmooth-sess \
-	spikedet \
-	spikedet-sess \
-	splitstr \
 	spmimg2bvolume \
-	spmregister-sess \
-	stc.fsl \
-	stc-sess \
-	stem2fmt \
 	stfreqgrinder \
-	stripsessargs \
 	stxgpredict \
 	stxgrinder \
 	stxgrinder0-sess \
 	stxgrinder-sess \
 	stxgrinder-sess-perrun \
-	subject-sess \
 	surf-sess \
 	surfsmooth-sess \
 	surf-sess-new \
 	svdfunctcvm \
 	svdfunctcvm-sess \
 	swfflac-sess \
-	sxacfg-get \
 	synthfmri \
 	synth-phenc \
 	synthrawroi \
 	synth-sess \
 	synthstudy \
 	synth-tr-sess \
-	tar-sess \
-	tkmedit-sess \
-	tkregister-sess \
-	tksurfer-sess \
 	txt2bfile \
 	vertavg-group \
 	vertavg-sess \
-	yakview \
-	zpadfmri
+	yakview 
+
 
 foo_SCRIPTS=$(FSF_FILES)
 
@@ -265,5 +268,5 @@ EXTRA_DIST=$(FSF_FILES)
 # Our release target. Include files to be excluded here. They will be
 # found and removed after 'make install' is run during the 'make
 # release' target.
-EXCLUDE_FILES=$(TDR_FILES) CVS
+EXCLUDE_FILES=$(TDR_FILES) $(OTHER_EXCLUDE) CVS
 include $(top_srcdir)/Makefile.extra
