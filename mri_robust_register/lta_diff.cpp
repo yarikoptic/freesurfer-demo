@@ -8,8 +8,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/06/15 18:14:07 $
- *    $Revision: 1.11.2.1 $
+ *    $Date: 2010/06/30 21:39:11 $
+ *    $Revision: 1.11.2.2 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -30,6 +30,7 @@
 #include <sstream>
 #include <vector>
 #include <cassert>
+#include <limits>
 
 #include "Registration.h"
 #include "MyMatrix.h"
@@ -55,7 +56,7 @@ extern "C"
 
 using namespace std;
 
-//static char vcid[] = "$Id: lta_diff.cpp,v 1.11.2.1 2010/06/15 18:14:07 nicks Exp $";
+//static char vcid[] = "$Id: lta_diff.cpp,v 1.11.2.2 2010/06/30 21:39:11 nicks Exp $";
 char *Progname = NULL;
 
 double cornerdiff(LTA* lta1, LTA* lta2)
@@ -157,7 +158,7 @@ double sphereDiff(MATRIX * M1, MATRIX* M2, double r)
 
 
    double dmax = 0;
-	 double dmin = numeric_limits<double>::infinity();
+	 double dmin = std::numeric_limits<double>::infinity();
 	 double davg = 0;
 	 int counter = 0;
 
