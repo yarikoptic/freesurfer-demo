@@ -13,9 +13,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: fischl $
- *    $Date: 2010/04/23 18:15:32 $
- *    $Revision: 1.274 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/05 14:48:30 $
+ *    $Revision: 1.274.2.1 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -13514,8 +13514,8 @@ GCAcomputeVoxelLikelihoods(GCA *gca,
 }
 
 int
-GCAmaxLikelihoodLabel(GCA_NODE *gcan,
-                      float *vals, int ninputs, float *plikelihood)
+GCAmaxLikelihoodLabel( const GCA_NODE *gcan,
+		       float *vals, int ninputs, float *plikelihood)
 {
   double p, max_p ;
   int    n, best_label ;

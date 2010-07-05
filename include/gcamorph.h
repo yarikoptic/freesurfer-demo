@@ -14,9 +14,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/05/29 00:40:32 $
- *    $Revision: 1.71 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/05 14:48:29 $
+ *    $Revision: 1.71.2.1 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -483,6 +483,26 @@ double MRIlabelMorphSSE(MRI *mri_source, MRI *mri_atlas, MRI *mri_morph) ;
 			  const MRI *mri,
 			  const double l_smoothness );
   
+  int  gcamJacobianTermAtNode( GCA_MORPH *gcam, 
+			       const MRI *mri, 
+			       double l_jacobian,
+			       int i, int j, int k, 
+			       double *pdx, double *pdy,
+			       double *pdz );
+
+  int gcamJacobianTerm( GCA_MORPH *gcam, 
+			const MRI *mri, 
+			double l_jacobian, 
+			double ratio_thresh );
+
+  int gcamLabelTerm( GCA_MORPH *gcam,
+		     const MRI *mri,
+		     double l_label, double label_dist );
+
+  int gcamLogLikelihoodTerm( GCA_MORPH *gcam,
+			     const MRI *mri,
+			     const MRI *mri_smooth,
+			     double l_log_likelihood );
 
 #ifdef FS_CUDA
   //! Wrapper around the GPU version of gcamComputeMetricProperties
@@ -512,6 +532,13 @@ double MRIlabelMorphSSE(MRI *mri_source, MRI *mri_atlas, MRI *mri_morph) ;
 
   void gcamSmoothnessTermGPU( GCA_MORPH* gcam,
 			      const float l_smoothness );
+
+  void gcamJacobianTermGPU( GCA_MORPH *gcam,
+			    const float l_jacobian,
+			    const float jac_scale );
+
+  void gcamAddStatusGPU( GCA_MORPH *gcam, const int statusFlags );
+  void gcamRemoveStatusGPU( GCA_MORPH *gcam, const int statusFlags );
 #endif
 
 #if defined(__cplusplus)
