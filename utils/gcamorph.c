@@ -11,8 +11,8 @@
  * Original Author: Bruce Fischl
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/07/05 14:48:31 $
- *    $Revision: 1.190.2.1 $
+ *    $Date: 2010/07/06 19:44:32 $
+ *    $Revision: 1.190.2.2 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -39,8 +39,8 @@
 #define GCAM_SMOOTHNESS_ENERGY_GPU
 #define GCAM_FIND_OPTIMAL_TIMESTEP_GPU
 
-#define GCAM_SMOOTH_TERM_GPU
-#define GCAM_JACOB_TERM_GPU
+//#define GCAM_SMOOTH_TERM_GPU
+//#define GCAM_JACOB_TERM_GPU
 #endif
 
 
