@@ -10,8 +10,8 @@ function flac = fast_ldanaflac(anadir)
 % Original Author: Doug Greve
 % CVS Revision Info:
 %    $Author: greve $
-%    $Date: 2010/07/16 15:31:24 $
-%    $Revision: 1.57.2.1 $
+%    $Date: 2010/07/16 16:22:13 $
+%    $Revision: 1.57.2.2 $
 %
 % Copyright (C) 2002-2007,
 % The General Hospital Corporation (Boston, MA). 
@@ -80,7 +80,9 @@ while(1)
   % scroll through any blank lines or comments
   while(1)
     tline = fgetl(fp);
-    if(~isempty(tline)) if(tline(1) ~= '#') break; end end
+    if(~isempty(tline)) 
+      if(tline(1) ~= '#') break; end; 
+    end
   end
   if(tline(1) == -1) break; end
 
