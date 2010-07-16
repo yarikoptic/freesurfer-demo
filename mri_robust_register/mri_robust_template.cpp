@@ -9,9 +9,9 @@
 /*
  * Original Author: Martin Reuter
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/06/15 18:14:31 $
- *    $Revision: 1.18.2.1 $
+ *    $Author: mreuter $
+ *    $Date: 2010/07/16 18:10:04 $
+ *    $Revision: 1.18.2.2 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -154,7 +154,7 @@ static void printUsage(void);
 static bool parseCommandLine(int argc, char *argv[],Parameters & P) ;
 
 static char vcid[] =
-"$Id: mri_robust_template.cpp,v 1.18.2.1 2010/06/15 18:14:31 nicks Exp $";
+"$Id: mri_robust_template.cpp,v 1.18.2.2 2010/07/16 18:10:04 mreuter Exp $";
 char *Progname = NULL;
 
 //static MORPH_PARMS  parms ;
@@ -340,7 +340,7 @@ static void printUsage(void)
   cout << "  --warp warp1.mgz ...       map each input to template" << endl;
   cout << "  --weights weights1.mgz ... output weights in target space" << endl;
   cout << "  --average #                construct template from: 0 Mean, 1 Median (default)" << endl;
-  cout << "  --inittp #                 use TP# for spacial init (default 1), 0: no init" << endl;
+  cout << "  --inittp #                 use TP# for spatial init (default 1), 0: no init" << endl;
   cout << "  --fixtp                    map everthing to init TP# (init TP is not resampled)" << endl;
 	
 //  cout << "  -A, --affine (testmode)    find 12 parameter affine xform (default is 6-rigid)" << endl;
