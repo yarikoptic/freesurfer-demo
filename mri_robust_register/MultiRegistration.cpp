@@ -14,8 +14,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/06/14 21:15:12 $
- *    $Revision: 1.11 $
+ *    $Date: 2010/07/22 18:00:14 $
+ *    $Revision: 1.11.2.1 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -147,7 +147,7 @@ int MultiRegistration::loadLTAs(const std::vector < std::string > nltas)
 
 /*!
   \fn void initRegistration(Registration & R, const Parameters & P)
-  \brief Initializes a Registration with Parameters (rigid, iscale, transonly, robust, sat and floatsvd)
+  \brief Initializes a Registration with Parameters (rigid, iscale, transonly, robust, sat and doubleprec)
   \param R  Registration to be initialized
 */
 void MultiRegistration::initRegistration(Registration & R)
@@ -159,7 +159,7 @@ void MultiRegistration::initRegistration(Registration & R)
   R.setTransonly(transonly);
   R.setRobust(robust);
   R.setSaturation(sat);
-  R.setFloatSVD(floatsvd);
+  R.setDoublePrec(doubleprec);
   //R.setDebug(debug);
   
 	
@@ -172,8 +172,8 @@ void MultiRegistration::initRegistration(Registration & R)
 //  // if (P.subsamplesize > 0) R.setSubsamplesize(P.subsamplesize);
 //
 //
-//   R.setSource(P.mri_mov[n],P.fixvoxel,P.fixtype);
-//   R.setTarget(P.mri_mean,P.fixvoxel,P.fixtype);
+//   R.setSource(P.mri_mov[n],P.fixvoxel,P.keeptype);
+//   R.setTarget(P.mri_mean,P.fixvoxel,P.keeptype);
 }
 
 bool MultiRegistration::averageSet(int itdebug)
@@ -329,7 +329,7 @@ bool MultiRegistration::computeTemplate(int itmax, double eps , int iterate, dou
   }
   
   vector < Registration > Rv(mri_mov.size());
-  for (int i = 0;i<nin;i++) Rv[i].setSource(mri_mov[i],fixvoxel,fixtype);
+  for (int i = 0;i<nin;i++) Rv[i].setSource(mri_mov[i],fixvoxel,keeptype);
 
   LTA * lastlta = NULL;
   while (itcount < itmax && maxchange > eps)
@@ -357,7 +357,7 @@ bool MultiRegistration::computeTemplate(int itmax, double eps , int iterate, dou
       initRegistration(Rv[i]); //set parameter
       Rv[i].setTarget(mri_mean,
                       fixvoxel,
-                      fixtype); // gaussian pyramid will be constructed for
+                      keeptype); // gaussian pyramid will be constructed for
                                   // each Rv[i], could be optimized
       ostringstream oss;
       oss << outdir << "tp" << i+1 << "_to_template-it" << itcount;
@@ -575,7 +575,7 @@ bool MultiRegistration::halfWayTemplate(int maxres, int iterate, double epsit, b
 
   Registration R;
   initRegistration(R); //set parameter
-  R.setSourceAndTarget(mri_mov[0],mri_mov[1],fixvoxel,fixtype);
+  R.setSourceAndTarget(mri_mov[0],mri_mov[1],keeptype);
 
   ostringstream oss;
   oss << outdir << "halfway_template.mgz";
@@ -726,7 +726,7 @@ bool MultiRegistration::initialXforms(int tpi, bool fixtp, int maxres, int itera
     
     Registration R;
     initRegistration(R); //set parameter
-    R.setSourceAndTarget(mri_mov[j],mri_mov[tpi],fixvoxel,fixtype);
+    R.setSourceAndTarget(mri_mov[j],mri_mov[tpi],keeptype);
     R.setName(oss.str());
 		
     // compute Alignment (maxres,iterate,epsit) are passed above
@@ -1107,7 +1107,7 @@ bool MultiRegistration::writeIntensities(const std::vector < std::string >& nint
 	 return (error == 0);
 }
 
-bool MultiRegistration::writeWeights(const std::vector < std::string >& nweights)
+bool MultiRegistration::writeWeights(const std::vector < std::string >& nweights, bool oneminusweights)
 {
    assert (nweights.size() == mri_weights.size());
 	 int error = 0;
@@ -1118,7 +1118,10 @@ bool MultiRegistration::writeWeights(const std::vector < std::string >& nweights
 			   cout << " No weights constructed, skipping output of weights" << endl;
 				 return false;
 			}
-		  error += MRIwrite(mri_weights[i], nweights[i].c_str()) ;
+			MRI * wtmp = mri_weights[i];
+			if (oneminusweights) wtmp = MRIlinearScale(wtmp,NULL,-1,1,0);
+		  error += MRIwrite(wtmp, nweights[i].c_str()) ;
+			if (oneminusweights) MRIfree(&wtmp);
 	 }
 	 return (error == 0);
 }
@@ -1161,19 +1164,19 @@ MRI* MultiRegistration::averageSet(const vector < MRI * >& set,
     // robust
     int x,y,z,i;
     assert(set.size() > 0);
-    double dd[set.size()];
+    float dd[set.size()];
     if (!mean) mean = MRIclone(set[0],NULL);
     //MRI * midx = MRIalloc(set[0]->width,set[0]->height,set[0]->depth, MRI_FLOAT);
     //MRIcopyHeader(mean,midx);
     //midx->type = MRI_FLOAT;
-    pair < double, double > mm;
+    pair < float, float > mm;
     for (z = 0 ; z < set[0]->depth ; z++)
       for (y = 0 ; y < set[0]->height ; y++)
         for (x = 0 ; x < set[0]->width ; x++)
         {
           for (i=0; i<(int) set.size();i++)
             dd[i] = MRIgetVoxVal(set[i],x,y,z,0);
-          mm = RobustGaussian::medianI(dd,(int)set.size());
+          mm = RobustGaussian<float>::medianI(dd,(int)set.size());
           MRIsetVoxVal(mean,x,y,z,0,mm.first);
 	  //MRIsetVoxVal(midx,x,y,z,0,mm.second);
         }
@@ -1188,7 +1191,7 @@ MRI* MultiRegistration::averageSet(const vector < MRI * >& set,
     int x,y,z,i;
 //     MATRIX* b = MatrixAlloc(set.size(),1,MATRIX_REAL);
 //     pair < MATRIX* , MATRIX* >  muw;
-    vnl_vector < double > b(set.size());
+    vnl_vector < float > b(set.size());
     assert(set.size() > 0);
     if (!mean) mean = MRIclone(set[0],NULL);
     for (z = 0 ; z < set[0]->depth ; z++)
@@ -1205,8 +1208,8 @@ MRI* MultiRegistration::averageSet(const vector < MRI * >& set,
           //cout << endl << "intgensities at this voxel:" << endl; ;
           //MatrixPrintFmt(stdout,"% 2.8f",b);
 
-          Regression R(b);
-					vnl_vector < double > p = R.getRobustEst(sat);
+          Regression<float> R(b);
+					vnl_vector < float > p = R.getRobustEst(sat);
           //muw = R.getRobustEstW(sat);
           //    cout << " tukey mean: " << muw.first->rptr[1][1] << endl;
           //MRIsetVoxVal(mean,x,y,z,0,muw.first->rptr[1][1]);
@@ -1225,8 +1228,8 @@ MRI* MultiRegistration::averageSet(const vector < MRI * >& set,
 //     MATRIX* A = MatrixAlloc(set.size()*n,n,MATRIX_REAL);
 //     A = MatrixZero(A->rows,A->cols,A);
 //     pair < MATRIX* , MATRIX* >  muw;
-    vnl_matrix < double > A(set.size()*n,n);
-		vnl_vector < double > b(set.size()*n);
+    vnl_matrix < float > A(set.size()*n,n);
+		vnl_vector < float > b(set.size()*n);
 		A.fill(0.0);
 		
     assert(set.size() > 0);
@@ -1254,9 +1257,9 @@ MRI* MultiRegistration::averageSet(const vector < MRI * >& set,
     //cout << endl << "intgensities at this voxel:" << endl; ;
     //MatrixPrintFmt(stdout,"% 2.8f",b);
 
-    Regression R(A,b);
+    Regression<float> R(A,b);
     //muw = R.getRobustEstW(sat);
-		vnl_vector < double > p = R.getRobustEst(sat);
+		vnl_vector < float > p = R.getRobustEst(sat);
     //    cout << " tukey mean: " << muw.first->rptr[1][1] << endl;
     int pcount = 0;
     for (z = 0 ; z < set[0]->depth ; z++)

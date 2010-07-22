@@ -14,8 +14,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/03/01 23:51:39 $
- *    $Revision: 1.4 $
+ *    $Date: 2010/07/22 18:00:14 $
+ *    $Revision: 1.4.2.1 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -57,11 +57,11 @@ class MultiRegistration
 public:
    MultiRegistration():outdir("./"),transonly(false),rigid(true),robust(true),sat(4.685),satit(false),
 	                     debug(0),iscale(false),subsamplesize(-1),fixvoxel(false),
-											 fixtype(false),average(1),floatsvd(true),mri_mean(NULL)
+											 keeptype(false),average(1),doubleprec(false),mri_mean(NULL)
 		{};
 	 MultiRegistration(const std::vector < std::string > mov):outdir("./"),transonly(false),
 	                     rigid(true),robust(true),sat(4.685),satit(false),debug(0),iscale(false),
-											 subsamplesize(-1),fixvoxel(false),fixtype(false),average(1),floatsvd(true),
+											 subsamplesize(-1),fixvoxel(false),keeptype(false),average(1),doubleprec(false),
 											 mri_mean(NULL)
 	  { loadMovables(mov);};
 		
@@ -77,7 +77,7 @@ public:
 	 bool writeLTAs(const std::vector < std::string > & nltas, bool vox2vox, const std::string & mean);
 	 bool writeWarps(const std::vector <  std::string >& nwarps);
 	 bool writeIntensities(const std::vector < std::string >& nintens);
-	 bool writeWeights(const std::vector < std::string >& nweights);
+	 bool writeWeights(const std::vector < std::string >& nweights, bool oneminusweights);
 
 
    int loadMovables(const std::vector < std::string > mov);
@@ -121,9 +121,9 @@ public:
   {
     fixvoxel = i;
   };
-  void setFixType(bool i)
+  void setKeepType(bool i)
   {
-    fixtype = i;
+    keeptype = i;
   };
   void setAverage(int i)
   {
@@ -133,9 +133,9 @@ public:
   {
     subsamplesize = sss;
   };
-	void setFloatSVD(bool b)
+	void setDoublePrec(bool b)
 	{
-	  floatsvd = b;
+	  doubleprec = b;
   }
 	
 	bool averageSet(int itdebug = 0);
@@ -173,9 +173,9 @@ private:
 	int    subsamplesize;
 	
   bool   fixvoxel;
-  bool   fixtype;
+  bool   keeptype;
   int    average;
-	bool floatsvd;
+	bool   doubleprec;
 	
 	// DATA
   std::vector < MRI* > mri_mov;

@@ -7,9 +7,9 @@
 /*
  * Original Author: Martin Reuter
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/06/30 21:39:11 $
- *    $Revision: 1.11.2.2 $
+ *    $Author: mreuter $
+ *    $Date: 2010/07/22 18:00:15 $
+ *    $Revision: 1.11.2.3 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -56,7 +56,7 @@ extern "C"
 
 using namespace std;
 
-//static char vcid[] = "$Id: lta_diff.cpp,v 1.11.2.2 2010/06/30 21:39:11 nicks Exp $";
+//static char vcid[] = "$Id: lta_diff.cpp,v 1.11.2.3 2010/07/22 18:00:15 mreuter Exp $";
 char *Progname = NULL;
 
 double cornerdiff(LTA* lta1, LTA* lta2)

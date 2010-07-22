@@ -10,8 +10,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/07/16 18:10:04 $
- *    $Revision: 1.18.2.2 $
+ *    $Date: 2010/07/22 18:00:15 $
+ *    $Revision: 1.18.2.3 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -96,7 +96,7 @@ struct Parameters
   vector <string> nltas;
   vector <string> nweights;
   bool   fixvoxel;
-  bool   fixtype;
+  bool   floattype;
   bool   lta_vox2vox;
   bool   affine;
   bool   iscale;
@@ -115,7 +115,8 @@ struct Parameters
 	bool   fixtp;
 	bool   satit;
 	string conform;
-	bool   doublesvd;
+	bool   doubleprec;
+	bool   oneminusweights;
 };
 
 // Initializations:
@@ -146,6 +147,7 @@ static struct Parameters P =
 	false,
 	false,
 	"",
+	false,
 	false
 };
 
@@ -154,7 +156,7 @@ static void printUsage(void);
 static bool parseCommandLine(int argc, char *argv[],Parameters & P) ;
 
 static char vcid[] =
-"$Id: mri_robust_template.cpp,v 1.18.2.2 2010/07/16 18:10:04 mreuter Exp $";
+"$Id: mri_robust_template.cpp,v 1.18.2.3 2010/07/22 18:00:15 mreuter Exp $";
 char *Progname = NULL;
 
 //static MORPH_PARMS  parms ;
@@ -165,6 +167,7 @@ int main(int argc, char *argv[])
 {
   cout << vcid << endl << endl;
   // set the environment variable
+//  setenv("SURFER_FRONTDOOR","",1) ;
   // to store mri as chunk in memory:
 //  setenv("FS_USE_MRI_CHUNK","",1) ;
   if (getenv("FS_USE_MRI_CHUNK") != NULL)
@@ -213,9 +216,9 @@ int main(int argc, char *argv[])
   MR.setSaturation(P.sat);
   MR.setSatit(P.satit);
 	MR.setFixVoxel(P.fixvoxel);
-	MR.setFixType(P.fixtype);
+	MR.setKeepType(!P.floattype);
 	MR.setAverage(P.average);
-	MR.setFloatSVD(!P.doublesvd);
+	MR.setDoublePrec(P.doubleprec);
 	MR.setSubsamplesize(P.subsamplesize);
 
 	// init MultiRegistration and load movables
@@ -302,7 +305,7 @@ int main(int argc, char *argv[])
       }
 	  }
   }
-  if (!P.leastsquares && P.nweights.size() > 0) MR.writeWeights(P.nweights);
+  if (!P.leastsquares && P.nweights.size() > 0) MR.writeWeights(P.nweights,P.oneminusweights);
 
   ///////////////////////////////////////////////////////////////
   msec = TimerStop(&start) ;
@@ -356,12 +359,12 @@ static void printUsage(void)
   cout << "  --sat <real>               set outlier sensitivity manually (e.g. '--sat 4.685' )" << endl;
 	cout << "                                higher values mean less sensitivity" << endl;
   cout << "  --satit                    auto-detect good sensitivity (for head scans)" << endl;
-  cout << "  --doublesvd                double svd (instead of float) ~1Gig more memory" << endl;
+  cout << "  --doubleprec               double precision (default: float) for intensities (!!memory!!)" << endl;
   cout << "  --subsample <#>            subsample if dim > # on all axes (default no subs.)" << endl;
 //  cout << "      --maskmov mask.mgz     mask mov/src with mask.mgz" << endl;
 //  cout << "      --maskdst mask.mgz     mask dst/target with mask.mgz" << endl;
-//  cout << "  --uchar                    set input type to UCHAR (with intensity scaling)" << endl;
-  cout << "  --conform conform.mgz      output conform template, 1mm vox (256^3)" << endl;
+//  cout << "  --conform conform.mgz      output conform template, 1mm vox (256^3)" << endl;
+  cout << "  --floattype                use float intensities (default keep intput type)" << endl; 
   cout << "  --debug                    show debug output (default no debug output)" << endl;
 //  cout << "      --test i mri         perform test number i on mri volume" << endl;
 
@@ -544,11 +547,11 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
     nargs = 0 ;
     cout << "Will estimate SAT iteratively!" << endl;
   }
-  else if (!strcmp(option, "DOUBLESVD") )
+  else if (!strcmp(option, "DOUBLEPREC") )
   {
-    P.doublesvd = true;
+    P.doubleprec = true;
     nargs = 0 ;
-    cout << "Will perform SVD with double precision (higher mem usage)!" << endl;
+    cout << "Will perform algorithm with double precision (higher mem usage)!" << endl;
   }
   else if (!strcmp(option, "WEIGHTS") )
   {
@@ -604,18 +607,24 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
 //     nargs = 0 ;
 //     cout << "Will conform images to 256^3 and voxels to 1mm!" << endl;
 //   }
-//   else if (!strcmp(option, "UCHAR") )
-//   {
-//     P.fixtype = true;
-//     nargs = 0 ;
-//     cout << "Changing type to UCHAR (with intesity scaling)!" << endl;
-//   }
+  else if (!strcmp(option, "FLOATTYPE") )
+  {
+     P.floattype = true;
+     nargs = 0 ;
+     cout << "Keeping image type as input!" << endl;
+ 	}
   else if (!strcmp(option, "INITTP") )
   {
     P.inittp = atoi(argv[1]);
     nargs = 1 ;
     if (P.inittp ==0 ) cout<< " No initialization, construct first mean from original TPs" << endl;
     else cout << "Using TP " <<P.inittp <<" as target for initialization" << endl;
+  }
+  else if (!strcmp(option, "ONEMINUSW") )
+  {
+    P.oneminusweights = true;
+    nargs = 0 ;
+    cout << "Will output 1-weights!" << endl;
   }
   else
   {

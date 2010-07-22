@@ -10,8 +10,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/01/14 19:41:04 $
- *    $Revision: 1.4 $
+ *    $Date: 2010/07/22 18:00:14 $
+ *    $Revision: 1.4.2.1 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -67,6 +67,8 @@ public:
 
   // operations
   static vnl_matrix < double >  MatrixSqrt(const vnl_matrix < double >& m);
+  static std::pair < vnl_matrix < double > , vnl_matrix < double > >
+	   MatrixSqrtAndInv(const vnl_matrix < double >& m);
 
   // distances
   static double RigidTransDistSq(const vnl_matrix < double >&a, const vnl_matrix < double >&b  = vnl_matrix<double>());
