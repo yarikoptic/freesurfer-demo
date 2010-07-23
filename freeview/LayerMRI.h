@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/28 20:32:31 $
- *    $Revision: 1.44 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.44.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -64,6 +64,7 @@ class SurfaceRegion;
 class LayerMRI : public LayerVolumeBase
 {
   friend class BuildContourThread;
+  friend class VolumeCropper;
   
 public:
   LayerMRI( LayerMRI* ref );
@@ -147,9 +148,7 @@ public:
 
   void GetRASCenter( double* pt );
   
-  virtual bool Rotate( std::vector<RotationElement>& rotations, 
-                       wxWindow* wnd, 
-                       wxCommandEvent& event );
+  bool IsTransformed();
   
   void SetReorient( bool bReorient );
   
@@ -158,6 +157,8 @@ public:
     m_nSampleMethod = nSampleMethod;
   }
 
+  void SetConform( bool bConform );
+  
   bool GetVoxelValueRange( const double* pt0, const double* pt1, 
                            int nPlane, double* range_out );
   
@@ -216,7 +217,20 @@ public:
   
   const char* GetOrientationString();
   
+  void SetCroppingBounds( double* bounds );
+  
+  virtual void GetDisplayBounds( double* bounds );
+  
+  bool SaveRegistration( const char* filename );
+  
 protected:
+  virtual bool DoRotate( std::vector<RotationElement>& rotations, 
+                       wxWindow* wnd, 
+                       wxCommandEvent& event );
+  virtual void DoTranslate( double* offset );
+  virtual void DoScale( double* rscale, int nSampleMethod );
+  virtual void DoRestore();
+  
   void InitializeVolume();
   void InitializeActors();
   void UpdateOpacity();
@@ -263,7 +277,8 @@ protected:
   bool    m_bResampleToRAS;
   bool    m_bReorient;
   int     m_nSampleMethod;
-
+  bool    m_bConform;
+  
   vtkImageActor*  m_sliceActor2D[3];
   vtkImageActor*  m_sliceActor3D[3];
   
@@ -278,8 +293,8 @@ protected:
         
   std::vector<SegmentationActor>  m_segActors;              
   
-  vtkActor*   m_actorContour;
-  vtkVolume*  m_propVolume;
+  vtkSmartPointer<vtkActor>   m_actorContour;
+  vtkSmartPointer<vtkVolume>  m_propVolume;
   
   int         m_nThreadID;
   vtkSmartPointer<vtkActor>       m_actorContourTemp;

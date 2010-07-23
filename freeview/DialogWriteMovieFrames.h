@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/01/11 21:30:14 $
- *    $Revision: 1.1 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.1.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -44,6 +44,8 @@ public:
   
   double GetAngleStep();
   
+  void UpdateUI();
+  
 protected:
   void OnWrite  ( wxCommandEvent& event );
   void OnAbort  ( wxCommandEvent& event );
@@ -52,7 +54,6 @@ protected:
   
   void OnShow   ( wxShowEvent& event );
   
-  void UpdateUI ();
 
   wxTextCtrl*   m_textOutputLocation;
   wxChoice*     m_choiceOutputExtension;

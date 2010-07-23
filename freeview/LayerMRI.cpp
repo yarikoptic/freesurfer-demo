@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/28 20:32:31 $
- *    $Revision: 1.71 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.71.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -81,6 +81,7 @@ LayerMRI::LayerMRI( LayerMRI* ref ) : LayerVolumeBase(),
     m_bResampleToRAS( false ),
     m_bReorient( false ),
     m_nSampleMethod( SAMPLE_NEAREST ),
+    m_bConform( false ),
     m_currentSurfaceRegion( NULL )
 {
   m_strTypeNames.push_back( "MRI" );
@@ -109,11 +110,12 @@ LayerMRI::LayerMRI( LayerMRI* ref ) : LayerVolumeBase(),
   mProperties = new LayerPropertiesMRI();
   mProperties->AddListener( this );
 
-  m_actorContour = vtkActor::New();
+  m_actorContour = vtkSmartPointer<vtkActor>::New();
   vtkSmartPointer<vtkPolyDataMapper> mapper = vtkSmartPointer<vtkPolyDataMapper>::New();
   mapper->SetInput( vtkSmartPointer<vtkPolyData>::New() );
   m_actorContour->SetMapper( mapper );
-  m_propVolume = vtkVolume::New();
+  
+  m_propVolume = vtkSmartPointer<vtkVolume>::New();
   
   m_nThreadID = 0;
   
@@ -135,8 +137,6 @@ LayerMRI::~LayerMRI()
     m_glyphActor2D[i]->Delete();
     m_glyphActor3D[i]->Delete();
 	}
-	m_actorContour->Delete();
-	m_propVolume->Delete();
 	
   if ( m_sFilename.size() > 0 )
     GetProperties()->SaveSettings( m_sFilename.c_str() );
@@ -176,6 +176,12 @@ const char* LayerMRI::GetOrientationString()
     return "RAS";
 }
 
+
+void LayerMRI::SetConform( bool bConform )
+{
+  m_bConform = bConform;
+}
+
 bool LayerMRI::LoadVolumeFromFile( wxWindow* wnd, wxCommandEvent& event )
 {
   if ( m_volumeSource )
@@ -183,6 +189,7 @@ bool LayerMRI::LoadVolumeFromFile( wxWindow* wnd, wxCommandEvent& event )
 
   m_volumeSource = new FSVolume( m_volumeRef );
   m_volumeSource->SetResampleToRAS( m_bResampleToRAS );
+  m_volumeSource->SetConform( m_bConform );
   m_volumeSource->SetInterpolationMethod( m_nSampleMethod );
 
   if ( !m_volumeSource->MRIRead(  m_sFilename.c_str(),
@@ -251,21 +258,6 @@ bool LayerMRI::SaveVolume( wxWindow* wnd, wxCommandEvent& event )
   if ( m_sFilename.size() == 0 || m_imageData == NULL )
     return false;
   
-  /*
-  if ( IsModified() || m_bReorient )
-    m_volumeSource->UpdateMRIFromImage( m_imageData, wnd, event, !m_bReorient );
-  else
-  {
-    if ( !m_volumeSource->Restore( m_sFilename.c_str(), 
-                                  m_sRegFilename.size() > 0 ? m_sRegFilename.c_str() : NULL, 
-                                  wnd, 
-                                  event ) )
-    {
-      cerr << "Restore from converted volume." << endl;
-      m_volumeSource->UpdateMRIFromImage( m_imageData, wnd, event, !m_bReorient );
-    }
-  }
-  */
   if ( !m_volumeSource->UpdateMRIFromImage( m_imageData, wnd, event, !m_bReorient ) )
     return false;
   
@@ -275,8 +267,9 @@ bool LayerMRI::SaveVolume( wxWindow* wnd, wxCommandEvent& event )
     wxString new_fn = wxString(m_sFilename.c_str()) + "~";
     rename( m_sFilename.c_str(), new_fn.c_str() );
   }
-  
-  bool bSaved = m_volumeSource->MRIWrite( m_sFilename.c_str(), !m_bReorient );
+   
+  bool bSaved = m_volumeSource->MRIWrite( m_sFilename.c_str(), 
+                                          (mReslice[0]->GetInterpolationMode() == VTK_RESLICE_NEAREST ? SAMPLE_NEAREST : SAMPLE_TRILINEAR ) );
   m_bModified = !bSaved;
 
   event.SetInt( 99 );
@@ -285,48 +278,96 @@ bool LayerMRI::SaveVolume( wxWindow* wnd, wxCommandEvent& event )
   return bSaved;
 }
 
-bool LayerMRI::Rotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event )
+bool LayerMRI::IsTransformed()
 {
-  m_bResampleToRAS = false;
-  m_volumeSource->SetResampleToRAS( m_bResampleToRAS );
-  if ( IsModified() )
+  vtkMatrix4x4* mat = vtkTransform::SafeDownCast( mReslice[0]->GetResliceTransform() )->GetMatrix();
+  return !MyUtils::IsIdentity( mat->Element );
+}
+
+void LayerMRI::DoRestore()
+{
+  vtkSmartPointer<vtkTransform> slice_tr = vtkTransform::SafeDownCast( mReslice[0]->GetResliceTransform() );
+  vtkTransform* ras_tr = m_volumeSource->GetTransform(); 
+  slice_tr->Identity();
+  ras_tr->Identity();
+  for ( int i = 0; i < 3; i++ )
+    mReslice[i]->Modified();
+}
+
+bool LayerMRI::DoRotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event )
+{
+  for ( int i = 0; i < 3; i++ )
   {
-    if ( !m_volumeSource->UpdateMRIFromImage( m_imageData, wnd, event ) )
-      return false;
+    if ( GetProperties()->GetColorMap() == LayerPropertiesMRI::LUT || rotations[0].SampleMethod == SAMPLE_NEAREST )
+      mReslice[i]->SetInterpolationModeToNearestNeighbor();
+    else
+      mReslice[i]->SetInterpolationModeToLinear();
   }
-  else
+  
+  vtkSmartPointer<vtkTransform> slice_tr = vtkTransform::SafeDownCast( mReslice[0]->GetResliceTransform() );
+  // also record transformation in RAS space
+  vtkTransform* ras_tr = m_volumeSource->GetTransform();
+  
+  for ( size_t i = 0; i < rotations.size(); i++ )
   {
-    if ( !m_volumeSource->Restore( m_sFilename.c_str(), 
-          m_sRegFilename.size() > 0 ? m_sRegFilename.c_str() : NULL, 
-          wnd, 
-          event ) )
-    {
-      cerr << "Failed to load original volume. Restore from converted volume (not good)." << endl;
-      m_volumeSource->UpdateMRIFromImage( m_imageData, wnd, event, !m_bReorient );
-    }
+    double v[3] = { 0, 0, 0 };
+    v[rotations[i].Plane] = 1;
+    double dTargetPoint[3];
+    RASToTarget( rotations[i].Point, dTargetPoint );
+    
+    slice_tr->Translate( dTargetPoint[0], dTargetPoint[1], dTargetPoint[2] );
+    slice_tr->RotateWXYZ( -rotations[i].Angle, v );
+    slice_tr->Translate( -dTargetPoint[0], -dTargetPoint[1], -dTargetPoint[2] );
+    
+    // record transformation in RAS space
+    ras_tr->Translate( -rotations[i].Point[0], -rotations[i].Point[1], -rotations[i].Point[2] );
+    ras_tr->RotateWXYZ( rotations[i].Angle, v );
+    ras_tr->Translate( rotations[i].Point[0], rotations[i].Point[1], rotations[i].Point[2] );
   }
 
-  int nSampleMethod = rotations[0].SampleMethod;
-  if ( GetProperties()->GetColorMap() == LayerPropertiesMRI::LUT )
-    nSampleMethod = SAMPLE_NEAREST;
-  bool ret = m_volumeSource->Rotate( rotations, wnd, event, nSampleMethod );
-  m_imageData = m_volumeSource->GetImageOutput();
   for ( int i = 0; i < 3; i++ )
   {
-    mReslice[i]->SetInput( m_imageData );
+    mReslice[i]->Modified();
   }
   
-  // update new world geometry
-  m_imageData->GetOrigin( m_dWorldOrigin );
-  m_imageData->GetSpacing( m_dWorldVoxelSize );
-  int* dim = m_imageData->GetDimensions();
+  return true;
+}
+
+void LayerMRI::DoTranslate( double* offset )
+{
+  vtkSmartPointer<vtkTransform> slice_tr = vtkTransform::SafeDownCast( mReslice[0]->GetResliceTransform() );
+  vtkTransform* ras_tr = m_volumeSource->GetTransform();
+  slice_tr->Translate( -offset[0], -offset[1], -offset[2] );
+  ras_tr->Translate( offset );
   for ( int i = 0; i < 3; i++ )
-    m_dWorldSize[i] = dim[i]*m_dWorldVoxelSize[i];
+    mReslice[i]->Modified();
+}
+
+
+void LayerMRI::DoScale( double* scale, int nSampleMethod )
+{
+  for ( int i = 0; i < 3; i++ )
+  {
+    if ( GetProperties()->GetColorMap() == LayerPropertiesMRI::LUT || nSampleMethod == SAMPLE_NEAREST )
+      mReslice[i]->SetInterpolationModeToNearestNeighbor();
+    else
+      mReslice[i]->SetInterpolationModeToLinear();
+  }
+  vtkSmartPointer<vtkTransform> slice_tr = vtkTransform::SafeDownCast( mReslice[0]->GetResliceTransform() );
+  vtkTransform* ras_tr = m_volumeSource->GetTransform();
+  double cpt[3], target_cpt[3];
+  GetRASCenter( cpt );
+  RASToTarget( cpt, target_cpt );
+  slice_tr->Translate( target_cpt[0], target_cpt[1], target_cpt[2] );
+  slice_tr->Scale( 1.0/scale[0], 1.0/scale[1], 1.0/scale[2] );
+  slice_tr->Translate( -target_cpt[0], -target_cpt[1], -target_cpt[2] );
   
-  if ( ret )
-    this->SendBroadcast( "LayerRotated", this, this );
+  ras_tr->Translate( -cpt[0], -cpt[1], -cpt[2] );
+  ras_tr->Scale( scale );
+  ras_tr->Translate( cpt[0], cpt[1], cpt[2] );
   
-  return ret;
+  for ( int i = 0; i < 3; i++ )
+    mReslice[i]->Modified();
 }
 
 void LayerMRI::InitializeVolume()
@@ -353,14 +394,18 @@ void LayerMRI::InitializeVolume()
 
 void LayerMRI::InitializeActors()
 {
+  vtkSmartPointer<vtkTransform> tr = vtkSmartPointer<vtkTransform>::New();
+  tr->Identity();
+  m_actorContour->SetUserTransform( tr->GetLinearInverse() );
   for ( int i = 0; i < 3; i++ )
   {
     // The reslice object just takes a slice out of the volume.
     //
     mReslice[i] = vtkSmartPointer<vtkImageReslice>::New();
     mReslice[i]->SetInput( m_imageData );
-//  mReslice[i]->SetOutputSpacing( sizeX, sizeY, sizeZ );
     mReslice[i]->BorderOff();
+    mReslice[i]->SetResliceTransform( tr );
+//    mReslice[i]->AutoCropOutputOn();
 
     // This sets us to extract slices.
     mReslice[i]->SetOutputDimensionality( 2 );
@@ -459,17 +504,6 @@ void LayerMRI::UpdateContour( int nSegValue )
 
 void LayerMRI::UpdateContourActor( int nSegValue )
 {
-  /*
-  double dTh1 = GetProperties()->GetContourMinThreshold();
-  double dTh2 = GetProperties()->GetContourMaxThreshold();
-  if ( nSegValue >= 0 )
-  {
-    dTh1 = nSegValue - 0.5;
-    dTh2 = nSegValue + 0.5;
-  }
-  MyUtils::BuildContourActor( GetImageData(), dTh1, dTh2, m_actorContour );
-  */
-  
   // Generate a new thread id before creating the thread. so that mainwindow will be able to determine 
   // if a build contour result is already expired, by comparing the returned id and current id. If they
   // are different, it means a new thread is rebuilding the contour
@@ -561,24 +595,9 @@ void LayerMRI::Append3DProps( vtkRenderer* renderer, bool* bSliceVisibility )
 	 // renderer->AddViewProp( m_segActors[i].actor );
     renderer->AddViewProp( m_actorContour );
     for ( size_t i = 0; i < m_surfaceRegions.size(); i++ )
-      m_surfaceRegions[i]->AppendActor( renderer );
+      m_surfaceRegions[i]->AppendProps( renderer );
 	}
 }
-
-/*
-void LayerMRI::SetSliceNumber( int* sliceNumber )
-{
- if ( sliceNumber[0] != m_nSliceNumber[0] || sliceNumber[1] != m_nSliceNumber[1] ||
-   sliceNumber[2] != m_nSliceNumber[2] )
- {
-  m_nSliceNumber[0] = sliceNumber[0];
-  m_nSliceNumber[1] = sliceNumber[1];
-  m_nSliceNumber[2] = sliceNumber[2];
-
-
- }
-}
-*/
 
 void LayerMRI::SetSlicePositionToWorldCenter()
 {
@@ -610,15 +629,15 @@ void LayerMRI::OnSlicePositionChanged( int nPlane )
       m_sliceActor2D[0]->PokeMatrix( matrix );
       m_sliceActor2D[0]->SetPosition( m_dSlicePosition[0], 0, 0 );
       m_sliceActor2D[0]->RotateX( 90 );
-      m_sliceActor2D[0]->RotateY( -90 );
+      m_sliceActor2D[0]->RotateY( 90 );
       m_sliceActor3D[0]->PokeMatrix( matrix );
       m_sliceActor3D[0]->SetPosition( m_dSlicePosition[0], 0, 0 );
       m_sliceActor3D[0]->RotateX( 90 );
-      m_sliceActor3D[0]->RotateY( -90 );
+      m_sliceActor3D[0]->RotateY( 90 );
   
       // Putting negatives in the reslice axes cosines will flip the
       // image on that axis.
-      mReslice[0]->SetResliceAxesDirectionCosines( 0, -1, 0,
+      mReslice[0]->SetResliceAxesDirectionCosines( 0, 1, 0,
           0, 0, 1,
           1, 0, 0 );
       mReslice[0]->SetResliceAxesOrigin( m_dSlicePosition[0], 0, 0  );
@@ -628,11 +647,9 @@ void LayerMRI::OnSlicePositionChanged( int nPlane )
       m_sliceActor2D[1]->PokeMatrix( matrix );
       m_sliceActor2D[1]->SetPosition( 0, m_dSlicePosition[1], 0 );
       m_sliceActor2D[1]->RotateX( 90 );
-      // m_sliceActor2D[1]->RotateY( 180 );
       m_sliceActor3D[1]->PokeMatrix( matrix );
       m_sliceActor3D[1]->SetPosition( 0, m_dSlicePosition[1], 0 );
       m_sliceActor3D[1]->RotateX( 90 );
-      // m_sliceActor3D[1]->RotateY( 180 );
   
       // Putting negatives in the reslice axes cosines will flip the
       // image on that axis.
@@ -768,14 +785,19 @@ double LayerMRI::GetVoxelValue( double* pos )
   if ( m_imageData == NULL )
     return 0;
 
+  vtkAbstractTransform* tr = mReslice[0]->GetResliceTransform();
+  double pos_new[3];
+  tr->TransformPoint( pos, pos_new );
+  
   double* orig = m_imageData->GetOrigin();
   double* vsize = m_imageData->GetSpacing();
   int* ext = m_imageData->GetExtent();
-
+  
+  
   int n[3];
   for ( int i = 0; i < 3; i++ )
   {
-    n[i] = (int)( ( pos[i] - orig[i] ) / vsize[i] + 0.5 );
+    n[i] = (int)( ( pos_new[i] - orig[i] ) / vsize[i] + 0.5 );
   }
 
   if ( n[0] < ext[0] || n[0] > ext[1] ||
@@ -874,7 +896,7 @@ bool LayerMRI::HasProp( vtkProp* prop )
 {
   if ( GetProperties()->GetShowAsContour() )
   {
-    if ( m_actorContour == prop )
+    if ( m_actorContour.GetPointer() == prop )
       return true;
     else
     {
@@ -1577,8 +1599,8 @@ void LayerMRI::UpdateLabelOutline()
       mEdgeFilter[i]->SetInputConnection( mResample[i]->GetOutputPort() );
       mColorMap[i]->SetInputConnection( mEdgeFilter[i]->GetOutputPort() );
       pos[i] = m_dSlicePosition[i];
-      m_sliceActor2D[i]->SetPosition( pos[0], (i==0?-pos[1]:pos[1]), pos[2] );
-      m_sliceActor3D[i]->SetPosition( pos[0], (i==0?-pos[1]:pos[1]), pos[2] );
+      m_sliceActor2D[i]->SetPosition( pos );
+      m_sliceActor3D[i]->SetPosition( pos );
     }
   }
   else
@@ -1592,6 +1614,7 @@ void LayerMRI::UpdateLabelOutline()
       m_sliceActor3D[i]->SetPosition( pos );
     }
   }
+  this->SendBroadcast( "ResampleFactorChanged", this );
 }
 
 void LayerMRI::UpdateUpSampleMethod()
@@ -1630,6 +1653,8 @@ void LayerMRI::UpdateUpSampleMethod()
       }
     }
   }
+  
+  this->SendBroadcast( "ResampleFactorChanged", this );
 }
 
 
@@ -1695,7 +1720,7 @@ bool LayerMRI::FloodFillByContour2D( double* ras, Contour2D* c2d )
   switch ( nPlane )
   {
     case 0:
-      x = nx-n[1]-1;
+      x = n[1];
       y = n[2];
       break;
     case 1:
@@ -1736,7 +1761,7 @@ bool LayerMRI::FloodFillByContour2D( double* ras, Contour2D* c2d )
         {
           if ( mask[j*nx+i] == nFillValue )
           {
-            m_imageData->SetScalarComponentFromFloat( n[nPlane], nx-i-1, j, nActiveComp, m_fFillValue );
+            m_imageData->SetScalarComponentFromFloat( n[nPlane], i, j, nActiveComp, m_fFillValue );
             cnt++;
           }
         }
@@ -1905,6 +1930,7 @@ bool LayerMRI::LoadRegionSurfaces( wxString& fn )
     SurfaceRegion* r = new SurfaceRegion( this );
     if ( r->Load( fp ) )
     {
+      r->SetInput( vtkPolyData::SafeDownCast( m_actorContour->GetMapper()->GetInput() ) );
       m_surfaceRegions.push_back( r );
       r->Highlight( false );
     }
@@ -1926,3 +1952,45 @@ bool LayerMRI::LoadRegionSurfaces( wxString& fn )
   this->SendBroadcast( "SurfaceRegionAdded", this );
   return bSuccess;
 }
+
+void LayerMRI::SetCroppingBounds( double* bounds )
+{
+  m_volumeSource->SetCroppingBounds( bounds );
+}
+
+void LayerMRI::GetDisplayBounds( double* bounds )
+{
+  m_imageData->GetBounds( bounds );
+  if ( mReslice[0].GetPointer() && mReslice[0]->GetAutoCropOutput() )
+  {
+    double d[6];
+    m_imageData->GetBounds( d );
+    vtkTransform* tr = vtkTransform::SafeDownCast( mReslice[0]->GetResliceTransform() );
+    double pt[3];
+    for ( int i = 0; i < 2; i++ )
+    {
+      for ( int j = 0; j < 2; j++ )
+      {
+        for ( int k = 0; k < 2; k++ )
+        {
+          pt[0] = d[i];
+          pt[1] = d[2+j];
+          pt[2] = d[4+k];
+          tr->GetLinearInverse()->TransformPoint( pt, pt );
+          if ( pt[0] < bounds[0] ) bounds[0] = pt[0];
+          if ( pt[0] > bounds[1] ) bounds[1] = pt[0];
+          if ( pt[1] < bounds[2] ) bounds[2] = pt[1];
+          if ( pt[1] > bounds[3] ) bounds[3] = pt[1];
+          if ( pt[2] < bounds[4] ) bounds[4] = pt[2];
+          if ( pt[2] > bounds[5] ) bounds[5] = pt[2];
+        }
+      }
+    }
+  }
+}
+
+bool LayerMRI::SaveRegistration( const char* filename )
+{
+  return m_volumeSource->SaveRegistration( filename );
+}
+

@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/25 19:58:23 $
- *    $Revision: 1.7 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.7.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -41,6 +41,7 @@ class vtkSelectPolyData;
 class vtkBox;
 class vtkProp;
 class vtkClipPolyData;
+class vtkCleanPolyData;
 class RenderView3D;
 class LayerMRI;
 
@@ -49,25 +50,29 @@ class SurfaceRegion : public Broadcaster, public Listener
 public:
   SurfaceRegion( LayerMRI* owner );
   virtual ~SurfaceRegion();
-
+  
   void SetInput( vtkPolyData* polydata );
 
   void AddPoint( double* pt );
   
   bool Close();
   
+  void ResetOutline();
+  
   wxColour GetColor();
   void SetColor( const wxColour& color );
 
   void Update();
 
-  void AppendActor( vtkRenderer* renderer );
+  void AppendProps( vtkRenderer* renderer );
 
   void Show( bool bShow = true );
   
   bool HasPoint( double* pos );
   
   void Highlight( bool bHighlight = true );
+  
+  bool DeleteCell( RenderView3D* view, int pos_x, int pos_y );
   
   vtkActor* GetMeshActor();
   
@@ -97,8 +102,11 @@ private:
   vtkSmartPointer<vtkPoints>  m_points;
   
   vtkSmartPointer<vtkBox>     m_clipbox;
-  vtkSmartPointer<vtkClipPolyData>    m_clipper;
+  vtkSmartPointer<vtkClipPolyData>    m_clipperPre;
   vtkSmartPointer<vtkSelectPolyData>  m_selector;
+  vtkSmartPointer<vtkCleanPolyData>   m_cleanerPost;
+  
+  vtkSmartPointer<vtkPolyData>        m_polydataHolder;
   
   LayerMRI*     m_mri;
   

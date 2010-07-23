@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/06/10 21:04:07 $
- *    $Revision: 1.27 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.27.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -123,6 +123,7 @@ private:
   void OnTextContourMax   ( wxCommandEvent& event );
   void OnCheckUseImageColorMap  ( wxCommandEvent& event );
   void OnColorContour     ( wxColourPickerEvent& event );
+  void OnCheckContourExtractAll ( wxCommandEvent& event );
   
   void OnCheckHideInfo    ( wxCommandEvent& event );
 
@@ -184,6 +185,7 @@ private:
   wxTextCtrl*     m_textContourMin;
   wxTextCtrl*     m_textContourMax;
   wxCheckBox*     m_checkUseImageColorMap;
+  wxCheckBox*     m_checkContourExtractAll;
   wxColourPickerCtrl* m_colorpickerContour;
   
   wxCheckBox*     m_checkHideInfo;

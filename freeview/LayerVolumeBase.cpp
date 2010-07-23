@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/04/06 18:23:09 $
- *    $Revision: 1.16 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.16.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -802,3 +802,9 @@ double LayerVolumeBase::GetMinimumVoxelSize()
   else
     return vs[2];
 }
+
+void LayerVolumeBase::GetDisplayBounds( double* bounds )
+{
+  m_imageData->GetBounds( bounds );
+}
+

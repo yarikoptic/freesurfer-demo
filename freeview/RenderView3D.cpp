@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/06/01 17:38:08 $
- *    $Revision: 1.39 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.39.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -52,6 +52,7 @@
 #include "vtkLine.h"
 #include "Interactor3DNavigate.h"
 #include "Interactor3DMeasure.h"
+#include "Interactor3DCropVolume.h"
 #include "LayerSurface.h"
 #include "SurfaceOverlayProperties.h"
 #include "SurfaceOverlay.h"
@@ -59,6 +60,7 @@
 #include "vtkBoundingBox.h"
 #include "SurfaceRegion.h"
 #include "Cursor3D.h"
+#include "VolumeCropper.h"
 
 #define SLICE_PICKER_PIXEL_TOLERANCE  15
 
@@ -81,7 +83,6 @@ RenderView3D::RenderView3D( wxWindow* parent, int id ) : RenderView( parent, id 
 void RenderView3D::InitializeRenderView3D()
 {
   this->SetDesiredUpdateRate( 5000 );
-// this->SetStillUpdateRate( 0.5 );
 
   if ( m_interactor )
     delete m_interactor;
@@ -89,8 +90,10 @@ void RenderView3D::InitializeRenderView3D()
   m_interactor = NULL;
   m_interactorNavigate = new Interactor3DNavigate();
   m_interactorMeasure = new Interactor3DMeasure();  
+  m_interactorCropVolume = new Interactor3DCropVolume();
   m_interactorNavigate->AddListener( MainWindow::GetMainWindowPointer() );
   m_interactorMeasure->AddListener( MainWindow::GetMainWindowPointer() );
+  m_interactorCropVolume->AddListener( MainWindow::GetMainWindowPointer() );
 
   m_bToUpdateRASPosition = false;
   m_bToUpdateCursorPosition = false;
@@ -139,6 +142,12 @@ RenderView3D* RenderView3D::New()
 
 RenderView3D::~RenderView3D()
 {
+  m_interactor = NULL;
+  
+  delete m_interactorNavigate;
+  delete m_interactorMeasure;
+  delete m_interactorCropVolume;
+  
   delete m_cursor3D;
 }
 
@@ -155,6 +164,9 @@ void RenderView3D::SetInteractionMode( int nMode )
   {
     case IM_Measure:
       m_interactor = m_interactorMeasure;
+      break;
+    case IM_VolumeCrop:
+      m_interactor = m_interactorCropVolume;
       break;
     default:
       m_interactor = m_interactorNavigate;
@@ -186,6 +198,7 @@ void RenderView3D::RefreshAllActors()
   }
   
   MainWindow::GetMainWindowPointer()->GetConnectivityData()->AppendProps( m_renderer );
+  MainWindow::GetMainWindowPointer()->GetVolumeCropper()->Append3DProps( m_renderer );
   
   m_renderer->ResetCameraClippingRange();
 
@@ -455,6 +468,20 @@ vtkProp* RenderView3D::PickProp( int posX, int posY, double* pos_out )
   return picker->GetViewProp();
 }
 
+int RenderView3D::PickCell( vtkProp* prop, int posX, int posY, double* pos_out )
+{
+  vtkCellPicker* picker = vtkCellPicker::SafeDownCast( this->GetPicker() );
+  if ( !picker )
+    return -1; 
+  
+  picker->InitializePickList();
+  picker->AddPickList( prop );
+  picker->Pick( posX, GetClientSize().GetHeight() - posY, 0, GetRenderer() );
+  if ( pos_out )
+    picker->GetPickPosition( pos_out );
+  return picker->GetCellId();
+}
+
 bool RenderView3D::InitializeSelectRegion( int posX, int posY )
 {
   double pos[3];
@@ -603,9 +630,10 @@ void RenderView3D::DoListenToMessage ( std::string const iMsg, void* iData, void
   {  
     UpdateSliceFrames();
   }
-  else if ( iMsg == "LayerAdded" || iMsg == "LayerRemoved" || iMsg == "LayerRotated" )
+  else if ( iMsg == "LayerAdded" || iMsg == "LayerRemoved" || iMsg == "LayerTransformed" )
   {
     UpdateBounds();
+    UpdateSliceFrames();
   }
   else if ( iMsg == "SurfaceRegionAdded" || iMsg == "SurfaceRegionRemoved" )
   {
@@ -676,7 +704,7 @@ bool RenderView3D::UpdateBounds()
     for ( int i = 0; i < lc->GetNumberOfLayers(); i++ )
     {
       double bd[6];
-      lc->GetLayer( i )->GetBounds( bd );
+      lc->GetLayer( i )->GetDisplayBounds( bd );
       for ( int j = 0; j < 3; j++ )
       {
         if ( bounds[j*2] > bd[j*2] )
@@ -897,7 +925,30 @@ void RenderView3D::MoveSliceToScreenCoord( int x, int y )
     new_pt[1] = pt[1];
     new_pt[2] = pt[2];
   }
+  if ( new_pt[m_nSliceHighlighted] < bounds[m_nSliceHighlighted*2] )
+    new_pt[m_nSliceHighlighted] = bounds[m_nSliceHighlighted*2];
+  else if ( new_pt[m_nSliceHighlighted] > bounds[m_nSliceHighlighted*2+1] )
+    new_pt[m_nSliceHighlighted] = bounds[m_nSliceHighlighted*2+1];
   lcm->OffsetSlicePosition( m_nSliceHighlighted, new_pt[m_nSliceHighlighted] - slicepos[m_nSliceHighlighted], false );
   slicepos[m_nSliceHighlighted] = new_pt[m_nSliceHighlighted];
   lc->SetCursorRASPosition( slicepos );
 }
+
+bool RenderView3D::PickCroppingBound( int nX, int nY )
+{
+  vtkProp* prop = PickProp( nX, nY );
+  if ( prop && MainWindow::GetMainWindowPointer()->GetVolumeCropper()->PickActiveBound( prop ) )
+  {
+    NeedRedraw( true );
+    return true;
+  }
+  else
+    return false;
+}
+
+void RenderView3D::MoveCroppingBound( int nX, int nY )
+{
+  MainWindow::GetMainWindowPointer()->GetVolumeCropper()
+      ->MoveActiveBound( this, nX, nY );
+}
+

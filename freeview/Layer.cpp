@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/06 21:17:12 $
- *    $Revision: 1.15 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.15.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -39,6 +39,8 @@ Layer::Layer() : Listener( "Layer" ), Broadcaster( "Layer" )
     m_dWorldOrigin[i] = 0;
     m_dWorldVoxelSize[i] = 1;
     m_dWorldSize[i] = 0;
+    m_dTranslate[i] = 0;
+    m_dScale[i] = 1;
   }
   m_bLocked = false;
   mProperties = NULL;
@@ -205,4 +207,73 @@ void Layer::GetBounds( double* bounds )
     bounds[i*2] = origin[i];
     bounds[i*2+1] = origin[i] + size[i];
   }
+}
+
+void Layer::GetDisplayBounds( double* bounds )
+{
+  this->GetBounds( bounds );
+}
+
+bool Layer::Rotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event )
+{
+  bool ret = DoRotate( rotations, wnd, event ); 
+  if ( ret )
+  {
+    ResetTranslate();
+    ResetScale();   
+    this->SendBroadcast( "LayerTransformed", this, this );
+  }
+  return ret;
+}
+
+bool Layer::Translate( double x, double y, double z )
+{
+  double pos[3] = { x, y, z };
+  return Translate( pos );
+}
+  
+bool Layer::Translate( double* dPos )
+{
+  double offset[3];
+  for ( int i = 0; i < 3; i++ )
+    offset[i] = dPos[i] - m_dTranslate[i];
+  
+  DoTranslate( offset );
+  
+  for ( int i = 0; i < 3; i++ )
+    m_dTranslate[i] = dPos[i];
+  
+  ResetScale();
+  this->SendBroadcast( "LayerTransformed", this, this );
+  
+  return true;
+}
+
+void Layer::Scale( double* scale, int nSampleMethod )
+{
+  double rscale[3];
+  for ( int i = 0; i < 3; i++ )
+    rscale[i] = scale[i] / m_dScale[i];
+  
+  DoScale( rscale, nSampleMethod );
+  
+  for ( int i = 0; i < 3; i++ )
+    m_dScale[i] = scale[i];
+  
+  ResetTranslate();
+  this->SendBroadcast( "LayerTransformed", this, this );
+}
+
+// reset transformations
+void Layer::Restore()
+{
+  DoRestore();
+  
+  for ( int i = 0; i < 3; i++ )
+  {
+    m_dTranslate[i] = 0;
+    m_dScale[i] = 1;
+  }
+  
+  this->SendBroadcast( "LayerTransformed", this, this );
 }

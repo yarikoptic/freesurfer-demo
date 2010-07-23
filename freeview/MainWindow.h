@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/06/08 17:43:26 $
- *    $Revision: 1.75 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.75.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -59,7 +59,7 @@ class wxToolBar;
 class BrushProperty;
 class ToolWindowEdit;
 class ToolWindowMeasure;
-class DialogRotateVolume;
+class DialogTransformVolume;
 class LayerMRI;
 class WindowHistogram;
 class WindowOverlayConfiguration;
@@ -69,7 +69,9 @@ class DialogSaveScreenshot;
 class DialogSavePoint;
 class DialogWriteMovieFrames;
 class DialogRepositionSurface;
+class DialogCropVolume;
 class ConnectivityData;
+class VolumeCropper;
 
 class MainWindow : public wxFrame, public Listener, public Broadcaster
 {
@@ -206,8 +208,10 @@ public:
   void OnHelpQuickReference         ( wxCommandEvent& event );
   void OnHelpAbout                  ( wxCommandEvent& event );
 
-  void OnToolRotateVolume           ( wxCommandEvent& event );
-  void OnToolRotateVolumeUpdateUI   ( wxUpdateUIEvent& event );
+  void OnToolTransformVolume           ( wxCommandEvent& event );
+  void OnToolTransformVolumeUpdateUI   ( wxUpdateUIEvent& event );
+  void OnToolCropVolume             ( wxCommandEvent& event );
+  void OnToolCropVolumeUpdateUI     ( wxUpdateUIEvent& event );
   void OnToolOptimalVolume          ( wxCommandEvent& event );
   void OnToolOptimalVolumeUpdateUI  ( wxUpdateUIEvent& event );
   void OnToolGradientVolume         ( wxCommandEvent& event );
@@ -249,6 +253,7 @@ public:
   void NewVolume();
   void SaveVolume();
   void SaveVolumeAs();
+  void SaveRegistrationAs();
 
   void RotateVolume( std::vector<RotationElement>& rotations, bool bAllVolumes );
 
@@ -275,8 +280,9 @@ public:
 
   void LoadVolumeFile ( const wxString& fn, 
 		       const wxString& reg_fn, 
-		       bool bResample = true, 
-           int nSampleMethod = 0 );
+		       bool bResample = false, 
+           int nSampleMethod = 0,
+           bool bConform = false );
   void LoadDTIFile    ( const wxString& fn_vector, 
 		    const wxString& fn_fa, 
 		    const wxString& reg_fn, 
@@ -320,7 +326,9 @@ public:
 
   static MainWindow* GetMainWindowPointer();
 
-  void NeedRedraw( int nCount = 2 );
+  void NeedRedraw( int nCount = 1 );
+  
+  void ForceRedraw();
 
   void AddScript( const wxArrayString& script );
   void RunScript();
@@ -396,9 +404,24 @@ public:
     return m_toolWindowMeasure;
   }
   
+  VolumeCropper* GetVolumeCropper()
+  {
+    return m_volumeCropper;
+  }
+  
   int GetMainViewId()
   {
     return m_nMainView;
+  }
+  
+  void SetDefaultSampleMethod( int nMethod )
+  {
+    m_nDefaultSampleMethod = nMethod;
+  }
+  
+  void SetDefaultConform( bool bConform )
+  {
+    m_bDefaultConform = bConform;
   }
   
   static wxString AutoSelectLastDir( wxString lastDir, wxString subdirectory );
@@ -473,7 +496,7 @@ private:
   wxPanel*            m_panelToolbarHolder;
   ToolWindowEdit*     m_toolWindowEdit;
   ToolWindowMeasure*  m_toolWindowMeasure;
-  DialogRotateVolume* m_dlgRotateVolume;
+  DialogTransformVolume* m_dlgTransformVolume;
   WindowHistogram*    m_wndHistogram;
   WindowOverlayConfiguration*       m_wndOverlayConfiguration;
   WindowConnectivityConfiguration*  m_wndConnectivityConfiguration; 
@@ -482,6 +505,7 @@ private:
   DialogWriteMovieFrames*     m_dlgWriteMovieFrames;
   DialogSavePoint*            m_dlgSavePoint;
   DialogRepositionSurface*    m_dlgRepositionSurface;
+  DialogCropVolume*           m_dlgCropVolume;
   wxMenu*           m_menuGotoPoints;
 
   RenderView2D*   m_viewAxial;
@@ -495,6 +519,8 @@ private:
 
   LayerCollectionManager* m_layerCollectionManager;
   LayerMRI*       m_layerVolumeRef;
+  
+  VolumeCropper*  m_volumeCropper;
   
   ConnectivityData*   m_connectivity;
 
@@ -518,6 +544,9 @@ private:
 
   bool            m_bProcessing;
   bool            m_bDoScreenshot;
+  
+  int             m_nDefaultSampleMethod;
+  bool            m_bDefaultConform;
 
   std::vector<wxArrayString> m_scripts;
 

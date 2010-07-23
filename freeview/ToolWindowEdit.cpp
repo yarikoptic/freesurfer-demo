@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/24 21:42:53 $
- *    $Revision: 1.17 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.17.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -170,9 +170,12 @@ void ToolWindowEdit::OnShow( wxShowEvent& event )
     wxConfigBase* config = wxConfigBase::Get();
     if ( config )
     {
-      int x = config->Read( _T("/ToolWindowEdit/PosX"), 50L );
-      int y = config->Read( _T("/ToolWindowEdit/PosY"), 50L );
-      Move( x, y );
+      int x = config->Read( _T("/ToolWindowEdit/PosX"), 0L );
+      int y = config->Read( _T("/ToolWindowEdit/PosY"), 0L );
+      if ( x == 0 && y == 0 )
+        Center();
+      else
+        Move( x, y );
     }
     for ( int i = 0; i < 3; i++ )
     {
@@ -192,20 +195,6 @@ void ToolWindowEdit::OnShow( wxShowEvent& event )
     }
   }
   MainWindow::GetMainWindowPointer()->SetFocus();
-}
-
-void ToolWindowEdit::ResetPosition()
-{
-  if ( IsShown() )
-  {
-    wxConfigBase* config = wxConfigBase::Get();
-    if ( config )
-    {
-      int x = config->Read( _T("/ToolWindowEdit/PosX"), 50L );
-      int y = config->Read( _T("/ToolWindowEdit/PosY"), 50L );
-      Move( x, y );
-    }
-  }
 }
 
 void ToolWindowEdit::DoListenToMessage ( std::string const iMsg, void* iData, void* sender )
@@ -655,7 +644,7 @@ void ToolWindowEdit::OnEditContourValue( wxCommandEvent& event )
         c2d->SetContourValue( value );
       else if ( mri )
       {
-        c2d->SetInput( mri->GetSliceImageData( view->GetViewPlane() ), value, mri->GetSlicePosition()[i] ); 
+        c2d->SetInput( mri->GetSliceImageData( view->GetViewPlane() ), value, mri->GetSlicePosition()[i], mri->GetActiveFrame() ); 
         c2d->SetVisible( true );
       }
     }

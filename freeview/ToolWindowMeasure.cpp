@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/25 19:58:23 $
- *    $Revision: 1.7 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.7.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -106,9 +106,12 @@ void ToolWindowMeasure::OnShow( wxShowEvent& event )
     wxConfigBase* config = wxConfigBase::Get();
     if ( config )
     {
-      int x = config->Read( _T("/ToolWindowMeasure/PosX"), 50L );
-      int y = config->Read( _T("/ToolWindowMeasure/PosY"), 50L );
-      Move( x, y );
+      int x = config->Read( _T("/ToolWindowMeasure/PosX"), 0L );
+      int y = config->Read( _T("/ToolWindowMeasure/PosY"), 0L );
+      if ( x == 0 && y == 0 )
+        Center();
+      else
+        Move( x, y );
     }
     
  //   SetClientSize( GetClientSize().GetWidth(), m_toolbar->GetSize().GetHeight() );
@@ -122,20 +125,6 @@ void ToolWindowMeasure::OnShow( wxShowEvent& event )
       GetPosition( &x, &y );
       config->Write( _T("/ToolWindowMeasure/PosX"), (long) x );
       config->Write( _T("/ToolWindowMeasure/PosY"), (long) y );
-    }
-  }
-}
-
-void ToolWindowMeasure::ResetPosition()
-{
-  if ( IsShown() )
-  {
-    wxConfigBase* config = wxConfigBase::Get();
-    if ( config )
-    {
-      int x = config->Read( _T("/ToolWindowMeasure/PosX"), 50L );
-      int y = config->Read( _T("/ToolWindowMeasure/PosY"), 50L );
-      Move( x, y );
     }
   }
 }
@@ -403,5 +392,6 @@ void ToolWindowMeasure::OnButtonLoad( wxCommandEvent& event )
                                _("Error"), wxOK );
       msg_dlg.ShowModal();
     } 
+    UpdateWidgets();
   }
 }

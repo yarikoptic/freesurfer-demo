@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/02/04 22:41:46 $
- *    $Revision: 1.13 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.13.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -60,11 +60,43 @@ public:
   virtual void SetVisible( bool bVisible = true ) = 0;
   virtual bool IsVisible() = 0;
 
-  virtual bool Rotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event )
+  bool Rotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event );
+  
+  bool Translate( double x, double y, double z );  
+  bool Translate( double* dPos );
+  
+  void Scale( double* scale, int nSampleMethod = 1 /* SAMPLE_TRILINEAR */ );
+  
+  void Restore();
+  
+  void ResetTranslate()
   {
-    return true;
+    m_dTranslate[0] = 0;
+    m_dTranslate[1] = 0;
+    m_dTranslate[2] = 0;
+  }
+  
+  void GetTranslate( double* pos )
+  {
+    pos[0] = m_dTranslate[0];
+    pos[1] = m_dTranslate[1];
+    pos[2] = m_dTranslate[2];
   }
 
+  void ResetScale()
+  {
+    m_dScale[0] = 1;
+    m_dScale[1] = 1;
+    m_dScale[2] = 1;
+  }
+  
+  void GetScale( double* scale )
+  {
+    scale[0] = m_dScale[0];
+    scale[1] = m_dScale[1];
+    scale[2] = m_dScale[2];
+  }
+  
   double* GetWorldOrigin();
   void GetWorldOrigin( double* origin );
   void SetWorldOrigin( double* origin );
@@ -114,15 +146,30 @@ public:
   }
   
   virtual void GetBounds( double* bounds );
+  
+  virtual void GetDisplayBounds( double* bounds );
 
 protected:
   virtual void DoListenToMessage( std::string const iMessage, void* iData, void* sender );
+  virtual bool DoRotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event ) 
+  { 
+    return true; 
+  }
+  virtual void DoRestore() {}
+  
+  virtual void DoTranslate( double* offset ) {}
+  virtual void DoScale( double* scale, int nSampleMethod ) {}
+  
   std::string  m_strName;
   double    m_dSlicePosition[3];
   double    m_dWorldOrigin[3];
   double    m_dWorldVoxelSize[3];
   double    m_dWorldSize[3];
 
+  // translate and scale are for volume transformation
+  double    m_dTranslate[3];
+  double    m_dScale[3];
+  
   bool   m_bLocked;
 
   LayerProperties*  mProperties;  

@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/24 21:42:53 $
- *    $Revision: 1.5 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.5.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -62,8 +62,6 @@ public:
   void OnButtonSaveAll      ( wxCommandEvent& event );
   void OnButtonLoad         ( wxCommandEvent& event );
   void OnSpinId             ( wxSpinEvent& evnet );
-
-  void ResetPosition();
   
   void UpdateWidgets();
   

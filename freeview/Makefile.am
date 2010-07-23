@@ -35,6 +35,8 @@ freeview_SOURCES=\
 	Cursor3D.h \
 	CursorFactory.cpp \
 	CursorFactory.h \
+	DialogCropVolume.cpp \
+	DialogCropVolume.h \
 	DialogEditLookupTable.cpp \
 	DialogEditLookupTable.h \
 	DialogGradientVolume.cpp \
@@ -61,8 +63,6 @@ freeview_SOURCES=\
 	DialogPreferences.h \
 	DialogRepositionSurface.cpp \
 	DialogRepositionSurface.h \
-	DialogRotateVolume.cpp \
-	DialogRotateVolume.h \
 	DialogSavePoint.cpp \
 	DialogSavePoint.h \
 	DialogSavePointSetAs.cpp \
@@ -71,6 +71,8 @@ freeview_SOURCES=\
 	DialogSaveScreenshot.h \
 	DialogSaveVolumeAs.cpp \
 	DialogSaveVolumeAs.h \
+	DialogTransformVolume.cpp \
+	DialogTransformVolume.h \
 	DialogVolumeFilter.cpp \
 	DialogVolumeFilter.h \
 	DialogWriteMovieFrames.cpp \
@@ -87,6 +89,8 @@ freeview_SOURCES=\
 	Interactor.h \
 	Interactor2D.cpp \
 	Interactor2D.h \
+	Interactor2DCropVolume.cpp \
+	Interactor2DCropVolume.h \
 	Interactor2DNavigate.cpp \
 	Interactor2DNavigate.h \
 	Interactor2DMeasure.cpp \
@@ -101,6 +105,8 @@ freeview_SOURCES=\
 	Interactor2DWayPointsEdit.h \
 	Interactor3D.cpp \
 	Interactor3D.h \
+	Interactor3DCropVolume.cpp \
+	Interactor3DCropVolume.h \
 	Interactor3DMeasure.cpp \
 	Interactor3DMeasure.h \
 	Interactor3DNavigate.cpp \
@@ -198,6 +204,8 @@ freeview_SOURCES=\
 	ToolWindowEdit.h \
 	ToolWindowMeasure.cpp \
 	ToolWindowMeasure.h \
+	VolumeCropper.cpp \
+	VolumeCropper.h \
 	VolumeFilter.cpp \
 	VolumeFilter.h \
 	VolumeFilterConvolve.cpp \
@@ -266,7 +274,7 @@ freeview_LDADD=\
 	-lvtkVolumeRendering -lvtkRendering -lvtkftgl \
 	-lvtkWidgets -lvtkHybrid \
 	-lvtkIO	-lvtkDICOMParser $(VTK_MPEG2ENCODE_LIB) \
-	$(WXWIDGETS_LIBS)
+	$(WXWIDGETS_LIBS) -lwx_gtk2_gl-2.8
 
 # put a wrapper around the bin, used to setup tcltktixblt,vtk,kww enviro vars
 # and if the OS is MACOSX have a different install-hook to create a bundle

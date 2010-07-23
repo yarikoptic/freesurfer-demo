@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/03/30 18:31:03 $
- *    $Revision: 1.13 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.13.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -67,6 +67,10 @@ bool Interactor2DVolumeEdit::ProcessMouseDownEvent( wxMouseEvent& event, RenderV
     else if ( !mri->IsEditable() ) //&& ( event.ControlDown() || m_nAction == EM_Polyline ) )
     {
       SendBroadcast( m_strLayerTypeName + "NotEditable", this );
+    }
+    else if ( m_strLayerTypeName == "MRI" && ((LayerMRI*)mri)->IsTransformed() )
+    {
+      SendBroadcast( m_strLayerTypeName + "NotEditableForTransformation", this );
     }
     else
     {
@@ -161,7 +165,7 @@ bool Interactor2DVolumeEdit::ProcessMouseDownEvent( wxMouseEvent& event, RenderV
           if ( dValue != 0 )
           {
             m_bEditing = true;
-            c2d->SetInput( mri_ref->GetSliceImageData( view->GetViewPlane() ), dValue, ras[view->GetViewPlane()] );
+            c2d->SetInput( mri_ref->GetSliceImageData( view->GetViewPlane() ), dValue, ras[view->GetViewPlane()], mri_ref->GetActiveFrame() );
             c2d->SetVisible( true );
             view->NeedRedraw();
           }

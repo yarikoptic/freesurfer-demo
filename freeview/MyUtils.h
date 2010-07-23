@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/14 18:04:58 $
- *    $Revision: 1.19 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.19.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -96,12 +96,14 @@ public:
   static bool CalculateOptimalVolume( int* vox, int nsize1, int* vox2, int nsize2,
                                       std::vector<void*> input_volumes, long* output_volume, int vol_size );
 
-  static bool BuildContourActor( vtkImageData* data_in, double dTh1, double dTh2, vtkActor* actor_out, int* ext = NULL );
+  static bool BuildContourActor( vtkImageData* data_in, double dTh1, double dTh2, vtkActor* actor_out, int* ext = NULL, bool bAllRegion = false );
 
   static bool BuildVolume( vtkImageData* data_in, double dTh1, double dTh2, vtkVolume* vol_out );
 
   static void GetLivewirePoints( vtkImageData* image_in, int nPlane_in, int nSlice_in,
                                  double* pt1_in, double* pt2_in, vtkPoints* pts_out );
+  
+  static bool IsIdentity( double m[4][4] );
 };
 
 template <class T>
@@ -187,5 +189,12 @@ void MyUtils::FreeMatrix(T** p, int ny)
   p = 0;
 }
 
+inline bool MyUtils::IsIdentity( double m[4][4] )
+{
+  return ( m[0][0] == 1 && m[0][1] == 0 && m[0][2] == 0 && m[0][3] == 0 &&
+      m[1][0] == 0 && m[1][1] == 1 && m[1][2] == 0 && m[1][3] == 0 &&
+      m[2][0] == 0 && m[2][1] == 0 && m[2][2] == 1 && m[2][3] == 0 &&
+      m[3][0] == 0 && m[3][1] == 0 && m[3][2] == 0 && m[3][3] == 1 );
+}
 
 #endif

@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/03/26 19:04:05 $
- *    $Revision: 1.11 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.11.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -74,10 +74,11 @@ public:
 
   void UpdateLabelData( wxWindow* wnd, wxCommandEvent& event );
 
-  bool Rotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event );
-
   virtual void SetModified();
+  
 protected:
+  bool DoRotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event );
+  void DoRestore();
   void InitializeActors();
   void UpdateOpacity();
   void UpdateColorMap();

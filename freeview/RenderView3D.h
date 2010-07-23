@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/24 21:42:53 $
- *    $Revision: 1.23 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.23.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -36,6 +36,7 @@ class vtkCubeSource;
 class vtkProp;
 class Interactor3DNavigate;
 class Interactor3DMeasure;
+class Interactor3DCropVolume;
 
 class VTK_RENDERING_EXPORT RenderView3D : public RenderView
 {
@@ -99,6 +100,12 @@ public:
   
   bool SaveAllSurfaceRegions( wxString& fn );
   
+  bool PickCroppingBound( int nX, int nY );
+  
+  void MoveCroppingBound( int nX, int nY );
+  
+  int PickCell( vtkProp* prop, int posX, int posY, double* pos_out = NULL );
+  
 protected:
   void OnInternalIdle();
   void DoUpdateRASPosition( int posX, int posY, bool bCursor = false );
@@ -136,6 +143,7 @@ private:
   
   Interactor3DNavigate*       m_interactorNavigate;
   Interactor3DMeasure*        m_interactorMeasure;
+  Interactor3DCropVolume*     m_interactorCropVolume;
   
   // any class wishing to process wxWindows events must use this macro
   DECLARE_EVENT_TABLE()

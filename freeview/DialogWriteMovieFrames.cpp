@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/01/11 21:30:14 $
- *    $Revision: 1.1 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.1.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -92,7 +92,7 @@ void DialogWriteMovieFrames::OnWrite( wxCommandEvent& event )
     dlg.ShowModal();
     return;
   }
-  if ( GetAngleStep() == 0 )
+  if ( MainWindow::GetMainWindowPointer()->GetMainViewId() == 3 && GetAngleStep() == 0 )
   {
     wxMessageDialog dlg( this, 
                          _("Angle step can not be 0."), 
@@ -133,4 +133,5 @@ void DialogWriteMovieFrames::UpdateUI()
   m_buttonAbort->Enable( bWriting );
   m_buttonWrite->Enable( !bWriting );
   m_buttonClose->Enable( !bWriting );
+  m_textAngleStep->Enable( MainWindow::GetMainWindowPointer()->GetMainViewId() == 3 );
 }

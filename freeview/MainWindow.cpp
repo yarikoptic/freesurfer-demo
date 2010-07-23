@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/06/08 17:43:26 $
- *    $Revision: 1.119 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:20 $
+ *    $Revision: 1.119.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -42,6 +42,7 @@
 #include <wx/filename.h>
 #include <wx/spinctrl.h>
 #include <wx/ffile.h>
+#include <wx/dir.h>
 #include "MainWindow.h"
 #include "ControlPanel.h"
 #include "PixelInfoPanel.h"
@@ -76,7 +77,7 @@
 #include "Cursor3D.h"
 #include "ToolWindowEdit.h"
 #include "ToolWindowMeasure.h"
-#include "DialogRotateVolume.h"
+#include "DialogTransformVolume.h"
 #include "DialogOptimalVolume.h"
 #include "WindowHistogram.h"
 #include "WindowOverlayConfiguration.h"
@@ -101,6 +102,8 @@
 #include "chronometer.h"
 #include "DialogVolumeFilter.h"
 #include "DialogRepositionSurface.h"
+#include "DialogCropVolume.h"
+#include "VolumeCropper.h"
 
 #define CTRL_PANEL_WIDTH 240
 
@@ -231,8 +234,10 @@ BEGIN_EVENT_TABLE(MainWindow, wxFrame)
   EVT_MENU        ( XRCID( "ID_VIEW_HISTOGRAM" ),         MainWindow::OnViewHistogram )
   EVT_UPDATE_UI   ( XRCID( "ID_VIEW_HISTOGRAM" ),         MainWindow::OnViewHistogramUpdateUI )
   
-  EVT_MENU        ( XRCID( "ID_TOOL_ROTATE_VOLUME" ),     MainWindow::OnToolRotateVolume )
-  EVT_UPDATE_UI   ( XRCID( "ID_TOOL_ROTATE_VOLUME" ),     MainWindow::OnToolRotateVolumeUpdateUI )
+  EVT_MENU        ( XRCID( "ID_TOOL_ROTATE_VOLUME" ),     MainWindow::OnToolTransformVolume )
+  EVT_UPDATE_UI   ( XRCID( "ID_TOOL_ROTATE_VOLUME" ),     MainWindow::OnToolTransformVolumeUpdateUI )
+  EVT_MENU        ( XRCID( "ID_TOOL_CROP_VOLUME" ),       MainWindow::OnToolCropVolume )
+  EVT_UPDATE_UI   ( XRCID( "ID_TOOL_CROP_VOLUME" ),       MainWindow::OnToolCropVolumeUpdateUI )
   EVT_MENU        ( XRCID( "ID_TOOL_OPTIMAL_VOLUME" ),    MainWindow::OnToolOptimalVolume )
   EVT_UPDATE_UI   ( XRCID( "ID_TOOL_OPTIMAL_VOLUME" ),    MainWindow::OnToolOptimalVolumeUpdateUI )
   EVT_MENU        ( XRCID( "ID_TOOL_GRADIENT_VOLUME" ),   MainWindow::OnToolGradientVolume )
@@ -299,9 +304,12 @@ MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
   m_bDoScreenshot = false;
   m_layerVolumeRef = NULL;
   m_nPrevActiveViewId = -1;
+  m_nDefaultSampleMethod = SAMPLE_NEAREST;
+  m_bDefaultConform = false;
   m_luts = new LUTDataHolder();
   m_propertyBrush = new BrushProperty();
   m_connectivity = new ConnectivityData();
+  m_volumeCropper = new VolumeCropper();
 
   wxXmlResource::Get()->LoadFrame( this, NULL, wxT("ID_MAIN_WINDOW") );
 
@@ -372,7 +380,7 @@ MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
   m_layerCollectionManager->AddListener( this );
   GetLayerCollection( "MRI" )->AddListener( m_pixelInfoPanel );
   GetLayerCollection( "Surface" )->AddListener( m_pixelInfoPanel );
-
+  
   m_connectivity->AddListener( m_view3D );
   
   m_wndQuickReference = new WindowQuickReference( this );
@@ -384,12 +392,11 @@ MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
 
   m_toolWindowEdit = NULL;
   m_toolWindowMeasure = NULL;
-  m_dlgRotateVolume = NULL;
+  m_dlgTransformVolume = NULL;
   m_dlgGradientVolume = NULL;
   m_dlgSaveScreenshot = NULL;
   m_dlgSavePoint = NULL;
   m_dlgWriteMovieFrames = NULL;
-  m_dlgRepositionSurface = NULL;
   
   m_menuGotoPoints = NULL;
 
@@ -409,6 +416,14 @@ MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
   m_dlgRepositionSurface->Hide();  
   m_view3D->AddListener( m_dlgRepositionSurface );
   GetLayerCollection( "Surface" )->AddListener( m_dlgRepositionSurface );
+  
+  m_dlgCropVolume = new DialogCropVolume( this );
+  m_dlgCropVolume->Hide();
+  GetLayerCollection( "MRI" )->AddListener( m_dlgCropVolume );
+  
+  m_volumeCropper->AddListener( this );
+  m_volumeCropper->AddListener( m_dlgCropVolume );
+  m_layerCollectionManager->AddListener( m_volumeCropper );
   
   UpdateToolbars();
   
@@ -488,12 +503,19 @@ MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
 MainWindow::~MainWindow()
 {
   for ( int i = 0; i < 4; i++ )
+  {
     m_viewRender[i]->Delete();
+    m_viewRender[i] = NULL;
+  }
   
   delete m_luts;
   delete m_propertyBrush;
   if ( m_connectivity )
     delete m_connectivity;
+  
+  if ( m_volumeCropper )
+    delete m_volumeCropper;
+  m_volumeCropper = NULL;
   
   if ( m_menuGotoPoints )
     delete m_menuGotoPoints;
@@ -755,12 +777,16 @@ void MainWindow::SaveVolumeAs()
     return;
   }
 
-  DialogSaveVolumeAs dlg( this );
-  dlg.SetFileName( layer_mri->GetFileName() );
+//  DialogSaveVolumeAs dlg( this );
+//  dlg.SetFileName( layer_mri->GetFileName() );
+  wxFileDialog dlg( this, _("Select file to save"), 
+                    wxFileName( layer_mri->GetFileName() ).GetPath(), 
+                    _(""),
+                    _("Volume files (*.mgz;*.mgh;*.nii;*.nii.gz;*.img)|*.mgz;*.mgh;*.nii;*.nii.gz;*.img|All files (*.*)|*.*"),
+                    wxFD_SAVE | wxFD_OVERWRITE_PROMPT );
   if ( dlg.ShowModal() == wxID_OK )
   {
-    layer_mri->SetFileName( dlg.GetFileName().char_str() );
-    layer_mri->SetReorient( dlg.GetReorient() );
+    layer_mri->SetFileName( dlg.GetPath().char_str() );
     SaveVolume();
     m_controlPanel->UpdateUI();
   }
@@ -810,7 +836,8 @@ void MainWindow::LoadVolume()
 
 void MainWindow::LoadVolumeFile( const wxString& filename, 
                                  const wxString& reg_filename, 
-                                 bool bResample, int nSampleMethod )
+                                 bool bResample, int nSampleMethod,
+                                 bool bConform )
 {
 // cout << bResample << endl;
   m_strLastDir = MyUtils::GetNormalizedPath( filename );
@@ -819,6 +846,7 @@ void MainWindow::LoadVolumeFile( const wxString& filename,
   LayerMRI* layer = new LayerMRI( m_layerVolumeRef );
   layer->SetResampleToRAS( bResample );
   layer->SetSampleMethod( nSampleMethod );
+  layer->SetConform( bConform );
   layer->GetProperties()->SetLUTCTAB( m_luts->GetColorTable( 0 ) );
   wxFileName fn( filename );
   fn.Normalize();
@@ -851,8 +879,62 @@ void MainWindow::LoadVolumeFile( const wxString& filename,
 
 void MainWindow::RotateVolume( std::vector<RotationElement>& rotations, bool bAllVolumes )
 {
-  WorkerThread* thread = new WorkerThread( this );
-  thread->RotateVolume( rotations, bAllVolumes );
+//  WorkerThread* thread = new WorkerThread( this );
+//  thread->RotateVolume( rotations, bAllVolumes );
+  
+  // rotation is much faster now so no need to do it in a separate thread 
+  wxCommandEvent event( 0, 0 ); // fake event, just a place holder to call the functions
+  std::vector<Layer*> layers = GetLayerCollectionManager()->GetAllLayers();
+      
+  // first update ROI and waypoints before their reference volume is rotated
+  bool bSuccess = true;
+  for ( size_t i = 0; i < layers.size(); i++ )
+  {
+    if ( layers[i]->IsTypeOf( "ROI" ) )
+    {
+      ( (LayerROI*)layers[i] )->UpdateLabelData( this, event );
+    }
+    else if ( layers[i]->IsTypeOf( "WayPoints" ) )
+    {
+      ( (LayerWayPoints*)layers[i] )->UpdateLabelData();
+    }  
+  }
+      
+  if ( bAllVolumes )
+  {
+    // then rotate MRI volumes
+    for ( size_t i = 0; i < layers.size(); i++ )
+    {
+      if ( layers[i]->IsTypeOf( "MRI" ) && !layers[i]->Rotate( rotations, this, event ) )
+      {
+        bSuccess = false;
+        break;
+      }
+    }
+        // at last rotate others
+    for ( size_t i = 0; i < layers.size() && bSuccess; i++ )
+    {
+      if ( !layers[i]->IsTypeOf( "MRI" ) && !layers[i]->Rotate( rotations, this, event ) )
+      {
+        bSuccess = false;
+        break;
+      }
+    }
+  }
+  else
+  {
+    LayerMRI* layer = (LayerMRI*) GetActiveLayer( "MRI" );
+    if ( !layer->Rotate( rotations, this, event ) )
+    {
+      bSuccess = false;
+    }
+  }
+  if ( !bSuccess )
+  {
+    wxMessageDialog dlg( this, _("Error occured while rotating volumes."), 
+                         _("Error"), wxOK );
+    dlg.ShowModal(); 
+  }
 }
 
 
@@ -864,7 +946,7 @@ void MainWindow::OnFileExit( wxCommandEvent& event )
 void MainWindow::OnActivate( wxActivateEvent& event )
 {
 #ifdef __WXGTK__
-  NeedRedraw();
+  NeedRedraw( 2 );
 #endif
   event.Skip();
 }
@@ -873,7 +955,7 @@ void MainWindow::OnIconize( wxIconizeEvent& event )
 {
 #ifdef __WXGTK__
   if ( !event.Iconized() )
-    NeedRedraw();
+    NeedRedraw( 2 );
 #endif
   event.Skip();
 }
@@ -883,7 +965,7 @@ void MainWindow::OnFileRecent( wxCommandEvent& event )
 {
   wxString fn( m_fileHistory->GetHistoryFile( event.GetId() - wxID_FILE1 ) );
   if ( !fn.IsEmpty() )
-    this->LoadVolumeFile( fn, _(""), m_bResampleToRAS );
+    this->LoadVolumeFile( fn, _(""), m_bResampleToRAS, m_nDefaultSampleMethod, m_bDefaultConform );
 }
 
 LayerCollection* MainWindow::GetLayerCollection( std::string strType )
@@ -1331,12 +1413,14 @@ void MainWindow::DoUpdateToolbars()
       m_viewRender[i]->AddListener( m_toolWindowMeasure );
   }
     
-  m_toolWindowEdit->Show( m_viewAxial->GetInteractionMode() == RenderView2D::IM_VoxelEdit ||
-      m_viewAxial->GetInteractionMode() == RenderView2D::IM_ROIEdit );
+  m_toolWindowEdit->Show( m_viewAxial->GetInteractionMode() == RenderView::IM_VoxelEdit ||
+      m_viewAxial->GetInteractionMode() == RenderView::IM_ROIEdit );
   
-  m_toolWindowMeasure->Show( m_viewAxial->GetInteractionMode() == RenderView2D::IM_Measure );
+  m_toolWindowMeasure->Show( m_viewAxial->GetInteractionMode() == RenderView::IM_Measure );
 
   m_toolWindowEdit->UpdateTools();
+  
+  m_dlgCropVolume->Show( m_viewAxial->GetInteractionMode() == RenderView::IM_VolumeCrop );
 
   m_bToUpdateToolbars = false;
 }
@@ -1702,7 +1786,7 @@ void MainWindow::SetViewLayout( int nLayout )
   m_renderViewHolder->Layout();
   view[0]->SetFocus();
 
-  NeedRedraw();
+  NeedRedraw( 2 );
 }
 
 void MainWindow::SetMainView( int nView )
@@ -2116,6 +2200,15 @@ void MainWindow::NeedRedraw( int nCount )
   m_nRedrawCount = nCount;
 }
 
+void MainWindow::ForceRedraw()
+{
+  for ( int i = 0; i < 4; i++ )
+  {
+    if ( m_viewRender[i]->IsShown() )
+      m_viewRender[i]->Render();
+  }
+}
+
 void MainWindow::OnInternalIdle()
 {
   wxFrame::OnInternalIdle();
@@ -2463,6 +2556,11 @@ void MainWindow::OnBuildContourThreadResponse( wxCommandEvent& event )
     return;
   
   mri->RealizeContourActor();
+  if ( m_volumeCropper->GetEnabled() )
+  {
+    m_volumeCropper->UpdateProps();
+    m_volumeCropper->Apply();
+  }
   
   if ( mri->GetProperties()->GetShowAsContour() )
     NeedRedraw();
@@ -2514,6 +2612,11 @@ void MainWindow::DoListenToMessage ( std::string const iMsg, void* iData, void* 
     wxMessageDialog dlg( this, _("Active volume is not editable."), _("Error"), wxOK | wxICON_ERROR );
     dlg.ShowModal();
   }
+  else if ( iMsg == "MRINotEditableForRotation" )
+  {
+    wxMessageDialog dlg( this, _("Active volume has been transformed. It is not a good idea to directly edit on transformed volume. Because partial volume effect may cause \"what you see is NOT what you get\". Please save, close and reload the volume to edit. This is a temporary and safe solution."), _("Error"), wxOK | wxICON_ERROR );
+    dlg.ShowModal();
+  }
   else if ( iMsg == "MRIReferenceNotSet" )
   {
     wxMessageDialog dlg( this, _("Reference volume is not set."), _("Error"), wxOK | wxICON_ERROR );
@@ -2528,6 +2631,10 @@ void MainWindow::DoListenToMessage ( std::string const iMsg, void* iData, void* 
   else if ( iMsg == "SurfacePositionChanged" )
   {
     m_view3D->UpdateConnectivityDisplay();
+  }
+  else if ( iMsg == "CropBoundChanged" )
+  {
+    NeedRedraw();
   }
   
   // Update world geometry
@@ -2843,7 +2950,8 @@ void MainWindow::CommandLoadVolume( const wxArrayString& sa )
            vector_render = _("line"),
            tensor_display = _("no"),
            tensor_render = _("boxoid");
-  int nSampleMethod = SAMPLE_NEAREST;
+  int nSampleMethod = m_nDefaultSampleMethod;
+  bool bConform = m_bDefaultConform;
   for ( size_t i = 1; i < sa_vol.GetCount(); i++ )
   {
     wxString strg = sa_vol[i];
@@ -2925,7 +3033,9 @@ void MainWindow::CommandLoadVolume( const wxArrayString& sa )
       }
       else if ( subOption == _("sample") )
       {
-        if ( subArgu.Lower() == _("trilinear") )
+        if ( subArgu.Lower() == _("nearest") )
+          nSampleMethod = SAMPLE_NEAREST;
+        else if ( subArgu.Lower() == _("trilinear") )
           nSampleMethod = SAMPLE_TRILINEAR;
       }
       else if ( subOption == _("opacity") )
@@ -3042,7 +3152,7 @@ void MainWindow::CommandLoadVolume( const wxArrayString& sa )
     m_scripts.insert( m_scripts.begin(), script );  
   }
   
-  LoadVolumeFile( fn, reg_fn, bResample, nSampleMethod );
+  LoadVolumeFile( fn, reg_fn, bResample, nSampleMethod, bConform );
 }
 
 void MainWindow::CommandSetColorMap( const wxArrayString& sa )
@@ -4324,10 +4434,9 @@ void MainWindow::OnToolSaveGotoPoint( wxCommandEvent& event )
   {
     m_dlgSavePoint = new DialogSavePoint( this );
     m_dlgSavePoint->SetGotoPoints( m_strGotoPoints );
-  }
-  
-  m_dlgSavePoint->Show();*/
-  
+  } 
+  m_dlgSavePoint->Show();
+  */
  
   wxString fn;
   LayerCollection* lc = GetLayerCollection( "MRI" );
@@ -4348,11 +4457,13 @@ void MainWindow::OnToolSaveGotoPoint( wxCommandEvent& event )
     }
   }
   
+  bool bError = false;
+  wxString msg;
   if ( !fn.IsEmpty() )
   {
     wxFileName wfn( fn );
     wfn.Normalize();
-    wxString dir = AutoSelectLastDir( wfn.GetFullPath(), _("tmp") );
+    wxString dir = AutoSelectLastDir( wfn.GetPath(), _("tmp") );
     if ( wxFileName::DirExists( dir ) )
     { 
       double ras[3];
@@ -4360,9 +4471,27 @@ void MainWindow::OnToolSaveGotoPoint( wxCommandEvent& event )
       wxFFile file( dir + wxFileName::GetPathSeparator() + _("edit.dat"), "w" );
       wxString strg;
       strg << ras[0] << " " << ras[1] << " " << ras[2] << "\n";
-      file.Write( strg );
+      bError = !file.Write( strg );
       file.Close();
+      if ( bError )
+        msg = _("Can not write to file."); 
     }
+    else
+    {
+      bError = true;
+      msg = _("Directory ") + dir + _(" does not exist.");
+    }
+  }
+  else
+  {
+    bError = true;
+    msg = _("Layer file name is empty. Can not decide where to save.");
+  }
+  if ( bError )
+  {
+    wxMessageDialog dlg( this, msg, 
+                         _("Error"), wxOK );
+    dlg.ShowModal();
   }
 }
 
@@ -4440,7 +4569,7 @@ void MainWindow::OnToolGotoPoint( wxCommandEvent& event )
     fn = ( (LayerMRI*)lc->GetLayer( i ) )->GetFileName();
     wxFileName wfn( fn );
     wfn.Normalize();
-    fn = AutoSelectLastDir( wfn.GetFullPath(), _("tmp") ) + wxFileName::GetPathSeparator() + _("edit.dat");
+    fn = AutoSelectLastDir( wfn.GetPath(), _("tmp") ) + wxFileName::GetPathSeparator() + _("edit.dat");
     if ( wxFileName::FileExists( fn ) )
       break;
     else  
@@ -4452,7 +4581,8 @@ void MainWindow::OnToolGotoPoint( wxCommandEvent& event )
     wxFFile file( fn );
     wxString strg;
     file.ReadAll( &strg );
-    wxArrayString ar = MyUtils::SplitString( strg, " " );
+    wxArrayString ar_line = MyUtils::SplitString( strg, "\n" );
+    wxArrayString ar = MyUtils::SplitString( ar_line[0], " " );
     ar.insert( ar.begin(), _("setras") );
     ar.push_back( _("tkreg") );
     CommandSetRAS( ar ); 
@@ -4841,22 +4971,26 @@ void MainWindow::LoadSurfaceLabelFile( const wxString& filename )
   }
 }
 
-void MainWindow::OnToolRotateVolume( wxCommandEvent& event )
+void MainWindow::OnToolTransformVolume( wxCommandEvent& event )
 {
-  if ( !m_dlgRotateVolume )
-    m_dlgRotateVolume = new DialogRotateVolume( this );
-
-  if ( !m_dlgRotateVolume->IsVisible() )
+  if ( !m_dlgTransformVolume )
   {
-    wxMessageDialog dlg( this, _("Rotation can only apply to volume for now. If you data includes ROI/Surface/Way Points, please do not use this feature yet."), _("Warning"), wxOK );
+    m_dlgTransformVolume = new DialogTransformVolume( this );
+    GetLayerCollection( "MRI" )->AddListener( m_dlgTransformVolume );
+  }
+
+  if ( !m_dlgTransformVolume->IsVisible() )
+  {
+    wxMessageDialog dlg( this, _("Transformation can only apply to volumes for now. If you data includes ROI/Surface/Way Points, please do not use this feature yet."), _("Warning"), wxOK );
     dlg.ShowModal();
-    m_dlgRotateVolume->Show();
+    m_dlgTransformVolume->Show();
+    m_dlgTransformVolume->UpdateUI();
   }
 }
 
-void MainWindow::OnToolRotateVolumeUpdateUI( wxUpdateUIEvent& event )
+void MainWindow::OnToolTransformVolumeUpdateUI( wxUpdateUIEvent& event )
 {
-// event.Check( m_dlgRotateVolume && m_dlgRotateVolume->IsShown() );
+// event.Check( m_dlgTransformVolume && m_dlgTransformVolume->IsShown() );
   event.Enable( !GetLayerCollection( "MRI" )->IsEmpty() && !IsProcessing() && !IsWritingMovieFrames() );
 }
 
@@ -4878,7 +5012,7 @@ void MainWindow::OnToolOptimalVolume( wxCommandEvent& event )
 
 void MainWindow::OnToolOptimalVolumeUpdateUI( wxUpdateUIEvent& event )
 {
-// event.Check( m_dlgRotateVolume && m_dlgRotateVolume->IsShown() );
+// event.Check( m_dlgTransformVolume && m_dlgTransformVolume->IsShown() );
   event.Enable( GetLayerCollection( "MRI" )->GetNumberOfLayers() > 1 && !IsProcessing() && !IsWritingMovieFrames() );
 }
 
@@ -4910,7 +5044,7 @@ void MainWindow::OnToolGradientVolume( wxCommandEvent& event )
 
 void MainWindow::OnToolGradientVolumeUpdateUI( wxUpdateUIEvent& event )
 {
-// event.Check( m_dlgRotateVolume && m_dlgRotateVolume->IsShown() );
+// event.Check( m_dlgTransformVolume && m_dlgTransformVolume->IsShown() );
   event.Enable( !GetLayerCollection( "MRI" )->IsEmpty() && !IsProcessing() && !IsWritingMovieFrames() );
 }
 
@@ -4918,8 +5052,8 @@ void MainWindow::OnToolGradientVolumeUpdateUI( wxUpdateUIEvent& event )
 void MainWindow::EnableControls( bool bEnable )
 {
   m_controlPanel->Enable( bEnable );
-  if ( m_dlgRotateVolume )
-    m_dlgRotateVolume->Enable( bEnable );
+  if ( m_dlgTransformVolume )
+    m_dlgTransformVolume->Enable( bEnable );
 }
 
 void MainWindow::OnMouseEnterWindow( wxMouseEvent& event )
@@ -5054,17 +5188,37 @@ void MainWindow::OnTimerWriteMovieFrames( wxTimerEvent& event )
              m_settingsMovieFrames.OutputLocation.c_str(),
              m_settingsMovieFrames.StepCount,
              m_settingsMovieFrames.OutputExtension.c_str() );
-  m_view3D->SaveScreenshot( fn, 
-                            m_settingsScreenshot.Magnification,
-                            m_settingsScreenshot.AntiAliasing );
-  m_view3D->Azimuth( angle_step );
-  NeedRedraw( true );
-  m_settingsMovieFrames.StepCount ++;
-  double angle = m_settingsMovieFrames.StepCount * fabs(angle_step);
-  m_statusBar->m_gaugeBar->SetValue( (int)(100*angle/360) );
-  if ( angle > 360 )
+  if ( m_nMainView == 3 ) // 3D view
   {
-    StopWriteMovieFrames();
+    m_view3D->SaveScreenshot( fn, 
+                              m_settingsScreenshot.Magnification,
+                              m_settingsScreenshot.AntiAliasing );
+    m_view3D->Azimuth( angle_step );
+    ForceRedraw( );
+    m_settingsMovieFrames.StepCount ++;
+    double angle = m_settingsMovieFrames.StepCount * fabs(angle_step);
+    m_statusBar->m_gaugeBar->SetValue( (int)(100*angle/360) );
+    if ( angle > 360 )
+      StopWriteMovieFrames();
+  }
+  else
+  {
+    m_viewRender[m_nMainView]->SaveScreenshot( fn, 
+                                               m_settingsScreenshot.Magnification,
+                                               m_settingsScreenshot.AntiAliasing );
+    m_settingsMovieFrames.StepCount ++;
+    if ( ((RenderView2D*)m_viewRender[m_nMainView])->SetSliceNumber( m_settingsMovieFrames.StepCount ) )
+    {
+      ForceRedraw();
+      LayerMRI* mri = (LayerMRI*)GetActiveLayer( "MRI" );
+      if ( mri )
+      {
+        double nMaxSlice = (mri->GetWorldSize())[m_nMainView] / (mri->GetWorldVoxelSize())[m_nMainView];
+        m_statusBar->m_gaugeBar->SetValue( (int)(100*m_settingsMovieFrames.StepCount / nMaxSlice) );
+      }
+    }
+    else
+      StopWriteMovieFrames();
   }
 }
 
@@ -5072,6 +5226,11 @@ void MainWindow::StartWriteMovieFrames()
 {
   m_statusBar->m_gaugeBar->Show();
   m_settingsMovieFrames.StepCount = 0;
+  if ( m_nMainView != 3 )
+  {
+    ((RenderView2D*)m_viewRender[m_nMainView])->SetSliceNumber( 0 );
+    ForceRedraw();
+  }
   if ( !m_dlgWriteMovieFrames->GetOutputLocation().IsEmpty() )
   {
     m_settingsMovieFrames.OutputLocation = m_dlgWriteMovieFrames->GetOutputLocation(); 
@@ -5082,9 +5241,12 @@ void MainWindow::StartWriteMovieFrames()
   {
     m_settingsMovieFrames.AngleStep = m_dlgWriteMovieFrames->GetAngleStep();
   }
-  wxString cmd = "mkdir ";
-  cmd += m_settingsMovieFrames.OutputLocation;
-  system( cmd.c_str() );
+  if ( !wxDir::Exists( m_settingsMovieFrames.OutputLocation ) )
+  {
+    wxString cmd = "mkdir ";
+    cmd += m_settingsMovieFrames.OutputLocation;
+    system( cmd.c_str() );
+  }
   m_settingsMovieFrames.OutputExtension = m_dlgWriteMovieFrames->GetOutputExtension();
   m_statusBar->m_gaugeBar->SetValue( 0 );
   m_timerWriteMovieFrames.Start( 1000 ); 
@@ -5095,6 +5257,7 @@ void MainWindow::StopWriteMovieFrames()
   m_timerWriteMovieFrames.Stop();
   m_settingsMovieFrames.StepCount = 0;
   m_statusBar->m_gaugeBar->Hide();
+  m_dlgWriteMovieFrames->UpdateUI();
 }
 
 void MainWindow::OnFilterMean( wxCommandEvent& event )
@@ -5209,3 +5372,40 @@ void MainWindow::OnEditRenameUpdateUI( wxUpdateUIEvent& event )
   LayerCollection* lc = GetCurrentLayerCollection();
   event.Enable( lc && lc->GetActiveLayer() );
 }
+
+void MainWindow::OnToolCropVolume( wxCommandEvent& event )
+{
+  LayerMRI* mri = (LayerMRI*)GetLayerCollection( "MRI" )->GetActiveLayer();
+  m_dlgCropVolume->SetVolume( mri );
+  m_dlgCropVolume->Show();
+  m_volumeCropper->SetEnabled( true );
+  m_volumeCropper->SetVolume( mri );
+  m_volumeCropper->Show();
+  SetMode( RenderView::IM_VolumeCrop );
+}
+
+void MainWindow::OnToolCropVolumeUpdateUI( wxUpdateUIEvent& event )
+{
+  Layer* layer = GetLayerCollection( "MRI" )->GetActiveLayer();
+  event.Enable( !IsProcessing() && layer && layer->IsVisible() );
+}
+
+void MainWindow::SaveRegistrationAs()
+{
+  LayerMRI* layer_mri = ( LayerMRI* )GetActiveLayer( "MRI" );
+  if ( !layer_mri)
+  {
+    return;
+  }
+  
+  wxFileDialog dlg( this, _("Select file to save"), 
+                    wxFileName( layer_mri->GetFileName() ).GetPath(), 
+                    _(""),
+                    _("LTA files (*.lta)|*.lta|All files (*.*)|*.*"),
+                    wxFD_SAVE | wxFD_OVERWRITE_PROMPT );
+  if ( dlg.ShowModal() == wxID_OK )
+  {
+    layer_mri->SaveRegistration( dlg.GetPath().char_str() );
+  }
+}
+

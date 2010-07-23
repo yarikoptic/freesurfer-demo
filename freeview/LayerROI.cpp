@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/04/30 21:21:19 $
- *    $Revision: 1.14 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.14.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -331,11 +331,16 @@ bool LayerROI::HasProp( vtkProp* prop )
   return false;
 }
 
-bool LayerROI::Rotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event )
+bool LayerROI::DoRotate( std::vector<RotationElement>& rotations, wxWindow* wnd, wxCommandEvent& event )
 {
   m_label->UpdateRASImage( m_imageData, m_layerSource->GetSourceVolume() );
 
   return true;
+}
+
+void LayerROI::DoRestore()
+{
+  m_label->UpdateRASImage( m_imageData, m_layerSource->GetSourceVolume() );
 }
 
 void LayerROI::UpdateLabelData( wxWindow* wnd, wxCommandEvent& event )

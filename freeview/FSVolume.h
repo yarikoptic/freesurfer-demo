@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/28 20:32:31 $
- *    $Revision: 1.25 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.25.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -40,6 +40,7 @@ extern "C"
 
 class wxWindow;
 class wxCommandEvent;
+class vtkTransform;
 
 class FSVolume
 {
@@ -50,8 +51,9 @@ public:
   bool Create( FSVolume* src, bool bCopyVoxelData, int data_type );
 
   bool MRIRead( const char* filename, const char* reg_filename, wxWindow* wnd, wxCommandEvent& event );
-  bool MRIWrite( const char* filename, bool bSaveToOriginal = true );
+  bool MRIWrite( const char* filename, int nSampleMethod = SAMPLE_NEAREST );
   bool MRIWrite();
+  bool SaveRegistration( const char* filename );
   bool Restore( const char* filename, const char* reg_filename, wxWindow* wnd, wxCommandEvent& event );
 
   int OriginalIndexToRAS( float iIdxX, float iIdxY, float iIdxZ,
@@ -173,6 +175,12 @@ public:
     return m_strOrientation;
   }
   
+  void SetCroppingBounds( double* bound );
+  
+  vtkTransform* GetTransform();
+  
+  void SetConform( bool bConform );
+  
 protected:
   bool LoadMRI( const char* filename, const char* reg_filename, wxWindow* wnd, wxCommandEvent& event );
   bool LoadRegistrationMatrix( const char* filename );
@@ -183,11 +191,12 @@ protected:
   bool ResizeRotatedImage( MRI* mri, MRI* refTarget, vtkImageData* refImageData, double* rasPoint,
                     wxWindow* wnd, wxCommandEvent& event );
   void UpdateRASToRASMatrix();
-  MRI* CreateTargetMRI( MRI* src, MRI* refTarget, bool AllocatePixel = true );
+  MRI* CreateTargetMRI( MRI* src, MRI* refTarget, bool AllocatePixel = true, bool bConform = false );
 
   MATRIX* GetRotationMatrix( int nPlane, double angle, double* origin );
 
   vtkSmartPointer<vtkImageData> m_imageData;
+  vtkSmartPointer<vtkTransform> m_transform;
 
   MRI*      m_MRI;
   MRI*      m_MRITarget;      // target space. header only
@@ -216,7 +225,11 @@ protected:
   float     m_RASBounds[6];
   
   int       m_nInterpolationMethod;
+  bool      m_bConform;
   char      m_strOrientation[4];
+  
+  double    m_dBounds[6];
+  bool      m_bCrop;
 };
 
 #endif

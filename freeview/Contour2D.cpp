@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/04/30 21:21:19 $
- *    $Revision: 1.7 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/23 17:52:19 $
+ *    $Revision: 1.7.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -34,6 +34,7 @@
 #include "vtkImageMapToColors.h"
 #include "vtkRGBAColorTransferFunction.h"
 #include "vtkImageGaussianSmooth.h"
+#include "vtkImageExtractComponents.h"
 #include "vtkMatrix4x4.h"
 #include "vtkImageMask.h"
 #include "vtkImageLogic.h"
@@ -97,10 +98,20 @@ vtkImageData* Contour2D::GetThresholdedImage()
   return m_filterMask->GetOutput();
 }
 
-void Contour2D::SetInput( vtkImageData* imagedata, double dContourValue, double dSliceLocation )
+void Contour2D::SetInput( vtkImageData* imagedata, double dContourValue, double dSliceLocation, int active_frame )
 {
-  m_imageInput = imagedata;
-  m_filterThreshold->SetInput( imagedata );
+  vtkSmartPointer<vtkImageExtractComponents> extract = vtkSmartPointer<vtkImageExtractComponents>::New();
+  if ( imagedata->GetNumberOfScalarComponents() > 1 )
+  {
+    extract->SetInput( imagedata );
+    extract->SetComponents( active_frame );
+    extract->Update();
+    m_imageInput = extract->GetOutput();
+  }
+  else
+   m_imageInput = imagedata;
+  
+  m_filterThreshold->SetInput( m_imageInput );
   SetContourValue( dContourValue );
   
   // create two masks and initialize them.
@@ -175,10 +186,7 @@ void Contour2D::DrawPatchLineOnMask( vtkImageData* image, double* ras1, double* 
   int dy = y1 - y0;
   double t = 0.5;
   int n[2];
-  if ( m_nPlane == 0 )
-    ptr[(n1[ny]+1)*dim[0]+dim[0]-n1[nx]-2] = nDrawValue;
-  else
-    ptr[n1[ny]*dim[0]+n1[nx]] = nDrawValue;
+  ptr[n1[ny]*dim[0]+n1[nx]] = nDrawValue;
   if ( abs( dx ) > abs( dy ) )
   {
     double m = (double) dy / (double) dx;
@@ -191,10 +199,7 @@ void Contour2D::DrawPatchLineOnMask( vtkImageData* image, double* ras1, double* 
       t += m;
       n[nx] = x0;
       n[ny] = (int) t;
-      if ( m_nPlane == 0 )
-        ptr[(n[ny]+1)*dim[0]+dim[0]-n[nx]-2] = nDrawValue;
-      else
-        ptr[n[ny]*dim[0]+n[nx]] = nDrawValue;
+      ptr[n[ny]*dim[0]+n[nx]] = nDrawValue;
     }
   }
   else
@@ -209,10 +214,7 @@ void Contour2D::DrawPatchLineOnMask( vtkImageData* image, double* ras1, double* 
       t += m;
       n[nx] = (int) t;
       n[ny] = y0;
-      if ( m_nPlane == 0 )
-        ptr[(n[ny]+1)*dim[0]+dim[0]-n[nx]-2] = nDrawValue;
-      else
-        ptr[n[ny]*dim[0]+n[nx]] = nDrawValue;
+      ptr[n[ny]*dim[0]+n[nx]] = nDrawValue;
     }
   }
   
@@ -238,9 +240,9 @@ void Contour2D::UpdateSliceLocation( double dSliceLocation )
   {
     case 0:
       m_actorContour->PokeMatrix( matrix );
-      m_actorContour->SetPosition( dSliceLocation, -pos[0], pos[1] );
+      m_actorContour->SetPosition( dSliceLocation, pos[0], pos[1] );
       m_actorContour->RotateX( 90 );
-      m_actorContour->RotateY( -90 );
+      m_actorContour->RotateY( 90 );
       break;
     case 1:
       m_actorContour->PokeMatrix( matrix );
