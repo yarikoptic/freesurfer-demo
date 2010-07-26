@@ -20,21 +20,19 @@ FSF_FILES=\
 	du-sess \
 	fast_getext \
 	fast-log-preamble.csh \
-	fcreg-sess \
-	feat.fsfast-patch \
-	feat.fsfast-patch.tcl \
+	fcseed-sess \
 	fieldsign-sess \
 	fixseqinfo-sess \
 	fsfast-version \
-	fsfeat \
-	fsfeatffx \
-	fsfeat-sess \
 	fslregister-sess \
         fsl2par \
 	func2label \
 	func2roi-sess \
 	func2tal \
 	func2tal-sess \
+        funcroi-config \
+        funcroi-sess \
+        funcroi-table-sess \
 	functwf-sess \
 	fwhmest \
 	getana \
@@ -81,7 +79,6 @@ FSF_FILES=\
 	mkbrainmask-sess \
 	mkcontrast \
 	mkcontrast-sess \
-	mkfeat-sess \
 	mkfieldsign \
 	mktemplate-sess \
 	optseq \
@@ -91,8 +88,6 @@ FSF_FILES=\
 	par2stf \
 	plot-twf-sess \
 	preproc-sess \
-	qmedit \
-	qsurfer \
 	rawfunc2surf-sess \
 	rawfunc2tal \
 	rawfunc2tal-sess \
