@@ -6,9 +6,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: mreuter $
- *    $Date: 2010/07/23 23:23:46 $
- *    $Revision: 1.143.2.1 $
+ *    $Author: nicks $
+ *    $Date: 2010/07/27 13:12:42 $
+ *    $Revision: 1.143.2.2 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -831,6 +831,7 @@ LTAtransformInterp(MRI *mri_src, MRI *mri_dst, LTA *lta, int interp)
         // maybe also reset or concatenate the actual transform 
         // if available in mri_dst->transform (not yet implemented) ...
 			}
+      MRIcopyHeader(mri_src, mri_dst) ;
     }
     ////////////////////////////////////////////////////////////////////////
     if (lta->type == LINEAR_RAS_TO_RAS)
