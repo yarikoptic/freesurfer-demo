@@ -1,7 +1,7 @@
 #
 # Makefile.am for fsfast
 #
-SUBDIRS=bin toolbox docs
+SUBDIRS=bin toolbox
 
 
 # Our release target. Include files to be excluded here. They will be
