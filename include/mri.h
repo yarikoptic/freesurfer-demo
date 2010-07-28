@@ -7,9 +7,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/06/30 21:21:56 $
- *    $Revision: 1.402.2.1 $
+ *    $Author: greve $
+ *    $Date: 2010/07/28 20:07:51 $
+ *    $Revision: 1.402.2.2 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -971,6 +971,7 @@ int MRIsetVoxelsWithValue(MRI *mri_src,
                           MRI *mri_dst,
                           int src_val,
                           int dst_val) ;
+double MRIpercentThresh(MRI *mri, MRI *mask, int frame, double pct);
 int MRIsetDifferentVoxelsWithValue(MRI *mri1,
                                    MRI *mri2,
                                    MRI *mri_dst,
