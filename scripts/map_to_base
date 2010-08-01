@@ -7,8 +7,8 @@
 # Original Author: Martin Reuter
 # CVS Revision Info:
 #    $Author: mreuter $
-#    $Date: 2010/07/29 23:10:26 $
-#    $Revision: 1.1.2.1 $
+#    $Date: 2010/08/01 17:32:17 $
+#    $Revision: 1.1.2.2 $
 #
 # Copyright (C) 2002-2007,
 # The General Hospital Corporation (Boston, MA).
@@ -22,7 +22,7 @@
 # General inquiries: freesurfer@nmr.mgh.harvard.edu
 #
 
-set VERSION = '$Id: map_to_base,v 1.1.2.1 2010/07/29 23:10:26 mreuter Exp $';
+VERSION='$Id: map_to_base,v 1.1.2.2 2010/08/01 17:32:17 mreuter Exp $';
 
 # WITHOUT FREESURFER DO NOTHING
 if [ -z $FREESURFER_HOME ]
