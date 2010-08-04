@@ -336,7 +336,7 @@ SUBDIRS=\
 	scuba2 \
 	freeview \
 	qdec_glmfit \
-        cudatest
+	cudatest
 
 # build stamp and symlinks to necessary 3rd-party packages.
 # in the case of FSL, just copy the 'flirt' utility to our bin
@@ -353,7 +353,7 @@ install-data-hook:
 	fi;
 	if test ! "x$(FSLDIR)" = "x" ; then \
 		if test -e $(FSLDIR) ; then \
-			cp -f $(FSLDIR)/bin/flirt $(DESTDIR)$(bindir) ; \
+			cp -f $(FSLDIR)/bin/flirt $(DESTDIR)$(bindir)/flirt.fsl ; \
 		fi; \
 	fi;
 	if test ! "x$(ANFIDIR)" = "x" ; then \
