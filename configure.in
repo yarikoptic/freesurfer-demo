@@ -9,8 +9,8 @@
 #
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2010/06/29 21:41:38 $
-#    $Revision: 1.476.2.5 $
+#    $Date: 2010/08/07 23:44:58 $
+#    $Revision: 1.476.2.6 $
 #
 ########################################################################
 AC_PREREQ(2.57)
@@ -1965,7 +1965,9 @@ AC_ARG_WITH(vtk-libraries,
 
 if test ! "$ac_vtk_includes" = "NO"; then
   AC_MSG_RESULT(VTK directory is $withval)
-  if test -e $ac_vtk_includes/vtk-5.5 ; then
+  if test -e $ac_vtk_includes/vtk-5.6 ; then
+    ac_vtk_includes="$ac_vtk_includes/vtk-5.6"
+  elif test -e $ac_vtk_includes/vtk-5.5 ; then
     ac_vtk_includes="$ac_vtk_includes/vtk-5.5"
   elif test -e $ac_vtk_includes/vtk-5.4 ; then
     ac_vtk_includes="$ac_vtk_includes/vtk-5.4"
@@ -1987,7 +1989,11 @@ fi
 if test ! "$ac_vtk_libraries" = "NO"; then
   VTK_LIBS=-L$ac_vtk_libraries
   VTK_LIB=$ac_vtk_libraries
-  if test -e $ac_vtk_libraries/vtk-5.5 ; then
+  if test -e $ac_vtk_libraries/vtk-5.6 ; then
+    VTK_LIB_VTK="$ac_vtk_libraries/vtk-5.6"
+    VTK_LIBS=-L$ac_vtk_libraries/vtk-5.6
+    VTK_LIB=$ac_vtk_libraries/vtk-5.6
+  elif test -e $ac_vtk_libraries/vtk-5.5 ; then
     VTK_LIB_VTK="$ac_vtk_libraries/vtk-5.5"
     VTK_LIBS=-L$ac_vtk_libraries/vtk-5.5
     VTK_LIB=$ac_vtk_libraries/vtk-5.5
