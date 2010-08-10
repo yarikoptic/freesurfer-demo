@@ -84,6 +84,7 @@ FSF_FILES=\
 	optseq \
 	optseq.matlab \
 	par2fsl \
+	par2fsl3 \
 	par2schedule \
 	par2stf \
 	plot-twf-sess \
