@@ -9,8 +9,8 @@
 #
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2010/08/07 23:44:58 $
-#    $Revision: 1.476.2.6 $
+#    $Date: 2010/08/13 17:32:19 $
+#    $Revision: 1.476.2.7 $
 #
 ########################################################################
 AC_PREREQ(2.57)
@@ -676,9 +676,9 @@ AC_ARG_ENABLE([emu],
 # setup  nvcc flags
 if  test x$DEBUG = xtrue
 then
-   NVCCFLAGS="-g -arch sm_20 --ptxas-options=-v"
+   NVCCFLAGS="-g -arch sm_13 --ptxas-options=-v"
 else
-   NVCCFLAGS="-arch sm_20 --ptxas-options=-v -g"
+   NVCCFLAGS="-arch sm_13 --ptxas-options=-v -g"
 fi
 if test x$EMULATION = xtrue
 then
@@ -3284,7 +3284,7 @@ AC_OUTPUT([Makefile
            qdecproject/Makefile
            vtkfsio/Makefile
            vtkutils/Makefile
-	   cudatest/Makefile])
+           cudatest/Makefile])
 
 ########################################################################
 
