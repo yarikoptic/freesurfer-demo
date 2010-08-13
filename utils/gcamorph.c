@@ -10,9 +10,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/07/06 19:44:32 $
- *    $Revision: 1.190.2.2 $
+ *    $Author: rge21 $
+ *    $Date: 2010/08/13 17:19:00 $
+ *    $Revision: 1.190.2.3 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -30,13 +30,13 @@
 // Control which portions are done on the GPU
 #define SHOW_EXEC_LOC 0
 #ifdef FS_CUDA
-#define GCAM_CMP_GPU
+//#define GCAM_CMP_GPU
 
-#define GCAM_LABEL_ENERGY_GPU
-#define GCAM_LLENERGY_GPU
-#define GCAM_JACOBENERGY_GPU
-#define GCAM_COMPUTE_RMS_GPU
-#define GCAM_SMOOTHNESS_ENERGY_GPU
+//#define GCAM_LABEL_ENERGY_GPU
+//#define GCAM_LLENERGY_GPU
+//#define GCAM_JACOBENERGY_GPU
+//#define GCAM_COMPUTE_RMS_GPU
+//#define GCAM_SMOOTHNESS_ENERGY_GPU
 #define GCAM_FIND_OPTIMAL_TIMESTEP_GPU
 
 //#define GCAM_SMOOTH_TERM_GPU
