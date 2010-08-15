@@ -8,8 +8,8 @@
 # Original Author: Doug Greve
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2010/08/15 01:58:25 $
-#    $Revision: 1.313.2.7 $
+#    $Date: 2010/08/15 16:30:06 $
+#    $Revision: 1.313.2.8 $
 #
 # Copyright (C) 2002-2010,
 # The General Hospital Corporation (Boston, MA).
@@ -26,7 +26,7 @@
 #
 umask 002;
 
-set VERSION = '$Id: recon-all,v 1.313.2.7 2010/08/15 01:58:25 nicks Exp $';
+set VERSION = '$Id: recon-all,v 1.313.2.8 2010/08/15 16:30:06 nicks Exp $';
 set ProgName = `basename $0`;
 
 set inputargs = ($argv);
@@ -2271,7 +2271,7 @@ foreach hemi ($hemilist)
     cd $subjdir/scripts > /dev/null
     set xopts = `fsr-getxopts mris_sphere $XOptsFile`;
     set cmd = (mris_sphere -q)
-#HACK NJS disable till normal vector of length zero bug fix:    if($UseCuda) set cmd = (mris_sphere_cuda -q)
+    if($UseCuda) set cmd = (mris_sphere_cuda -q)
     if($NoRandomness) set cmd = ($cmd -seed $RngSeed)
     set cmd = ($cmd $xopts)
     set cmd = ($cmd ../surf/$hemi.inflated.nofix ../surf/$hemi.qsphere.nofix)
@@ -2547,7 +2547,7 @@ foreach hemi ($hemilist)
       # default stream:
       set xopts = `fsr-getxopts mris_sphere $XOptsFile`;
       set cmd = (mris_sphere)
-#HACK NJS disable till normal vector of length zero bug fix:    if($UseCuda) set cmd = (mris_sphere_cuda -q)
+      if($UseCuda) set cmd = (mris_sphere_cuda -q)
       if($NoRandomness) set cmd = ($cmd -seed $RngSeed)
       if($UseNoNeg) set cmd = ($cmd -remove_negative 1)
       set cmd = ($cmd $xopts)
