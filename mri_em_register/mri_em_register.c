@@ -8,7 +8,7 @@
 /*
  * Original Author: Bruce Fischl
  * CUDA version : Richard Edgar
- * CVS Revision Info: $Id: mri_em_register.c,v 1.77 2010/02/12 19:43:30 rge21 Exp $
+ * CVS Revision Info: $Id: mri_em_register.c,v 1.77.2.1 2010/08/26 00:00:55 nicks Exp $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA).
@@ -197,7 +197,7 @@ main(int argc, char *argv[])
   nargs =
     handle_version_option
     (argc, argv,
-     "$Id: mri_em_register.c,v 1.77 2010/02/12 19:43:30 rge21 Exp $",
+     "$Id: mri_em_register.c,v 1.77.2.1 2010/08/26 00:00:55 nicks Exp $",
      "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
@@ -1253,11 +1253,17 @@ find_optimal_transform
     max_log_p = local_GCAcomputeLogSampleProbability
                 (gca, gcas, mri, m_L,nsamples) ;
     fprintf(stdout,
-            "Found translation: (%2.1f, %2.1f, %2.1f): log p = %2.1f\n",
+            "Found translation: (%2.1f, %2.1f, %2.1f): log p = %4.3f\n",
             *MATRIX_RELT(m_L, 1, 4),
             *MATRIX_RELT(m_L, 2, 4),
             *MATRIX_RELT(m_L, 3, 4),
             max_log_p) ;
+
+    /*
+    printf( "%s: Debugging exit\n", __FUNCTION__ );
+    exit( EXIT_SUCCESS );
+    */
+
 #endif
     /////////////////////////////////////////////////////////////////////////
 
@@ -1427,14 +1433,16 @@ find_optimal_translation
     }
 
 #if defined(FS_CUDA) && FAST_TRANSLATION
-     unsigned int nTrans = 1+((max_trans-min_trans)/delta);
+    unsigned int nTrans = 1+((max_trans-min_trans)/delta);
     float myMaxLogP, mydx, mydy, mydz;
     CUDA_FindOptimalTranslation( m_L, min_trans, max_trans, nTrans,
 				 &myMaxLogP, &mydx, &mydy, &mydz );
-    max_log_p = myMaxLogP;
-    x_max = mydx;
-    y_max = mydy;
-    z_max = mydz;
+    if( myMaxLogP > max_log_p ) {
+      max_log_p = myMaxLogP;
+      x_max = mydx;
+      y_max = mydy;
+      z_max = mydz;
+    }
 #else
     for (x_trans = min_trans ; x_trans <= max_trans ; x_trans += delta)
     {
@@ -1450,7 +1458,6 @@ find_optimal_translation
           if (nint((x_trans)) == -9 && nint((y_trans)) == -5 &&
               nint((z_trans)) == -7)
             DiagBreak() ;
-
           // get the transform
           m_L_tmp = MatrixMultiply(m_trans, m_L, m_L_tmp) ;
           // calculate the LogSample probability
@@ -1461,6 +1468,14 @@ find_optimal_translation
             local_GCAcomputeLogSampleProbability
             (gca, gcas, mri, m_L_tmp,nsamples) ;
 #endif
+	  
+#if 0
+	  printf( "%s: %8.3f %8.3f %8.3f %12.6f\n",
+		  __FUNCTION__,
+		  x_trans, y_trans, z_trans,
+		  log_p );
+#endif
+
           if (log_p > max_log_p)
           {
             max_log_p = log_p ;
@@ -1478,10 +1493,12 @@ find_optimal_translation
     }
 #endif
 
-    if (Gdiag & DIAG_SHOW)
+    if( Gdiag & DIAG_SHOW ) {
       printf(
-        "max log p = %2.1f @ (%2.1f, %2.1f, %2.1f)\n",
+        "max log p = %12.6f @ (%4.3f, %4.3f, %4.3f)\n",
         max_log_p, x_max, y_max, z_max) ;
+    }
+    
 
     /* update L to reflect new maximum and search around it */
     *MATRIX_RELT(m_trans, 1, 4) = x_max ;
@@ -1497,6 +1514,14 @@ find_optimal_translation
                 (gca, gcas, mri, m_L,nsamples) ;
 #endif
 
+#if 0
+    // Repeat for debugging
+    printf(
+	   "max log p = %12.6f @ (%4.3f, %4.3f, %4.3f)\n",
+	   max_log_p, x_max, y_max, z_max) ;
+#endif
+
+
     x_max = y_max = z_max = 0.0 ;
     /* we've translated transform by old maxs */
 
@@ -1505,7 +1530,6 @@ find_optimal_translation
     min_trans = mean_trans - delta ;
     max_trans = mean_trans + delta ;
   }
-  printf("\n") ;
 
   MatrixFree(&m_trans) ;
 
@@ -1520,6 +1544,9 @@ find_optimal_translation
   ----------------------------------------------------------------------*/
 static void printUsage(void)
 {
+  outputHelp(Progname);
+
+#ifdef GREGT
   // there are so many options.
   printf("usage: mri_em_register [<options>] "
          "<in volume> <atlas> <output transform>\n") ;
@@ -1579,6 +1606,7 @@ static void printUsage(void)
   printf("  -p ctl_point_pct : use top pct percent wm points as control points\n");
   printf("  -m momentum\n");
   printf("  \n");
+#endif
 
 }
 
@@ -1596,6 +1624,10 @@ get_option(int argc, char *argv[])
     parms.l_dist = atof(argv[2]) ;
     nargs = 1 ;
     printf("l_dist = %2.2f\n", parms.l_dist) ;
+  }
+  else if (!strcmp(option, "-HELP")||!strcmp(option, "-USAGE")) {
+      printUsage();
+      exit(1) ;
   }
   else if (!strcmp(option, "NOMAP"))
   {
@@ -2003,6 +2035,7 @@ get_option(int argc, char *argv[])
 #endif
       break ;
     case '?':
+    case 'H':
     case 'U':
       printUsage();
       exit(1) ;
@@ -2151,16 +2184,34 @@ find_optimal_linear_xform
     unsigned int nScale = 1+((max_scale-min_scale)/delta_scale);
     unsigned int nAngle = 1+((max_angle-min_angle)/delta_rot);
     unsigned int nTrans = 1+((max_trans-min_trans)/delta_trans);
+    double xMaxTrans, yMaxTrans, zMaxTrans;
+    double xMaxScale, yMaxScale, zMaxScale;
+    double xMaxRot, yMaxRot, zMaxRot;
+    double maxLogP;
     printf( "%s: %i %i %i\n", __FUNCTION__, nScale, nAngle, nTrans );
 
     CUDA_FindOptimalTransform( m_L, m_origin,
 			       min_trans, max_trans, nTrans,
 			       min_scale, max_scale, nScale,
 			       min_angle, max_angle, nAngle,
-			       &max_log_p,
-			       &x_max_trans, &y_max_trans, &z_max_trans,
-			       &x_max_scale, &y_max_scale, &z_max_scale,
-			       &x_max_rot, &y_max_rot, &z_max_rot );
+			       &maxLogP,
+			       &xMaxTrans, &yMaxTrans, &zMaxTrans,
+			       &xMaxScale, &yMaxScale, &zMaxScale,
+			       &xMaxRot, &yMaxRot, &zMaxRot );
+    if( maxLogP > max_log_p ) {
+      x_max_trans = xMaxTrans;
+      y_max_trans = yMaxTrans;
+      z_max_trans = zMaxTrans;
+      
+      x_max_scale = xMaxScale;
+      y_max_scale = yMaxScale;
+      z_max_scale = zMaxScale;
+
+      x_max_rot = xMaxRot;
+      y_max_rot = yMaxRot;
+      z_max_rot = zMaxRot;
+      max_log_p = maxLogP;
+    }
     
 #else
 
