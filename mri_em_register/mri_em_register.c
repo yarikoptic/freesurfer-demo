@@ -8,7 +8,7 @@
 /*
  * Original Author: Bruce Fischl
  * CUDA version : Richard Edgar
- * CVS Revision Info: $Id: mri_em_register.c,v 1.77.2.1 2010/08/26 00:00:55 nicks Exp $
+ * CVS Revision Info: $Id: mri_em_register.c,v 1.77.2.2 2010/08/26 04:12:35 nicks Exp $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA).
@@ -197,7 +197,7 @@ main(int argc, char *argv[])
   nargs =
     handle_version_option
     (argc, argv,
-     "$Id: mri_em_register.c,v 1.77.2.1 2010/08/26 00:00:55 nicks Exp $",
+     "$Id: mri_em_register.c,v 1.77.2.2 2010/08/26 04:12:35 nicks Exp $",
      "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
@@ -1544,9 +1544,6 @@ find_optimal_translation
   ----------------------------------------------------------------------*/
 static void printUsage(void)
 {
-  outputHelp(Progname);
-
-#ifdef GREGT
   // there are so many options.
   printf("usage: mri_em_register [<options>] "
          "<in volume> <atlas> <output transform>\n") ;
@@ -1606,8 +1603,6 @@ static void printUsage(void)
   printf("  -p ctl_point_pct : use top pct percent wm points as control points\n");
   printf("  -m momentum\n");
   printf("  \n");
-#endif
-
 }
 
 static int
