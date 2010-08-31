@@ -8,8 +8,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/08/03 20:19:37 $
- *    $Revision: 1.39.2.2 $
+ *    $Date: 2010/08/31 20:46:28 $
+ *    $Revision: 1.39.2.3 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -110,7 +110,7 @@ void Registration::computeIterativeRegistration( int nmax,double epsit, MRI * mr
 
   // check if mi (inital transform) is passed
   if (!m.empty()) fmd.first = m;
-  else if (!Minit.empty()) fmd.first = Minit;
+  else if (!Minit.empty()) fmd.first = getMinitResampled();
   else fmd.first = initializeTransform(mriS,mriT);
 
   if (verbose > 1)
@@ -124,7 +124,7 @@ void Registration::computeIterativeRegistration( int nmax,double epsit, MRI * mr
   MRI* mri_Twarp   = NULL;
   vnl_matrix_fixed<double , 4, 4> mh2;
   vnl_matrix_fixed<double , 4, 4> mh;
-  vnl_matrix_fixed<double , 4, 4> mhi;
+  vnl_matrix_fixed<double , 4, 4> mhi;mhi.set_identity();
   vnl_matrix_fixed<double , 4, 4> mi;
 	
   double diff = 100;
@@ -211,6 +211,7 @@ void Registration::computeIterativeRegistration( int nmax,double epsit, MRI * mr
 	}
 	
 	} // end double, now giving up RStep
+	// ------------------------------------------FLOAT------------------------------------------------------
 	else // identical (except float) below:
 	{
 	
@@ -325,11 +326,11 @@ void Registration::computeIterativeRegistration( int nmax,double epsit, MRI * mr
         {
           if (MRIFvox(mri_hweights,x,y,z) < 0) MRIFvox(mri_hweights,x,y,z) = 1;
         }
-		mri_weights = MRIalloc(mriT->width,mriT->height,mriT->depth,MRI_FLOAT);
+				
+    mri_weights = MRIalloc(mriT->width,mriT->height,mriT->depth,MRI_FLOAT);
     MRIcopyHeader(mriT,mri_weights);
     mri_weights->type = MRI_FLOAT;
     mri_weights = MyMRI::MRIlinearTransform(mri_hweights,mri_weights,mh2);
-	
   }
   mov2weights = mh; 
   dst2weights = mhi;
@@ -480,7 +481,7 @@ double Registration::findSaturation (MRI * mriS, MRI* mriT, const vnl_matrix < d
 
   // check if mi (inital transform) is passed
   if (!mi.empty()) md.first = mi;
-  else if (!Minit.empty()) md.first = Minit;
+  else if (!Minit.empty()) md.first = getMinitResampled();
   else md.first = initializeTransform(mriS,mriT);
 
   if (verbose >1 ) 
@@ -490,7 +491,7 @@ double Registration::findSaturation (MRI * mriS, MRI* mriT, const vnl_matrix < d
 		cout << "   - initial iscale: " << scaleinit <<endl;
   }
 
-  // adjust minit to current (lowest) resolution:
+  // adjust md.first to current (lowest) resolution:
   int rstart = 2;
   for (int r = 1; r<=resolution-rstart; r++)
     for (int rr = 0;rr<3;rr++)
@@ -647,7 +648,7 @@ void Registration::computeMultiresRegistration (int stopres, int n,double epsit,
 //   MRIwrite(gpS[i],fn);
 //  }
 
-	vnl_matrix_fixed <double, 4, 4> m; m.set_identity();
+	//vnl_matrix_fixed <double, 4, 4> m; m.set_identity();
 
   // variables to store matrix m and scaling factor d:
   pair < vnl_matrix_fixed <double, 4, 4> , double > cmd;
@@ -655,14 +656,24 @@ void Registration::computeMultiresRegistration (int stopres, int n,double epsit,
 
   // check if mi (inital transform) is passed
   if (!mi.empty()) md.first =mi;
-  else if (!Minit.empty()) md.first = Minit;
-  else md.first = initializeTransform(mriS,mriT);
+  else if (!Minit.empty()) md.first = getMinitResampled();
+  else md.first = initializeTransform(mriS,mriT); //default
+
+  if (debug)
+  {
+    MRI * mri_tmp = MRIclone(mriT,NULL); // bring to same space as target (output after resampling)
+    mri_tmp = MyMRI::MRIlinearTransform(mriS,mri_tmp,md.first);
+    MyMRI::MRIvalscale(mri_tmp,mri_tmp,md.second);
+	  string fn = getName() + "-mriS-init.mgz";
+    MRIwrite(mri_tmp,fn.c_str());
+    MRIfree(&mri_tmp);
+  }
 
   if (verbose >0 ) 
   {
     cout << "   - initial transform:\n" ;
 		cout << md.first << endl;
-		cout << "   - initial iscale: " << scaleinit <<endl;
+		cout << "   - initial iscale: " << md.second <<endl;
   }
 
   // adjust minit to current (lowest) resolution:
@@ -2845,16 +2856,16 @@ vnl_matrix_fixed <double,4,4> Registration::initializeTransform(MRI *mriS, MRI *
 
 // removed: do not trust RAS coordinates
 //  it can happen that SRC is outside of Target frame
-//  MATRIX* Minit = MRIgetVoxelToVoxelXform(mriS,mriT) ;
-//  MRI * mri_tmp = MRIlinearTransform(mriS,NULL,Minit);
+//  MATRIX* myinit = MRIgetVoxelToVoxelXform(mriS,mriT) ;
+//  MRI * mri_tmp = MRIlinearTransform(mriS,NULL,myinit);
 //  if (verbose > 1)
 //	{
 //      cout << endl <<"Vox2Vox (mov->dst): " << endl;
-//      MatrixPrintFmt(stdout,"% 2.8f",Minit);
+//      MatrixPrintFmt(stdout,"% 2.8f",myinit);
 //	}
 
-  //MATRIX* Minit = MatrixIdentity(4,NULL) ;
-  vnl_matrix_fixed <double,4,4> Minit; Minit.set_identity();
+  //MATRIX* myinit = MatrixIdentity(4,NULL) ;
+  vnl_matrix_fixed <double,4,4> myinit; myinit.set_identity();
 	
   // find centroids:
 	centroidS.clear();
@@ -2869,7 +2880,7 @@ vnl_matrix_fixed <double,4,4> Registration::initializeTransform(MRI *mriS, MRI *
 		 cout << "        Centroid T: " << centroidT[0] << ", " << centroidT[1] << ", "<< centroidT[2] << endl;	
 	}
 
-  if (!inittransform) return Minit;
+  if (!inittransform) return myinit;
 
   //bool initorient = false; // do not use orientation (can be off due to different cropping)
   //bool initorient = true;
@@ -2932,31 +2943,31 @@ vnl_matrix_fixed <double,4,4> Registration::initializeTransform(MRI *mriS, MRI *
         }
 
       // first move Src centroid to origin
-      Minit[0][3] -= centroidS[0];
-      Minit[1][3] -= centroidS[1];
-      Minit[2][3] -= centroidS[2];
+      myinit[0][3] -= centroidS[0];
+      myinit[1][3] -= centroidS[1];
+      myinit[2][3] -= centroidS[2];
 
       // Rotate evT * evS^-1
       //MATRIX* evS2i = MatrixInverse(evS2,NULL);
       vnl_matrix_fixed < double , 4, 4 >  evS2i = vnl_inverse(evS2);
       //assert(evS2i);
-      //Minit = MatrixMultiply(evS2i,Minit,Minit);
-      //Minit = MatrixMultiply(evT2,Minit,Minit);
-      Minit = evT2* evS2i * Minit;
+      //myinit = MatrixMultiply(evS2i,myinit,myinit);
+      //myinit = MatrixMultiply(evT2,myinit,myinit);
+      myinit = evT2* evS2i * myinit;
  
       // finally move to T centroid
-      Minit[0][3] += centroidT[0];
-      Minit[1][3] += centroidT[1];
-      Minit[2][3] += centroidT[2];
+      myinit[0][3] += centroidT[0];
+      myinit[1][3] += centroidT[1];
+      myinit[2][3] += centroidT[2];
 
-      if (debug)
-      {
-			  MATRIX * mtmp = MyMatrix::convertVNL2MATRIX(Minit,NULL);
-        MRI* mri_tmp = MRIlinearTransform(mriS,NULL,mtmp); // move to mymri using vnl matrix later
-				MatrixFree(&mtmp);
-        MRIwrite(mri_tmp,"init-align-rot.mgz");
-        MRIfree(&mri_tmp);				
-      }
+//       if (debug)
+//       {
+// 			  MATRIX * mtmp = MyMatrix::convertVNL2MATRIX(myinit,NULL);
+//         MRI* mri_tmp = MRIlinearTransform(mriS,NULL,mtmp); // move to mymri using vnl matrix later
+// 				MatrixFree(&mtmp);
+//         MRIwrite(mri_tmp,"init-align-rot.mgz");
+//         MRIfree(&mri_tmp);				
+//       }
       //MatrixFree(&evS2);
       //MatrixFree(&evS2i);
       //MatrixFree(&evT2);
@@ -2969,21 +2980,22 @@ vnl_matrix_fixed <double,4,4> Registration::initializeTransform(MRI *mriS, MRI *
   if (!initorient) // if orientation did not work
   {
     cout << "     -- using translation info\n" ;
-    Minit[0][3] += centroidT[0]-centroidS[0];
-    Minit[1][3] += centroidT[1]-centroidS[1];
-    Minit[2][3] += centroidT[2]-centroidS[2];
-    if (debug)
-    {
-			MATRIX * mtmp = MyMatrix::convertVNL2MATRIX(Minit,NULL);
-      MRI * mri_tmp = MRIlinearTransform(mriS,NULL,mtmp);
-			MatrixFree(&mtmp);
-      MRIwrite(mri_tmp,"init-align-trans.mgz");
-      MRIfree(&mri_tmp);
-    }
+    myinit[0][3] += centroidT[0]-centroidS[0];
+    myinit[1][3] += centroidT[1]-centroidS[1];
+    myinit[2][3] += centroidT[2]-centroidS[2];
+//     if (debug)
+//     {
+// 			MATRIX * mtmp = MyMatrix::convertVNL2MATRIX(myinit,NULL);
+//       MRI * mri_tmp = MRIlinearTransform(mriS,NULL,mtmp);
+// 			MatrixFree(&mtmp);
+//       MRIwrite(mri_tmp,"initS-align-trans.mgz");
+//       MRIfree(&mri_tmp);
+//       MRIwrite(mriT,"initT-align-trans.mgz");
+//     }
   }
 
 
-  return Minit;
+  return myinit;
 }
 
 
@@ -3049,47 +3061,66 @@ void Registration::setSourceAndTarget (MRI * s,MRI * t, bool keeptype)
   cout << "Registration::setSourceAndTarget ..." << endl;
 	
 	// we will make images isotropic
-	double minsize = s->xsize;
+
   // get smallest dimension
-  if (s->ysize < minsize) minsize = s->ysize;
-	if (s->zsize < minsize) minsize = s->zsize;
-	if (t->xsize < minsize) minsize = t->xsize;
-	if (t->ysize < minsize) minsize = t->ysize;
-	if (t->zsize < minsize) minsize = t->zsize;
-  vector < int > s_dim = MyMRI::findRightSize(s, minsize,false);
-  vector < int > t_dim = MyMRI::findRightSize(t, minsize,false);
+  double mins = s->xsize;
+  if (s->ysize < mins) mins = s->ysize;
+  if (s->zsize < mins) mins = s->zsize;
+  double mint = t->xsize;
+  if (t->ysize < mint) mint = t->ysize;
+  if (t->zsize < mint) mint = t->zsize;
+  // select the larger of the smallest sides
+  double isosize = mins;
+  if ( mint > mins ) isosize = mint;
+  vector < int > s_dim = MyMRI::findRightSize(s, isosize,false);
+  vector < int > t_dim = MyMRI::findRightSize(t, isosize,false);
   for (uint i = 0;i<3;i++)
 	  if (s_dim[i] < t_dim[i]) s_dim[i] = t_dim[i];
 
-  cout << "   Asserting " << minsize <<"mm isotropic and (" << s_dim[0] << ", " << s_dim[1] << ", " << s_dim[2] <<") voxels" <<endl;
+  cout << "   Asserting both images: " << isosize <<"mm isotropic and (" << s_dim[0] << ", " << s_dim[1] << ", " << s_dim[2] <<") voxels" <<endl;
 
   // source
-	pair < MRI*, vnl_matrix_fixed < double, 4, 4> > mm = makeIsotropic(s,NULL,minsize,s_dim[0],s_dim[1],s_dim[2],keeptype);
+	pair < MRI*, vnl_matrix_fixed < double, 4, 4> > mm = makeIsotropic(s,NULL,isosize,s_dim[0],s_dim[1],s_dim[2],keeptype);
 	if (mri_source) MRIfree(&mri_source);
 	mri_source = mm.first;
 	Rsrc = mm.second;
-	if (debug)
+	bool rl = needReslice(s,isosize,s_dim[0],s_dim[1],s_dim[2],keeptype);
+  if (debug)
 	{
-	   string n = name+string("-mriS-resample.mgz");
-     MRIwrite(mri_source,n.c_str());
+	   cout << "   Reslice Src Matrix: " << endl << mm.second << endl;
+     if (rl)
+     {
+	     string n = name+string("-mriS-resample.mgz");
+		   cout << "   Writing resampled source as " << n << endl;
+       MRIwrite(mri_source,n.c_str());
+     }
   }
+	if (!rl ) cout << "    - no Source reslice necessary" << endl;
 	   
 	// target
-	mm = makeIsotropic(t,NULL,minsize,s_dim[0],s_dim[1],s_dim[2],keeptype);
+	mm = makeIsotropic(t,NULL,isosize,s_dim[0],s_dim[1],s_dim[2],keeptype);
 	if (mri_target) MRIfree(&mri_target);
 	mri_target = mm.first;
 	Rtrg = mm.second;
-	if (debug)
+	rl = needReslice(t,isosize,s_dim[0],s_dim[1],s_dim[2],keeptype);
+  if (debug)
 	{
-	  string n = name+string("-mriT-resample.mgz");
-    MRIwrite(mri_target,n.c_str());
+	  cout << "   Reslice Trg Matrix: " << endl << mm.second << endl;
+    if (rl)
+    {
+	    string n = name+string("-mriT-resample.mgz");
+		  cout << "   Writing resampled target as " << n << endl;
+      MRIwrite(mri_target,n.c_str());
+    }
   }
+	if (!rl ) cout << "    - no Target reslice necessary" << endl;
 		 
 	
   if (gpS.size() > 0) freeGaussianPyramid(gpS);
 	centroidS.clear();
   if (gpT.size() > 0) freeGaussianPyramid(gpT);
 	centroidT.clear();
+	if (verbose > 1 ) cout << " DONE setSoruceAndTarget " << endl;
 }
 
 
@@ -3153,30 +3184,41 @@ void Registration::setName(const std::string &n)
   }
 }
 
+bool Registration::needReslice(MRI *mri,  double vsize, int xdim, int ydim, int zdim, bool keeptype)
+{
+  // don't change type if keeptype or if already float:
+  bool notypeconvert = (keeptype || mri->type == MRI_FLOAT);
+//	if (notypeconvert && verbose > 1) cout << "     - no TYPE conversion necessary" << endl;
+	// dont change voxel size if 
+	// if already conform and no vsize specified
+	bool novoxconvert  = (vsize < 0 && mri->xsize == mri->ysize && mri->ysize == mri->zsize );
+//	if (novoxconvert && verbose > 1) cout << "     - no vsize and allready conform "<< mri->xsize << endl;
+	// if conform like vsize and no dims specified:
+	bool conformvsize = (mri->xsize == vsize && mri->ysize == vsize && mri->zsize== vsize);
+//	if (conformvsize && verbose > 1) cout << "     - allready conform to "<< vsize << endl;
+	novoxconvert = novoxconvert || (xdim < 0 && ydim < 0 && zdim < 0  && conformvsize);
+//	if (novoxconvert && verbose > 1) cout << "     - no voxel conversion necessary (dimensions not passed)" << endl;
+	// or if all values are specified and agree:
+	bool dimagree = (xdim == mri->width && ydim== mri->height && zdim ==mri->depth);
+//	if (dimagree && verbose > 1) cout << "     - image dimensions agree" << endl;
+	novoxconvert = novoxconvert || (conformvsize && dimagree);
+//	if (novoxconvert && verbose > 1) cout << "     - no VOXEL conversion necessary" << endl;
+	
+  return !(novoxconvert && notypeconvert );
+}
 
 std::pair < MRI* , vnl_matrix_fixed <double, 4, 4> >
 Registration::makeIsotropic(MRI *mri, MRI *out, double vsize, int xdim, int ydim, int zdim, bool keeptype)
 // makes the voxel size isotropic (and vox2ras map standard)
 {
-  // don't change type if keeptype or if already float:
-  bool notypeconvert = (keeptype || mri->type == MRI_FLOAT);
-	// dont change voxel size if 
-	// if already conform and no vsize specified
-	bool novoxconvert  = (vsize < 0 && mri->xsize == mri->ysize && mri->ysize == mri->zsize );
-	// if conform like vsize and no dims specified:
-	bool conformvsize = (mri->xsize == vsize && mri->ysize == vsize && mri->zsize== vsize);
-	novoxconvert = novoxconvert || (xdim < 0 && ydim < 0 && zdim < 0  && conformvsize);
-	// or if all values are specified and agree:
-	bool dimagree = (xdim == mri->width && ydim== mri->height && zdim ==mri->width);
-	novoxconvert = novoxconvert || (conformvsize && dimagree);
-	
 
   out = MRIcopy(mri,out);
 	vnl_matrix_fixed < double , 4, 4> Rm;Rm.set_identity();
 	
-	if (novoxconvert && notypeconvert )
+	if (! needReslice(mri,vsize,xdim,ydim,zdim,keeptype ) )
 	   return std::pair < MRI *,vnl_matrix_fixed < double, 4, 4> >(out,Rm);
-	
+		 
+	if (verbose > 1) cout << "     - will resample image" << endl;
 	// determine conform size
   double conform_size = vsize;
 	if (conform_size < 0) // if not set use minimum:
@@ -3449,3 +3491,20 @@ std::pair < vnl_matrix_fixed < double , 4, 4 >, vnl_matrix_fixed < double , 4, 4
   return md2w;
 }
 
+vnl_matrix < double > Registration::getMinitResampled()
+// returns the Minit matrix as vox2vox for the resampled images
+// (it is originally the vox2vox of the input images before resampling)
+// see also description of Registration::getFinalVox2Vox
+{
+  if (Minit.empty()) return Minit;
+  if (!resample) return Minit;
+	
+	vnl_matrix < double > MIR(4,4);
+	
+	MIR =  vnl_inverse(Rtrg) * Minit * Rsrc;
+
+  //cout << " Rscr: " << endl << Rsrc << endl;
+  //cout << " Rtrg: " << endl << Rtrg << endl;
+
+  return MIR;
+}
