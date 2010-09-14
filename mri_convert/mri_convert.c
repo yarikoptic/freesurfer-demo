@@ -7,8 +7,8 @@
  * Original Author: Bruce Fischl (Apr 16, 1997)
  * CVS Revision Info:
  *    $Author: greve $
- *    $Date: 2010/08/10 19:11:50 $
- *    $Revision: 1.166.2.2 $
+ *    $Date: 2010/09/14 21:03:28 $
+ *    $Revision: 1.166.2.3 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
 
   make_cmd_version_string
     (argc, argv,
-     "$Id: mri_convert.c,v 1.166.2.2 2010/08/10 19:11:50 greve Exp $", 
+     "$Id: mri_convert.c,v 1.166.2.3 2010/09/14 21:03:28 greve Exp $", 
      "$Name:  $",
      cmdline);
 
@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
     handle_version_option
     (
       argc, argv,
-      "$Id: mri_convert.c,v 1.166.2.2 2010/08/10 19:11:50 greve Exp $", 
+      "$Id: mri_convert.c,v 1.166.2.3 2010/09/14 21:03:28 greve Exp $", 
       "$Name:  $"
       );
   if (nargs && argc - nargs == 1)
@@ -310,13 +310,12 @@ int main(int argc, char *argv[]) {
   argc -= nargs;
 
   for(i = 1;i < argc;i++) {
-    if(strcmp(argv[i], "-version2") == 0)
-      exit(97);
-    if(strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--reorder") == 0) {
+    if(strcmp(argv[i], "-version2") == 0) exit(97);
+    else if(strcmp(argv[i], "-r") == 0 || strcmp(argv[i], "--reorder") == 0) {
       get_ints(argc, argv, &i, reorder_vals, 3);
       reorder_flag = TRUE;
     }
-    if(strcmp(argv[i], "-r4") == 0 || strcmp(argv[i], "--reorder4") == 0) {
+    else if(strcmp(argv[i], "-r4") == 0 || strcmp(argv[i], "--reorder4") == 0) {
       get_ints(argc, argv, &i, reorder4_vals, 4);
       reorder4_flag = TRUE;
     }
@@ -1007,7 +1006,8 @@ int main(int argc, char *argv[]) {
 
     } else if ((strcmp(argv[i], "-u") == 0)
                || (strcmp(argv[i], "--usage") == 0)
-               || (strcmp(argv[i], "--help") == 0)) {
+               || (strcmp(argv[i], "--help") == 0)
+               || (strcmp(argv[i], "-h") == 0)) {
       usage(stdout);
       exit(0);
     }
@@ -1336,7 +1336,7 @@ int main(int argc, char *argv[]) {
             "= --zero_ge_z_offset option ignored.\n");
   }
 
-  printf("$Id: mri_convert.c,v 1.166.2.2 2010/08/10 19:11:50 greve Exp $\n");
+  printf("$Id: mri_convert.c,v 1.166.2.3 2010/09/14 21:03:28 greve Exp $\n");
   printf("reading from %s...\n", in_name_only);
 
   if (in_volume_type == OTL_FILE) {
@@ -2604,7 +2604,12 @@ void usage_message(FILE *stream) {
 
 } /* end usage_message() */
 
+
 void usage(FILE *stream) {
+
+  outputHelp(Progname);
+
+#ifdef GREGT
 
   fprintf(stream, "\n");
   fprintf(stream, "usage: %s [options] <in volume> <out volume>\n",
@@ -2976,6 +2981,7 @@ void usage(FILE *stream) {
          "cosines or orientation string,\n");
   printf("the ras_good_flag is set.\n");
   printf("\n");
+#endif // GREGT
 
 } /* end usage() */
 
