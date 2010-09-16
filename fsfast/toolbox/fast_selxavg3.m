@@ -1,6 +1,6 @@
 % fast_selxavg3.m
 %
-% $Id: fast_selxavg3.m,v 1.88.2.2 2010/07/16 15:31:24 greve Exp $
+% $Id: fast_selxavg3.m,v 1.88.2.3 2010/09/16 15:35:54 greve Exp $
 
 
 %
@@ -9,8 +9,8 @@
 % Original Author: Doug Greve
 % CVS Revision Info:
 %    $Author: greve $
-%    $Date: 2010/07/16 15:31:24 $
-%    $Revision: 1.88.2.2 $
+%    $Date: 2010/09/16 15:35:54 $
+%    $Revision: 1.88.2.3 $
 %
 % Copyright (C) 2002-2007,
 % The General Hospital Corporation (Boston, MA). 
@@ -25,17 +25,27 @@
 % Bug reports: analysis-bugs@nmr.mgh.harvard.edu
 %
 
+sessname = basename(sess);
+fprintf('\n');
+fprintf('\n');
+fprintf('#@# %s ###############################\n',sessname);
+fprintf('%s\n',sess);
 
-fprintf('$Id: fast_selxavg3.m,v 1.88.2.2 2010/07/16 15:31:24 greve Exp $\n');
+
+fprintf('-------------------------\n');
+fprintf('$Id: fast_selxavg3.m,v 1.88.2.3 2010/09/16 15:35:54 greve Exp $\n');
+which fast_selxavg3
+which fast_ldanaflac
+which MRIread
+fprintf('-------------------------\n');
+
+if(isempty(outtop)) outtop = fast_dirname(sess); end
+fprintf('outtop = %s\n',outtop);
 
 SUBJECTS_DIR = getenv('SUBJECTS_DIR');
 FSHOME = getenv('FREESURFER_HOME');
 
 dof2 = 0; % in case there are no contrasts
-
-sessname = basename(sess);
-if(isempty(outtop)) outtop = fast_dirname(sess); end
-fprintf('outtop = %s\n',outtop);
 
 ext = getenv('FSF_OUTPUT_FORMAT');
 if(isempty(ext)) ext = 'nii'; end
@@ -50,7 +60,7 @@ if(isempty(flac0))
   if(~monly) quit; end
   return; 
 end
-flac0.sxaversion = '$Id: fast_selxavg3.m,v 1.88.2.2 2010/07/16 15:31:24 greve Exp $';
+flac0.sxaversion = '$Id: fast_selxavg3.m,v 1.88.2.3 2010/09/16 15:35:54 greve Exp $';
 
 flac0.sess = sess;
 flac0.nthrun = 1;
@@ -59,7 +69,6 @@ if(isempty(flac0))
   if(~monly) quit; end
   return; 
 end
-
 nruns = size(flac0.runlist,1);
 fprintf('nruns = %d\n',nruns);
 ncontrasts = length(flac0.con);
