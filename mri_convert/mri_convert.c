@@ -6,9 +6,9 @@
 /*
  * Original Author: Bruce Fischl (Apr 16, 1997)
  * CVS Revision Info:
- *    $Author: greve $
- *    $Date: 2010/09/14 21:03:28 $
- *    $Revision: 1.166.2.3 $
+ *    $Author: nicks $
+ *    $Date: 2010/09/20 17:29:33 $
+ *    $Revision: 1.166.2.4 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
 
   make_cmd_version_string
     (argc, argv,
-     "$Id: mri_convert.c,v 1.166.2.3 2010/09/14 21:03:28 greve Exp $", 
+     "$Id: mri_convert.c,v 1.166.2.4 2010/09/20 17:29:33 nicks Exp $", 
      "$Name:  $",
      cmdline);
 
@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
     handle_version_option
     (
       argc, argv,
-      "$Id: mri_convert.c,v 1.166.2.3 2010/09/14 21:03:28 greve Exp $", 
+      "$Id: mri_convert.c,v 1.166.2.4 2010/09/20 17:29:33 nicks Exp $", 
       "$Name:  $"
       );
   if (nargs && argc - nargs == 1)
@@ -1336,7 +1336,7 @@ int main(int argc, char *argv[]) {
             "= --zero_ge_z_offset option ignored.\n");
   }
 
-  printf("$Id: mri_convert.c,v 1.166.2.3 2010/09/14 21:03:28 greve Exp $\n");
+  printf("$Id: mri_convert.c,v 1.166.2.4 2010/09/20 17:29:33 nicks Exp $\n");
   printf("reading from %s...\n", in_name_only);
 
   if (in_volume_type == OTL_FILE) {
@@ -2607,9 +2607,12 @@ void usage_message(FILE *stream) {
 
 void usage(FILE *stream) {
 
+#ifdef GREGT
+
+//TODO: gregs help output routine isnt ready for prime-time
   outputHelp(Progname);
 
-#ifdef GREGT
+#else
 
   fprintf(stream, "\n");
   fprintf(stream, "usage: %s [options] <in volume> <out volume>\n",
