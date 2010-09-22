@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/07/23 20:14:29 $
- *    $Revision: 1.2.2.2 $
+ *    $Date: 2010/09/22 17:13:35 $
+ *    $Revision: 1.2.2.3 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -36,6 +36,10 @@
 #include "LayerMRI.h"
 #include "LayerCollection.h"
 #include "CommonDataStruct.h"
+
+#if wxVERSION_NUMBER > 2900
+#include <wx/bookctrl.h>
+#endif
 
 extern "C"
 {
@@ -265,44 +269,50 @@ void DialogTransformVolume::OnScrollTranslateZ( wxScrollEvent& event )
 
 void DialogTransformVolume::RespondTextTranslate( int n )
 {
-  double dvalue;
-  if ( m_textTranslate[n]->GetValue().ToDouble( &dvalue ) )
+  if ( IsShown() )
   {
-    LayerMRI* layer = ( LayerMRI* )MainWindow::GetMainWindowPointer()->GetActiveLayer( "MRI" );
-    if ( layer )
+    double dvalue;
+    if ( m_textTranslate[n]->GetValue().ToDouble( &dvalue ) )
     {
-      double pos[3];
-      layer->GetTranslate( pos );
-      pos[n] = dvalue;
-      layer->Translate( pos );
-      MainWindow::GetMainWindowPointer()->NeedRedraw();
-      
-      double* vs = layer->GetWorldVoxelSize();
-      int range = m_scrollTranslate[n]->GetRange();
-      m_scrollTranslate[n]->SetThumbPosition( range/2 + (int)( pos[n] / vs[n] ) );
-      m_btnRestoreOriginal->Enable();
-      UpdateUI( 1 );
+      LayerMRI* layer = ( LayerMRI* )MainWindow::GetMainWindowPointer()->GetActiveLayer( "MRI" );
+      if ( layer )
+      {
+        double pos[3];
+        layer->GetTranslate( pos );
+        pos[n] = dvalue;
+        layer->Translate( pos );
+        MainWindow::GetMainWindowPointer()->NeedRedraw();
+        
+        double* vs = layer->GetWorldVoxelSize();
+        int range = m_scrollTranslate[n]->GetRange();
+        m_scrollTranslate[n]->SetThumbPosition( range/2 + (int)( pos[n] / vs[n] ) );
+        m_btnRestoreOriginal->Enable();
+        UpdateUI( 1 );
+      }
     }
   }
 }
 
 void DialogTransformVolume::RespondScrollTranslate( int n )
 {
-  LayerMRI* layer = ( LayerMRI* )MainWindow::GetMainWindowPointer()->GetActiveLayer( "MRI" );
-  if ( layer )
+  if ( IsShown() )
   {
-    double pos[3];
-    layer->GetTranslate( pos );
-    int range = m_scrollTranslate[n]->GetRange();
-    int npos = m_scrollTranslate[n]->GetThumbPosition();
-    double* vs = layer->GetWorldVoxelSize();
-    pos[n] = ( npos - range/2 ) * vs[n];    
-    layer->Translate( pos );
-    MainWindow::GetMainWindowPointer()->NeedRedraw();
-    
-    m_textTranslate[n]->ChangeValue( wxString() << pos[n] );
-    m_btnRestoreOriginal->Enable();
-    UpdateUI( 1 );
+    LayerMRI* layer = ( LayerMRI* )MainWindow::GetMainWindowPointer()->GetActiveLayer( "MRI" );
+    if ( layer )
+    {
+      double pos[3];
+      layer->GetTranslate( pos );
+      int range = m_scrollTranslate[n]->GetRange();
+      int npos = m_scrollTranslate[n]->GetThumbPosition();
+      double* vs = layer->GetWorldVoxelSize();
+      pos[n] = ( npos - range/2 ) * vs[n];    
+      layer->Translate( pos );
+      MainWindow::GetMainWindowPointer()->NeedRedraw();
+      
+      m_textTranslate[n]->ChangeValue( wxString() << pos[n] );
+      m_btnRestoreOriginal->Enable();
+      UpdateUI( 1 );
+    }
   }
 }
 
@@ -339,25 +349,28 @@ void DialogTransformVolume::OnScrollScaleZ( wxScrollEvent& event )
 
 void DialogTransformVolume::RespondTextScale( int n )
 {
-  double dvalue;
-  if ( m_textScale[n]->GetValue().ToDouble( &dvalue ) && dvalue > 0 )
+  if ( IsShown() )
   {
-    LayerMRI* layer = ( LayerMRI* )MainWindow::GetMainWindowPointer()->GetActiveLayer( "MRI" );
-    if ( layer )
+    double dvalue;
+    if ( m_textScale[n]->GetValue().ToDouble( &dvalue ) && dvalue > 0 )
     {
-      double scale[3];
-      layer->GetScale( scale );
-      scale[n] = dvalue;
-      layer->Scale( scale );
-      MainWindow::GetMainWindowPointer()->NeedRedraw();
-      
-      if ( dvalue >= 1 )
-        m_scrollScale[n]->SetThumbPosition( 50 + (int)( (dvalue-1.0)*50 ) );
-      else        
-        m_scrollScale[n]->SetThumbPosition( 50 - (int)( (1.0-dvalue)*100 ) );
+      LayerMRI* layer = ( LayerMRI* )MainWindow::GetMainWindowPointer()->GetActiveLayer( "MRI" );
+      if ( layer )
+      {
+        double scale[3];
+        layer->GetScale( scale );
+        scale[n] = dvalue;
+        layer->Scale( scale );
+        MainWindow::GetMainWindowPointer()->NeedRedraw();
         
-      m_btnRestoreOriginal->Enable();
-      UpdateUI( 0 );
+        if ( dvalue >= 1 )
+          m_scrollScale[n]->SetThumbPosition( 50 + (int)( (dvalue-1.0)*50 ) );
+        else        
+          m_scrollScale[n]->SetThumbPosition( 50 - (int)( (1.0-dvalue)*100 ) );
+          
+        m_btnRestoreOriginal->Enable();
+        UpdateUI( 0 );
+      }
     }
   }
 }
@@ -383,7 +396,12 @@ void DialogTransformVolume::RespondScrollScale( int n )
   }
 }
 
+//#if wxCHECK_VERSION( 2, 9, 0 )
+#if wxVERSION_NUMBER > 2900
+void DialogTransformVolume::OnPageChanged( wxBookCtrlEvent& event )
+#else
 void DialogTransformVolume::OnPageChanged( wxNotebookEvent& event )
+#endif
 {
 }
 

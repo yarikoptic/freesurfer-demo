@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/03/10 21:40:06 $
- *    $Revision: 1.10 $
+ *    $Author: nicks $
+ *    $Date: 2010/09/22 17:13:36 $
+ *    $Revision: 1.10.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -46,6 +46,7 @@ public:
   ToolWindowEdit( wxWindow* parent );
   virtual ~ToolWindowEdit();
 
+  void OnClose( wxCloseEvent& event );
   void OnShow( wxShowEvent& event );
 
   void OnActionVoxelFreehand          ( wxCommandEvent& event );

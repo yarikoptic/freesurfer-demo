@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/07/23 17:52:20 $
- *    $Revision: 1.7.2.1 $
+ *    $Date: 2010/09/22 17:13:36 $
+ *    $Revision: 1.7.2.2 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -58,14 +58,18 @@ BEGIN_EVENT_TABLE( ToolWindowMeasure, wxFrame )
   EVT_UPDATE_UI ( XRCID( "ID_ACTION_MEASURE_SPLINE" ),    ToolWindowMeasure::OnActionMeasureSplineUpdateUI )
   EVT_MENU      ( XRCID( "ID_ACTION_MEASURE_SURFACE" ),   ToolWindowMeasure::OnActionMeasureSurfaceRegion )
   EVT_UPDATE_UI ( XRCID( "ID_ACTION_MEASURE_SURFACE" ),   ToolWindowMeasure::OnActionMeasureSurfaceRegionUpdateUI )
+  EVT_MENU      ( XRCID( "ID_ACTION_MEASURE_LABEL" ),     ToolWindowMeasure::OnActionMeasureLabel )
+  EVT_UPDATE_UI ( XRCID( "ID_ACTION_MEASURE_LABEL" ),     ToolWindowMeasure::OnActionMeasureLabelUpdateUI )
   EVT_BUTTON    ( XRCID( "ID_BUTTON_COPY" ),              ToolWindowMeasure::OnButtonCopy )
   EVT_BUTTON    ( XRCID( "ID_BUTTON_EXPORT" ),            ToolWindowMeasure::OnButtonExport )
   EVT_BUTTON    ( XRCID( "ID_BUTTON_SAVE" ),              ToolWindowMeasure::OnButtonSave )
   EVT_BUTTON    ( XRCID( "ID_BUTTON_SAVE_ALL" ),          ToolWindowMeasure::OnButtonSaveAll )
   EVT_BUTTON    ( XRCID( "ID_BUTTON_LOAD" ),              ToolWindowMeasure::OnButtonLoad )
+  EVT_BUTTON    ( XRCID( "ID_BUTTON_UPDATE" ),            ToolWindowMeasure::OnButtonUpdate )
   EVT_SPINCTRL  ( XRCID( "ID_SPIN_ID"),                   ToolWindowMeasure::OnSpinId )      
   
   EVT_SHOW      ( ToolWindowMeasure::OnShow )
+  EVT_CLOSE     ( ToolWindowMeasure::OnClose )
 
 END_EVENT_TABLE()
 
@@ -80,6 +84,7 @@ ToolWindowMeasure::ToolWindowMeasure( wxWindow* parent ) : Listener( "ToolWindow
   m_btnSave     = XRCCTRL( *this, "ID_BUTTON_SAVE",     wxButton );
   m_btnSaveAll  = XRCCTRL( *this, "ID_BUTTON_SAVE_ALL",   wxButton );
   m_btnLoad     = XRCCTRL( *this, "ID_BUTTON_LOAD",     wxButton );
+  m_btnUpdate   = XRCCTRL( *this, "ID_BUTTON_UPDATE",     wxButton );
   m_spinId      = XRCCTRL( *this, "ID_SPIN_ID",         wxSpinCtrl );
   
   m_widgets2D.push_back( m_btnCopy );
@@ -99,9 +104,23 @@ ToolWindowMeasure::ToolWindowMeasure( wxWindow* parent ) : Listener( "ToolWindow
 ToolWindowMeasure::~ToolWindowMeasure()
 {}
 
+
+void ToolWindowMeasure::OnClose( wxCloseEvent& event)
+{
+  Hide(); 
+  MainWindow* mainwnd = MainWindow::GetMainWindowPointer();
+  if ( mainwnd->IsShown() )
+    mainwnd->SetMode( 0 );
+}
+
 void ToolWindowMeasure::OnShow( wxShowEvent& event )
 {
+//#if wxCHECK_VERSION(2,9,0)
+#if wxVERSION_NUMBER > 2900  
+  if ( event.IsShown() )
+#else
   if ( event.GetShow() )
+#endif  
   {
     wxConfigBase* config = wxConfigBase::Get();
     if ( config )
@@ -160,10 +179,59 @@ void ToolWindowMeasure::UpdateWidgets( )
   m_bToUpdateWidgets = true;
 }
 
+wxString ToolWindowMeasure::GetLabelStats()
+{
+  wxString strg;
+  LayerCollection* lc = MainWindow::GetMainWindowPointer()->GetLayerCollection( "MRI" );
+  LayerMRI* label = NULL, *mri = NULL;
+  for ( int i = 0; i < lc->GetNumberOfLayers(); i++ )
+  {
+    if ( ( (LayerMRI*)lc->GetLayer( i ) )->GetProperties()->GetColorMap() == LayerPropertiesMRI::LUT )
+    {
+      label = ( (LayerMRI*)lc->GetLayer( i ) );
+      break;
+    }
+  }
+  for ( int i = 0; i < lc->GetNumberOfLayers(); i++ )
+  {
+    if ( ( (LayerMRI*)lc->GetLayer( i ) )->GetProperties()->GetColorMap() != LayerPropertiesMRI::LUT )
+    {
+      mri = ( (LayerMRI*)lc->GetLayer( i ) );
+      break;
+    }
+  }
+  if ( label && mri )
+  {
+    int nPlane = MainWindow::GetMainWindowPointer()->GetMainViewId();
+    std::vector<int> ids, numbers;
+    std::vector<double> means, sds;
+    mri->GetLabelStats( label, nPlane, ids, numbers, means, sds );
+    strg << "Id \tCount \tMean \t+/-SD\n";
+    for ( size_t i = 0; i < ids.size(); i++ )
+    {
+      wxString snum, smean;
+      snum << numbers[i];
+      smean << means[i];
+      if ( snum.size() < 4 )
+        snum.Pad( (4-snum.size())*2 );
+      if ( smean.size() < 4 )
+        smean.Pad( (4-smean.size())*2 );
+      strg << ids[i] << " \t" << snum << " \t" << smean << " \t" << sds[i] << "\n";
+    }
+  }
+  
+  return strg;
+}
+
 void ToolWindowMeasure::DoUpdateWidgets()
 {
   wxString strg;
-  if ( m_region )
+  RenderView2D* view = (RenderView2D*)MainWindow::GetMainWindowPointer()->GetRenderView( 0 );
+  if ( view->GetAction() == Interactor::MM_Label )
+  {
+    strg = GetLabelStats();
+  }
+  else if ( m_region )
   {
     wxArrayString strgs = m_region->GetLongStats();
     for ( size_t i = 0; i < strgs.size(); i++ )
@@ -172,8 +240,8 @@ void ToolWindowMeasure::DoUpdateWidgets()
   m_textStats->ChangeValue( strg ); 
   m_btnCopy->Enable( !strg.IsEmpty() );
   m_btnExport->Enable( !strg.IsEmpty() );
+  m_btnUpdate->Show( view->GetAction() == Interactor::MM_Label );
   
-  RenderView3D* view = (RenderView3D*)MainWindow::GetMainWindowPointer()->GetRenderView( 3 );
   for ( size_t i = 0; i < m_widgets3D.size(); i++ )
     m_widgets3D[i]->Show( view->GetAction() == Interactor::MM_SurfaceRegion );
   
@@ -229,6 +297,10 @@ void ToolWindowMeasure::DoListenToMessage ( std::string const iMsg, void* iData,
   {
     if ( m_surfaceRegion == iData )
       SetSurfaceRegion( NULL );
+  }
+  else if ( iMsg == "LayerAdded" || iMsg == "LayerRemoved" || iMsg == "LayerEdited" )
+  {
+    UpdateWidgets();
   }
 }
 
@@ -308,6 +380,32 @@ void ToolWindowMeasure::OnActionMeasureSurfaceRegionUpdateUI( wxUpdateUIEvent& e
       && !MainWindow::GetMainWindowPointer()->GetLayerCollection( "MRI" )->IsEmpty() );
 }
 
+void ToolWindowMeasure::OnActionMeasureLabel( wxCommandEvent& event )
+{
+  MainWindow::GetMainWindowPointer()->SetAction( Interactor::MM_Label );
+  UpdateWidgets();
+}
+
+void ToolWindowMeasure::OnActionMeasureLabelUpdateUI( wxUpdateUIEvent& event)
+{
+  RenderView2D* view = ( RenderView2D* )MainWindow::GetMainWindowPointer()->GetRenderView( 0 );
+  event.Check( view->GetInteractionMode() == RenderView2D::IM_Measure
+      && view->GetAction() == Interactor::MM_Label );
+  LayerCollection* col = MainWindow::GetMainWindowPointer()->GetLayerCollection( "MRI" );
+  bool bLabelExist = false;
+  for ( int i = 0; i < col->GetNumberOfLayers(); i++ )
+  {
+    if ( ( (LayerMRI*)col->GetLayer( i ) )->GetProperties()->GetColorMap() == LayerPropertiesMRI::LUT )
+    {
+      bLabelExist = true;
+      break;
+    }
+  }
+  event.Enable( MainWindow::GetMainWindowPointer()->GetMainViewId() < 3 &&
+      view->GetInteractionMode() == RenderView2D::IM_Measure &&
+      col->GetNumberOfLayers() > 1 && bLabelExist );
+}
+
 void ToolWindowMeasure::OnButtonCopy( wxCommandEvent& event )
 {
   wxString output = m_textStats->GetValue();
@@ -376,6 +474,7 @@ void ToolWindowMeasure::OnButtonSaveAll( wxCommandEvent& event )
   }
 }
 
+
 void ToolWindowMeasure::OnButtonLoad( wxCommandEvent& event )
 {
   wxFileDialog dlg( this, _("Load region(s) from file"), _(""), _(""),
@@ -394,4 +493,9 @@ void ToolWindowMeasure::OnButtonLoad( wxCommandEvent& event )
     } 
     UpdateWidgets();
   }
+}
+
+void ToolWindowMeasure::OnButtonUpdate( wxCommandEvent& event )
+{
+  UpdateWidgets();
 }

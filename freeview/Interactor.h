@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/05/24 21:42:53 $
- *    $Revision: 1.7 $
+ *    $Author: nicks $
+ *    $Date: 2010/09/22 17:13:35 $
+ *    $Revision: 1.7.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -41,7 +41,7 @@ public:
   
   enum MeasureMode 
   { 
-    MM_Line = 0, MM_Polyline, MM_Spline, MM_Rectangle, MM_SurfaceRegion
+    MM_Line = 0, MM_Polyline, MM_Spline, MM_Rectangle, MM_SurfaceRegion, MM_Label
   };
 
   enum EditMode

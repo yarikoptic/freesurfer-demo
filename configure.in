@@ -9,8 +9,8 @@
 #
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2010/08/25 16:45:18 $
-#    $Revision: 1.476.2.8 $
+#    $Date: 2010/09/22 17:13:35 $
+#    $Revision: 1.476.2.9 $
 #
 ########################################################################
 AC_PREREQ(2.57)
@@ -287,8 +287,8 @@ AC_CHECK_FUNCS([\
   strtol \
   uname])
 
-# many systems dont have libg2c.so, the shared lib supporting g77, so 
-# build using the static lib if available, so that distro is more 
+# many linux systems dont have libg2c.so, the shared lib supporting g77,
+# so build using the static lib if available, so that distro is more 
 # widely compatible. the talairach_avi/Makefile.am file uses LIB_G2C_A
 LIB_G2C_A=""
 if test -e /usr/local/lib/libg2c.a ; then
@@ -673,17 +673,32 @@ AC_ARG_ENABLE([emu],
    [EMULATION=false]
 )
 
-# setup  nvcc flags
-if  test x$DEBUG = xtrue
+# default is to support tesla-class, this enables building for fermi-class
+ac_have_fermi_gpu=no
+AC_ARG_ENABLE(fermi-gpu,
+ [  --enable-fermi-gpu      enable NVidia Fermi GPU support],
+ [ ac_have_fermi_gpu=yes
+   AC_MSG_NOTICE(Building for Fermi-class GPU)
+ ])
+AM_CONDITIONAL(HAVE_FERMI_GPU, test "x$ac_have_fermi_gpu" = "xyes")
+
+# setup nvcc flags (default is for tesla-class, --enable-fermi-gpu overrides)
+NVIDIA_ARCH="sm_11"
+if test x$ac_have_fermi_gpu = xyes
 then
-   NVCCFLAGS="-g -arch sm_11 --ptxas-options=-v"
+  NVIDIA_ARCH="sm_20"
+fi
+if test x$DEBUG = xtrue
+then
+   NVCCFLAGS="-g -arch $NVIDIA_ARCH --ptxas-options=-v"
 else
-   NVCCFLAGS="-arch sm_11 --ptxas-options=-v -g"
+   NVCCFLAGS="-arch $NVIDIA_ARCH --ptxas-options=-v -g"
 fi
 if test x$EMULATION = xtrue
 then
    NVCCFLAGS+=" -deviceemu"
 fi
+# Ubuntu hack: NVCCFLAGS+=" --compiler-bindir=/usr/bin/gcc-4.3"
 AC_SUBST(NVCCFLAGS)
 
 # warn the user about missing functionality
@@ -1336,6 +1351,22 @@ AC_ARG_WITH(boost-dir,
      ac_boost_libraries="$withval"/lib
      ac_boost_dir="$withval"
   ])
+
+if test "x$BOOST_DIR" = "x"; then
+  # if a Boost root was not supplied, but one exists in the
+  # default packages path at the NMR Center, AND this is a mac,
+  # then use that:
+  if test "$OS" = "Darwin"; then
+    if test -d "/usr/pubsw/packages/boost/current" ; then
+      withval=/usr/pubsw/packages/boost/current
+      BOOST_DIR="$withval"
+      ac_boost_dir="$withval"
+      boost_i="$withval"/include
+      ac_boost_includes="$boost_i"
+      ac_boost_libraries="$withval"/lib
+    fi
+  fi
+fi
 
 AC_ARG_WITH(boost-include,
   [  --with-boost-include=DIR    root of BOOST include directory.],
@@ -2107,6 +2138,8 @@ AC_SUBST(KWWIDGETS_DIR)
 WXWIDGETS_CFLAGS=""
 WXWIDGETS_CXXFLAGS=""
 WXWIDGETS_LIBS=""
+WXWIDGETS_GL_LIBS=""
+WXWIDGETS_OPTIONAL_LIBS=""
 WXWIDGETS_DIR=""
 
 AC_MSG_CHECKING(wxWidgets config)
@@ -2133,6 +2166,8 @@ if test ! "x$WXWIDGETS_DIR" = "x"; then
   WXWIDGETS_CXXFLAGS="`${WXCONFIG} --cxxflags`"
   # we want to use the local / static jpeg, tiff and expat libs
   WXWIDGETS_LIBS="`${WXCONFIG} --libs | sed 's/-ljpeg/..\/jpeg\/libjpeg.a/g' | sed 's/-ltiff/..\/tiff\/libtiff.a/g' | sed 's/-lexpat/..\/expat\/libexpat.a/g'`"
+  WXWIDGETS_GL_LIBS="`${WXCONFIG} --libs gl | sed 's/-ljpeg/..\/jpeg\/libjpeg.a/g' | sed 's/-ltiff/..\/tiff\/libtiff.a/g' | sed 's/-lexpat/..\/expat\/libexpat.a/g'`"
+  WXWIDGETS_OPTIONAL_LIBS="`${WXCONFIG} --optional-libs aui`"
 
   # except wx-config isn't so handy in including some header paths on Linux:
   if test -d /usr/include/gtk-2.0 ; then
@@ -2148,6 +2183,20 @@ if test ! "x$WXWIDGETS_DIR" = "x"; then
   WXWIDGETS_GTK_CFLAGS="$WXWIDGETS_GTK_CFLAGS	-I/usr/include/atk-1.0"
   WXWIDGETS_CFLAGS="$WXWIDGETS_CFLAGS	$WXWIDGETS_GTK_CFLAGS"
   WXWIDGETS_CXXFLAGS="$WXWIDGETS_CXXFLAGS	$WXWIDGETS_GTK_CFLAGS"
+  fi
+
+  # seems like we gotta manually check for these...
+  if test -e ${WXWIDGETS_DIR}/lib/libwx_gtk2_gl-2.8.a ; then
+    WXWIDGETS_LIBS="$WXWIDGETS_LIBS -lwx_gtk2_gl-2.8"
+  fi
+  if test -e ${WXWIDGETS_DIR}/lib/libwx_gtk2u_gl-2.9.a ; then
+    WXWIDGETS_LIBS="$WXWIDGETS_LIBS -lwx_gtk2u_gl-2.9"
+  fi
+  if test -e ${WXWIDGETS_DIR}/lib/libwx_gtk2u_aui-2.9.a ; then
+    WXWIDGETS_LIBS="$WXWIDGETS_LIBS -lwx_gtk2u_aui-2.9"
+  fi
+  if test -e ${WXWIDGETS_DIR}/lib/libwx_gtk2u_core-2.9.a ; then
+    WXWIDGETS_LIBS="$WXWIDGETS_LIBS -lwx_gtk2u_core-2.9"
   fi
 fi
 
@@ -2169,8 +2218,41 @@ AM_CONDITIONAL(ENABLE_WXWIDGETS_APPS, test "$wxw_apps" = "yes")
 AC_SUBST(WXWIDGETS_CFLAGS)
 AC_SUBST(WXWIDGETS_CXXFLAGS)
 AC_SUBST(WXWIDGETS_LIBS)
+AC_SUBST(WXWIDGETS_GL_LIBS)
+AC_SUBST(WXWIDGETS_OPTIONAL_LIBS)
 AC_SUBST(WXWIDGETS_DIR)
 
+################################################################
+# GTS
+################################################################
+GTS_CFLAGS=""
+GTS_LIBS=""
+GTS_DIR=""
+
+AC_MSG_CHECKING(gts config)
+
+AC_ARG_WITH(gts-dir,
+  [  --with-gts-dir=DIR where the root of GTS is installed.],
+  [  GTS_DIR="$withval" ])
+
+
+# use the handy wx-config utility to get the compiler and linker flags
+if test ! "x$GTS_DIR" = "x"; then
+  AC_MSG_RESULT([Enabled building of GTS apps.])
+  GTSCONFIG="${GTS_DIR}/bin/gts-config"
+  GTS_CFLAGS="`${GTSCONFIG} --cflags`"
+  # we want to use the local / static jpeg, tiff and expat libs
+  GTS_LIBS="`${GTSCONFIG} --libs`"
+else
+  AC_MSG_RESULT([Not building of GTS apps.])
+
+fi
+
+AM_CONDITIONAL(HAVE_GTS_LIBS, test ! "x$GTS_DIR" = "x")
+
+AC_SUBST(GTS_CFLAGS)
+AC_SUBST(GTS_LIBS)
+AC_SUBST(GTS_DIR)
 
 ################################################################
 # ITK
@@ -2551,9 +2633,9 @@ BOOST_PO_LIB=""
 # if --with-boost-dir was used, make sure necessary lib(s) exist,
 # namely, boost_program_options, used by fem_elastic build dir
 if test ! "x$ac_boost_dir" = "xNO"; then
-  BOOST_PO_LIB="${BOOST_LIBS} -lboost_program_options"
-  if test -e ${BOOST_LIB}/libboost_program_options.a ; then
-    BOOST_PO_LIB=${BOOST_LIB}/libboost_program_options.a
+  BOOST_PO_LIB="${BOOST_LIBS} -lboost_program_options-mt"
+  if test -e ${BOOST_LIB}/libboost_program_options-mt.a ; then
+    BOOST_PO_LIB=${BOOST_LIB}/libboost_program_options-mt.a
     AC_MSG_RESULT([found '$BOOST_PO_LIB'])
   fi
 else
@@ -2948,6 +3030,7 @@ AC_SUBST(TESTS_ENVIRONMENT)
 #########################################################################
 AC_OUTPUT([Makefile
            check_siemens_dir/Makefile
+           cudatest/Makefile
            dicom/Makefile
            distribution/Makefile
            distribution/average/Makefile
@@ -2976,7 +3059,7 @@ AC_OUTPUT([Makefile
            fslutils/Makefile
            glut/Makefile
            gpu_utils/Makefile
-	   opencl_algorithms/Makefile
+           opencl_algorithms/Makefile
            hiam_make_surfaces/Makefile
            hiam_register/Makefile
            hiam_make_template/Makefile
@@ -3283,8 +3366,7 @@ AC_OUTPUT([Makefile
            qdec_glmfit/Makefile
            qdecproject/Makefile
            vtkfsio/Makefile
-           vtkutils/Makefile
-           cudatest/Makefile])
+           vtkutils/Makefile])
 
 ########################################################################
 

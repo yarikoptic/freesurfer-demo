@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/07/23 17:52:19 $
- *    $Revision: 1.44.2.1 $
+ *    $Date: 2010/09/22 17:13:36 $
+ *    $Revision: 1.44.2.2 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -173,7 +173,7 @@ public:
   
   COLOR_TABLE* GetEmbeddedColorTable();
   
-  void SnagToVoxelCenter( const double* pt_in, double* pt_out );
+  void SnapToVoxelCenter( const double* pt_in, double* pt_out );
   
   int GetBuildContourThreadID()
   {
@@ -222,6 +222,12 @@ public:
   virtual void GetDisplayBounds( double* bounds );
   
   bool SaveRegistration( const char* filename );
+  
+  void GetLabelStats( LayerMRI* label, int nPlane,
+                      std::vector<int>& id, 
+                      std::vector<int>& number, 
+                      std::vector<double>& mean, 
+                      std::vector<double>& std );
   
 protected:
   virtual bool DoRotate( std::vector<RotationElement>& rotations, 

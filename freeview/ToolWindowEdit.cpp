@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/07/23 17:52:20 $
- *    $Revision: 1.17.2.1 $
+ *    $Date: 2010/09/22 17:13:36 $
+ *    $Revision: 1.17.2.2 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -93,11 +93,13 @@ BEGIN_EVENT_TABLE( ToolWindowEdit, wxFrame )
   EVT_COLOURPICKER_CHANGED  ( XRCID( "ID_COLORPICKER_CONTOUR" ),  ToolWindowEdit::OnColorContour )
 
   EVT_SHOW      ( ToolWindowEdit::OnShow )
+  EVT_CLOSE     ( ToolWindowEdit::OnClose )
 
 END_EVENT_TABLE()
 
 
 ToolWindowEdit::ToolWindowEdit( wxWindow* parent ) : Listener( "ToolWindowMeasure" ),
+    m_editSmoothSD( NULL ),
     m_bToUpdateTools( false )
 {
   wxXmlResource::Get()->LoadFrame( this, parent, wxT("ID_TOOLWINDOW_EDIT") );
@@ -163,9 +165,22 @@ void ToolWindowEdit::ShowWidgets( std::vector<wxWindow*>& list, bool bShow )
   }
 }
 
+void ToolWindowEdit::OnClose( wxCloseEvent& event )
+{
+  Hide();
+  MainWindow* mainwnd = MainWindow::GetMainWindowPointer();
+  if ( mainwnd->IsShown() )
+    mainwnd->SetMode( 0 );
+}
+
 void ToolWindowEdit::OnShow( wxShowEvent& event )
 {
+//#if wxCHECK_VERSION(2,9,0)
+#if wxVERSION_NUMBER > 2900  
+  if ( event.IsShown() )
+#else
   if ( event.GetShow() )
+#endif
   {
     wxConfigBase* config = wxConfigBase::Get();
     if ( config )
@@ -192,7 +207,7 @@ void ToolWindowEdit::OnShow( wxShowEvent& event )
       GetPosition( &x, &y );
       config->Write( _T("/ToolWindowEdit/PosX"), (long) x );
       config->Write( _T("/ToolWindowEdit/PosY"), (long) y );
-    }
+    } 
   }
   MainWindow::GetMainWindowPointer()->SetFocus();
 }
@@ -617,15 +632,19 @@ void ToolWindowEdit::OnCheckSmooth( wxCommandEvent& event )
 void ToolWindowEdit::OnEditSmoothSD( wxCommandEvent& event )
 {
   double value;
-  if ( m_editSmoothSD->GetValue().ToDouble( &value ) && value > 0 )
+
+  if (m_editSmoothSD != NULL)
   {
-    for ( int i = 0; i < 3; i++ )
+    if ( m_editSmoothSD->GetValue().ToDouble( &value ) && value > 0 )
     {
-      RenderView2D* view = ( RenderView2D* )MainWindow::GetMainWindowPointer()->GetRenderView( i );
-      Contour2D* c2d = view->GetContour2D();
-      c2d->SetSmoothSD( value );
+      for ( int i = 0; i < 3; i++ )
+      {
+        RenderView2D* view = ( RenderView2D* )MainWindow::GetMainWindowPointer()->GetRenderView( i );
+        Contour2D* c2d = view->GetContour2D();
+        c2d->SetSmoothSD( value );
+      }
+      UpdateTools();
     }
-    UpdateTools();
   }
 }
 

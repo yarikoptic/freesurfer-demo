@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/07/23 17:52:20 $
- *    $Revision: 1.119.2.1 $
+ *    $Date: 2010/09/22 17:13:36 $
+ *    $Revision: 1.119.2.2 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -234,6 +234,11 @@ BEGIN_EVENT_TABLE(MainWindow, wxFrame)
   EVT_MENU        ( XRCID( "ID_VIEW_HISTOGRAM" ),         MainWindow::OnViewHistogram )
   EVT_UPDATE_UI   ( XRCID( "ID_VIEW_HISTOGRAM" ),         MainWindow::OnViewHistogramUpdateUI )
   
+  EVT_MENU        ( XRCID( "ID_LAYER_SHOW_ALL" ),         MainWindow::OnLayerShowAll )
+  EVT_UPDATE_UI   ( XRCID( "ID_LAYER_SHOW_ALL" ),         MainWindow::OnLayerShowHideAllUpdateUI )
+  EVT_MENU        ( XRCID( "ID_LAYER_HIDE_ALL" ),         MainWindow::OnLayerHideAll )
+  EVT_UPDATE_UI   ( XRCID( "ID_LAYER_HIDE_ALL" ),         MainWindow::OnLayerShowHideAllUpdateUI )
+  
   EVT_MENU        ( XRCID( "ID_TOOL_ROTATE_VOLUME" ),     MainWindow::OnToolTransformVolume )
   EVT_UPDATE_UI   ( XRCID( "ID_TOOL_ROTATE_VOLUME" ),     MainWindow::OnToolTransformVolumeUpdateUI )
   EVT_MENU        ( XRCID( "ID_TOOL_CROP_VOLUME" ),       MainWindow::OnToolCropVolume )
@@ -294,8 +299,9 @@ END_EVENT_TABLE()
 // ----------------------------------------------------------------------------
 
 // frame constructor
-MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
-{
+
+void MainWindow::InitWidgetsFromXRC( wxWindow* parent)
+{  
 // m_bLoading = false;
 // m_bSaving = false;
   m_bProcessing = false;
@@ -311,12 +317,12 @@ MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
   m_connectivity = new ConnectivityData();
   m_volumeCropper = new VolumeCropper();
 
-  wxXmlResource::Get()->LoadFrame( this, NULL, wxT("ID_MAIN_WINDOW") );
+  wxXmlResource::Get()->LoadObject( this, parent, wxT("ID_MAIN_WINDOW"), wxT("wxFrame") );
 
   // must be created before the following controls
   m_layerCollectionManager = new LayerCollectionManager();
 
-  m_panelToolbarHolder = XRCCTRL( *this, "ID_PANEL_HOLDER", wxPanel );
+//  m_panelToolbarHolder = XRCCTRL( *this, "ID_PANEL_HOLDER", wxPanel );
 // wxBoxSizer* sizer = (wxBoxSizer*)panelHolder->GetSizer(); //new wxBoxSizer( wxVERTICAL );
 
   // create the main splitter window
@@ -325,14 +331,7 @@ MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
   m_splitterMain->SetMinimumPaneSize( 80 );
 // sizer->Add( m_splitterMain, 1, wxEXPAND );
 
-  
-  m_toolbarMain = GetToolBar();
-  m_toolbarVoxelEdit = XRCCTRL( *this, "ID_TOOLBAR_VOXEL_EDIT", wxToolBar );
-  m_toolbarROIEdit = XRCCTRL( *this, "ID_TOOLBAR_ROI_EDIT", wxToolBar );
-  m_toolbarBrush = XRCCTRL( *this, "ID_TOOLBAR_BRUSH", wxToolBar );
-  m_toolbarBrush->Show( false );
-  m_toolbarVoxelEdit->Show( false );
-  m_toolbarROIEdit->Show( false );
+   m_toolbarMain = GetToolBar();
 
 // this->SetSizer( sizer );
 // sizer->Add( ( wxToolBar* )XRCCTRL( *this, "m_toolBar2", wxToolBar ), 0, wxEXPAND );
@@ -497,6 +496,7 @@ MainWindow::MainWindow() : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
 //  UpdateGotoPoints();
   
   m_timerWriteMovieFrames.SetOwner( this, ID_TIMER_WRITE_MOVIE_FRAMES );
+
 }
 
 // frame destructor
@@ -797,7 +797,7 @@ void MainWindow::LoadVolume()
   DialogLoadVolume dlg( this, GetLayerCollection( "MRI" )->IsEmpty() );
   dlg.SetLastDir( AutoSelectLastDir( m_strLastDir, _("mri") ) );
   wxArrayString list;
-  for ( int i = 0; i < m_fileHistory->GetMaxFiles(); i++ )
+  for ( size_t i = 0; i < m_fileHistory->GetCount(); i++ )
     list.Add( m_fileHistory->GetHistoryFile( i ) );
   dlg.SetRecentFiles( list );
   if ( dlg.ShowModal() == wxID_OK )
@@ -954,7 +954,12 @@ void MainWindow::OnActivate( wxActivateEvent& event )
 void MainWindow::OnIconize( wxIconizeEvent& event )
 {
 #ifdef __WXGTK__
+//#if wxCHECK_VERSION(2,9,0)
+#if wxVERSION_NUMBER > 2900  
+  if ( !event.IsIconized() )
+#else
   if ( !event.Iconized() )
+#endif
     NeedRedraw( 2 );
 #endif
   event.Skip();
@@ -2541,7 +2546,10 @@ void MainWindow::OnWorkerThreadResponse( wxCommandEvent& event )
   else
   {
     // if ( event.GetInt() > m_statusBar->m_gaugeBar->GetValue() )
-    m_statusBar->m_gaugeBar->SetValue( event.GetInt() );
+    int val = event.GetInt();
+    if ( val > m_statusBar->m_gaugeBar->GetRange() )
+      val = m_statusBar->m_gaugeBar->GetRange();
+    m_statusBar->m_gaugeBar->SetValue( val );
   }
 }
 
@@ -2966,7 +2974,7 @@ void MainWindow::CommandLoadVolume( const wxArrayString& sa )
       }
       else if ( subOption == _("grayscale") || 
                 subOption == _("heatscale") || 
-                subOption == _("jetscale") ) 
+                subOption == _("colorscale") ) 
       {
         colormap_scale = subOption;    // colormap scale might be different from colormap!
         scales = MyUtils::SplitString( subArgu, _(",") );
@@ -3176,7 +3184,7 @@ void MainWindow::CommandSetColorMap( const wxArrayString& sa )
   strg = sa[2];
   if ( strg == _("heatscale") )
     nColorMapScale = LayerPropertiesMRI::Heat;
-  else if ( strg == _("jetscale") )
+  else if ( strg == _("colorscale") )
     nColorMapScale = LayerPropertiesMRI::Jet;
   else if ( strg == _("lut") )
     nColorMapScale = LayerPropertiesMRI::LUT;
@@ -3222,10 +3230,10 @@ void MainWindow::CommandSetLayerName( const wxArrayString& cmd )
 {
   if ( cmd.size() > 2 )
   {
-    LayerCollection* lc = GetLayerCollection( cmd[1].c_str() );
+    LayerCollection* lc = GetLayerCollection( (const char*)cmd[1].c_str() );
     if ( lc && !lc->IsEmpty() )
     {
-      lc->GetActiveLayer()->SetName( cmd[2].c_str() );
+      lc->GetActiveLayer()->SetName( (const char*)cmd[2].c_str() );
     }
   }
   ContinueScripts();
@@ -3235,7 +3243,7 @@ void MainWindow::CommandLockLayer( const wxArrayString& cmd )
 {
   if ( cmd.size() > 2 && ( cmd[2] == _("1") || cmd[2] == _("true") ) )
   {
-    LayerCollection* lc = GetLayerCollection( cmd[1].c_str() );
+    LayerCollection* lc = GetLayerCollection( (const char*)cmd[1].c_str() );
     if ( lc && !lc->IsEmpty() )
     {
       lc->GetActiveLayer()->Lock( true );
@@ -3248,7 +3256,7 @@ void MainWindow::CommandShowLayer( const wxArrayString& cmd )
 {
   if ( cmd.size() > 2 && ( cmd[2] == _("0") || cmd[2] == _("false") ) )
   {
-    LayerCollection* lc = GetLayerCollection( cmd[1].c_str() );
+    LayerCollection* lc = GetLayerCollection( (const char*)cmd[1].c_str() );
     if ( lc && !lc->IsEmpty() )
     {
       lc->GetActiveLayer()->SetVisible( false );
@@ -5123,7 +5131,7 @@ void MainWindow::SetVolumeColorMap( int nColorMap, int nColorMapScale, std::vect
           p->SetMinMaxGenericThreshold( scales[0], scales[1] );
         }
         else if ( !scales.empty() )
-          cerr << "Need 2 values for jetscale." << endl;
+          cerr << "Need 2 values for colorscale." << endl;
         break;
     }
   }
@@ -5409,3 +5417,28 @@ void MainWindow::SaveRegistrationAs()
   }
 }
 
+void MainWindow::OnLayerShowAll( wxCommandEvent& event )
+{
+  LayerCollection* lc = GetCurrentLayerCollection();
+  if ( lc )
+  {
+    for ( int i = 0; i < lc->GetNumberOfLayers(); i++ )
+      lc->GetLayer( i )->Show();
+  }
+}
+
+void MainWindow::OnLayerHideAll( wxCommandEvent& event )
+{
+  LayerCollection* lc = GetCurrentLayerCollection();
+  if ( lc )
+  {
+    for ( int i = 0; i < lc->GetNumberOfLayers(); i++ )
+      lc->GetLayer( i )->Hide();
+  }
+}
+
+void MainWindow::OnLayerShowHideAllUpdateUI( wxUpdateUIEvent& event )
+{
+  LayerCollection* lc = GetCurrentLayerCollection();
+  event.Enable( lc && lc->GetNumberOfLayers() > 0 );
+}

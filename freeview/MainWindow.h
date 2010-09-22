@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/07/23 17:52:20 $
- *    $Revision: 1.75.2.1 $
+ *    $Date: 2010/09/22 17:13:36 $
+ *    $Revision: 1.75.2.2 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -76,9 +76,16 @@ class VolumeCropper;
 class MainWindow : public wxFrame, public Listener, public Broadcaster
 {
 public:
-  MainWindow();
+  MainWindow(wxWindow* parent = NULL) : Listener( "MainWindow" ), Broadcaster( "MainWindow" )
+  {
+    InitWidgetsFromXRC(parent);
+  }
   virtual ~MainWindow();
+  
+private:
+  void InitWidgetsFromXRC(wxWindow* parent);
 
+public:
   enum ViewLayout { VL_1X1 = 0, VL_2X2, VL_1N3, VL_1N3_H };
   enum MainView  { MV_Sagittal = 0, MV_Coronal, MV_Axial, MV_3D };
 
@@ -179,6 +186,10 @@ public:
   void OnViewSurfacePialUpdateUI    ( wxUpdateUIEvent& event );
   void OnViewSurfaceOriginal        ( wxCommandEvent& event );
   void OnViewSurfaceOriginalUpdateUI( wxUpdateUIEvent& event );
+  
+  void OnLayerShowAll               ( wxCommandEvent& event );
+  void OnLayerHideAll               ( wxCommandEvent& event );
+  void OnLayerShowHideAllUpdateUI   ( wxUpdateUIEvent& event );
 
   void OnModeNavigate               ( wxCommandEvent& event );
   void OnModeNavigateUpdateUI       ( wxUpdateUIEvent& event);
@@ -490,9 +501,6 @@ private:
   WindowQuickReference* m_wndQuickReference;
   StatusBar*          m_statusBar;
   wxToolBar*          m_toolbarMain;
-  wxToolBar*          m_toolbarVoxelEdit;
-  wxToolBar*          m_toolbarROIEdit;
-  wxToolBar*          m_toolbarBrush;
   wxPanel*            m_panelToolbarHolder;
   ToolWindowEdit*     m_toolWindowEdit;
   ToolWindowMeasure*  m_toolWindowMeasure;

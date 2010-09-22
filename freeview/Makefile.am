@@ -216,13 +216,6 @@ freeview_SOURCES=\
 	VolumeFilterMean.h \
 	VolumeFilterMedian.cpp \
 	VolumeFilterMedian.h \
-	vtkDijkstraGraphGeodesicPath.cxx \
-	vtkDijkstraGraphGeodesicPath.h \
-	vtkDijkstraGraphInternals.h \
-	vtkDijkstraImageContourLineInterpolator.cxx \
-	vtkDijkstraImageContourLineInterpolator.h \
-	vtkDijkstraImageGeodesicPath.cxx \
-	vtkDijkstraImageGeodesicPath.h \
 	vtkSimpleLabelEdgeFilter.cpp \
 	vtkSimpleLabelEdgeFilter.h \
 	WindowConnectivityConfiguration.cpp \
@@ -248,19 +241,11 @@ freeview_SOURCES=\
 	res/resource.cpp \
 	res/resource.h \
 	res/QuickRef.h
-#	scout/laplace2.cpp \
-#	scout/laplace2.h \
-#	scout/locator.cpp \
-#	scout/locator.h \
-#	scout/preprocessor.cpp \
-#	scout/preprocessor.h \
-#	scout/tracer.cpp \
-#	scout/tracer.h
 
 freeview_LDFLAGS=$(OS_LDFLAGS) $(LDFLAGS_TCL)
 
 freeview_LDADD=\
-	$(addprefix $(top_builddir)/, $(LIBS_MGH)) $(LIBS_TCL_OPENGL) \
+	$(addprefix $(top_builddir)/, $(LIBS_MGH)) \
 	$(top_builddir)/vtkfsio/libvtkfsio.a \
 	$(top_builddir)/vtkutils/libvtkutils.a \
 	$(VTK_LIBS) $(VTK_VERDICT_LIB) -lvtkGraphics \
@@ -274,7 +259,7 @@ freeview_LDADD=\
 	-lvtkVolumeRendering -lvtkRendering -lvtkftgl \
 	-lvtkWidgets -lvtkHybrid \
 	-lvtkIO	-lvtkDICOMParser $(VTK_MPEG2ENCODE_LIB) \
-	$(WXWIDGETS_LIBS) -lwx_gtk2_gl-2.8
+	$(WXWIDGETS_LIBS) $(WXGTK2GL) $(WXWIDGETS_OPTIONAL_LIBS)
 
 # put a wrapper around the bin, used to setup tcltktixblt,vtk,kww enviro vars
 # and if the OS is MACOSX have a different install-hook to create a bundle
@@ -285,6 +270,7 @@ install-exec-hook:freeview
 	mkdir -p $(DESTDIR)$(bindir)/Freeview.app/Contents/MacOS
 	mkdir -p $(DESTDIR)$(bindir)/Freeview.app/Contents/Resources
 	mkdir -p $(DESTDIR)$(bindir)/Freeview.app/Contents/Resources/English.lproj
+#	mkdir -p $(DESTDIR)$(bindir)/Freeview.app/Contents/Frameworks
 	cp $(top_builddir)/freeview/Info.plist $(DESTDIR)$(bindir)/Freeview.app/Contents
 	echo -n 'APPL????' > $(DESTDIR)$(bindir)/Freeview.app/Contents/PkgInfo
 	cp $(top_builddir)/freeview/freeview $(DESTDIR)$(bindir)/Freeview.app/Contents/MacOS/freeview.bin
@@ -295,6 +281,7 @@ install-exec-hook:freeview
 		>> $(DESTDIR)$(bindir)/freeview
 	echo "exec $(DESTDIR)$(bindir)/Freeview.app/Contents/MacOS/freeview.bin \$$*" >> $(DESTDIR)$(bindir)/freeview
 	chmod a+x $(DESTDIR)$(bindir)/freeview
+#	./mac_package_dylibs.sh $(WXWIDGETS_DIR)lib $(DESTDIR)$(bindir)/Freeview.app/Contents/Frameworks $(DESTDIR)$(bindir)/Freeview.app/Contents/MacOS/freeview.bin
 	if [[ -f /usr/pubsw/bin/chrpath ]]; then \
 	/usr/pubsw/bin/chrpath -d $(DESTDIR)$(bindir)/Freeview.app/Contents/MacOS/freeview.bin; fi
 

@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/07/23 17:52:19 $
- *    $Revision: 1.13.2.1 $
+ *    $Date: 2010/09/22 17:13:36 $
+ *    $Revision: 1.13.2.2 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -128,7 +128,8 @@ bool Interactor2DVolumeEdit::ProcessMouseDownEvent( wxMouseEvent& event, RenderV
             view->GetCursor2D()->SetPosition( ras );
           }
   
-          view->ReleaseMouse();
+          if ( view->GetCapture() == view )
+            view->ReleaseMouse();
           view->CaptureMouse();
         }
       }
@@ -233,7 +234,8 @@ bool Interactor2DVolumeEdit::ProcessMouseDownEvent( wxMouseEvent& event, RenderV
     }
 
     m_dPolylinePoints.clear();
-    view->ReleaseMouse();
+    if ( view->GetCapture() == view )
+      view->ReleaseMouse();
 
     return false;
   }
