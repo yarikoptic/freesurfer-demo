@@ -8,11 +8,11 @@
 /*
  * Original Author: Richard Edgar
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/05/14 17:50:11 $
- *    $Revision: 1.2 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:14 $
+ *    $Revision: 1.2.2.1 $
  *
- * Copyright (C) 2002-2008,
+ * Copyright (C) 2010,
  * The General Hospital Corporation (Boston, MA). 
  * All rights reserved.
  *
@@ -25,14 +25,19 @@
  *
  */
 
+#ifdef GCAMORPH_ON_GPU
 
 #ifndef GCA_MORPH_TERM_GPU_HPP
 #define GCA_MORPH_TERM_GPU_HPP
+
+#include "macros.h"
+#include "error.h"
 
 #include "chronometer.hpp"
 
 #include "mriframegpu.hpp"
 #include "gcamorphgpu.hpp"
+#include "gcamorphcpu.hpp"
 
 namespace GPU {
   namespace Algorithms {
@@ -56,6 +61,164 @@ namespace GPU {
       void Smoothness( GPU::Classes::GCAmorphGPU& gcam,
 		       const float l_smoothness ) const;
 
+      //! Computes the Jacobian term
+      void Jacobian( GPU::Classes::GCAmorphGPU& gcam,
+		     const float l_jacobian,
+		     const float jac_scale ) const;
+
+      //! Computes the Log Likelihood term
+      template<typename T, typename U>
+      void LogLikelihood( GPU::Classes::GCAmorphGPU& gcam,
+			  const GPU::Classes::MRIframeGPU<T>& mri,
+			  const GPU::Classes::MRIframeGPU<U>& mri_smooth,
+			  double l_log_likelihood ) const;
+
+      //! Dispatch routine for the Log Likelihood term
+      template<typename T, typename U>
+      void LLtermDispatch( GCA_MORPH *gcam,
+			   const MRI*  mri,
+			   const MRI* mri_smooth,
+			   double l_log_likelihood ) const;
+      
+      //! Basic Dispatch routine for LLT
+      void LLTDispatch( GCA_MORPH *gcam,
+			const MRI*  mri,
+			const MRI* mri_smooth,
+			double l_log_likelihood ) const;
+
+
+      template<typename T>
+      void BindMRI( const GPU::Classes::MRIframeGPU<T>& mri ) const;
+
+      template<typename T>
+      void UnbindMRI( void ) const;
+
+      template<typename T>
+      void BindMRIsmooth( const GPU::Classes::MRIframeGPU<T>& mri ) const;
+
+      template<typename T>
+      void UnbindMRIsmooth( void ) const;
+
+
+      //! Posterior/Anterior consistency check for Label term
+      int LabelPostAntConsistency( GPU::Classes::GCAmorphGPU& gcam,
+				   GPU::Classes::MRIframeGPU<float>& mri_dist ) const;
+
+      //! Final update stage for Label term
+      int LabelFinalUpdate( GPU::Classes::GCAmorphGPU& gcam,
+			    const GPU::Classes::MRIframeGPU<float>& mri_dist,
+			    const float l_label ) const;
+
+
+      //! Copy deltas for Label term
+      void LabelCopyDeltas( GPU::Classes::GCAmorphGPU& gcam,
+			    const GPU::Classes::MRIframeGPU<float>& mri_dist,
+			    const float l_label ) const;
+
+      
+      //! Wrapper for Remove Label Outliers
+      int RemoveLabelOutliersDispatch( GPU::Classes::GCAmorphGPU& gcam,
+				       MRI *mri_dist,
+				       const int whalf,
+				       const double thresh ) const;
+      
+      //! Wrapper for Label Main Loop
+      void LabelMainLoopDispatch( GPU::Classes::GCAmorphGPU& gcam,
+				  const MRI *mri,
+				  MRI *mri_dist,
+				  const double l_label,
+				  const double label_dist ) const;
+
+
+      //! Label Term for the GPU
+      template<typename T>
+      int LabelTerm( GPU::Classes::GCAmorphGPU& gcam,
+		     const GPU::Classes::MRIframeGPU<T>& mri,
+		     double l_label, double label_dist ) const {
+
+	int num;
+	MRI *mri_dist, *mriCPU;
+	int nremoved;
+
+	if( DZERO(l_label) ) {
+	  return( NO_ERROR );
+	}
+
+	gcam.CheckIntegrity();
+
+	const dim3 gcamDims = gcam.d_rx.GetDims();
+
+	mri_dist = MRIalloc( gcamDims.x, gcamDims.y, gcamDims.z, MRI_FLOAT );
+	//MRIsetResolution( mri_dist, gcam.spacing, gcam.spacing, gcam.spacing );
+	std::cerr << __FUNCTION__ << ": Did not call MRIsetResolution" << std::endl;
+
+	// GCAMresetLabelNodeStatus
+	gcam.RemoveStatus( GCAM_LABEL_NODE );
+	gcam.RemoveStatus( GCAM_IGNORE_LIKELIHOOD );
+
+
+	// Set up the CPU copies
+	Freesurfer::GCAmorphCPU gcamCPU;
+	gcamCPU.AllocateFromTemplate( gcam );
+	gcamCPU.GetFromGPU( gcam );
+
+	const dim3 mriDims = mri.GetDims();
+	mriCPU = MRIalloc( mriDims.x, mriDims.y, mriDims.z, mri.MRItype() );
+	mri.Recv( mriCPU, 0 );
+	
+	// Do the main loop
+	this->LabelMainLoop( gcamCPU, mriCPU, mri_dist, l_label, label_dist );
+
+	// Remove the outliers
+	nremoved = RemoveLabelOutliers( gcamCPU, mri_dist, 2, 3 );
+
+	SetInconsistentLabelNodes( nremoved );
+
+	// Put data back on the GPU
+	gcamCPU.PutOnGPU( gcam );
+
+	// Put mri_dist on the GPU
+	GPU::Classes::MRIframeGPU<float> mriDistGPU;
+	mriDistGPU.Allocate( mri_dist );
+	mriDistGPU.Send( mri_dist, 0 );
+
+	// Copy the deltas
+	this->LabelCopyDeltas( gcam, mriDistGPU, l_label );
+
+	nremoved += this->LabelPostAntConsistency( gcam, mriDistGPU );
+
+	num = this->LabelFinalUpdate( gcam, mriDistGPU, l_label );
+
+	MRIfree( &mri_dist );
+	MRIfree( &mriCPU );
+
+	return( NO_ERROR );
+      }
+
+
+      //! Dispatch wrapper from CPU types
+      template<typename T>
+      int LabelTermDispatch( GCA_MORPH *gcam, const MRI *mri,
+			     double l_label, double label_dist ) const {
+
+	int retVal;
+
+	GPU::Classes::MRIframeGPU<T> mriGPU;
+
+	mriGPU.Allocate( mri );
+	mriGPU.Send( mri, 0 );
+
+	GPU::Classes::GCAmorphGPU gcamGPU;
+	gcamGPU.SendAll( gcam );
+
+	retVal = this->LabelTerm( gcamGPU, mriGPU, l_label, label_dist );
+
+	gcamGPU.RecvAll( gcam );
+
+	return( retVal );
+      }
+
+
       // ######################################################
     private:
 
@@ -68,9 +231,60 @@ namespace GPU {
       static SciGPU::Utilities::Chronometer tSmoothSubtract;
       //! Timer for smoothness computation itself
       static SciGPU::Utilities::Chronometer tSmoothCompute;
+
+      //! Timer for the Jacobian term
+      static SciGPU::Utilities::Chronometer tJacobTot;
+      //! Timer for norm calculation of Jacobian term
+      static SciGPU::Utilities::Chronometer tJacobMaxNorm;
+      //! Timer for jacobian computation itself
+      static SciGPU::Utilities::Chronometer tJacobCompute;
+
+      //! Timer for Log likelihood term
+      static SciGPU::Utilities::Chronometer tLogLikelihoodTot;
+      //! Timer for Log likelihood term computation
+      static SciGPU::Utilities::Chronometer tLogLikelihoodCompute;
+
+      //! Timer for the main loop of LabelTerm
+      static SciGPU::Utilities::Chronometer tLabelMainLoop;
+      //! Timer for the computation portion of RemoveOutliers
+      static SciGPU::Utilities::Chronometer tRemoveOutliers;
+      //! Timer for copy deltas portion of LabelTerm
+      static SciGPU::Utilities::Chronometer tLabelCopyDeltas;
+      //! Timer for post/ant consistency check of LabelTerm
+      static SciGPU::Utilities::Chronometer tLabelPostAntConsistency;
+      //! Timer for final update of Label term
+      static SciGPU::Utilities::Chronometer tLabelFinal;
+
+      // ---------------------
+
+      template<typename T>
+      void LLTmrismoothDispatch( GCA_MORPH *gcam,
+				 const MRI*  mri,
+				 const MRI* mri_smooth,
+				 double l_log_likelihood ) const;
+
+      //! Remove Label Outliers for Label term
+      int RemoveLabelOutliers( Freesurfer::GCAmorphCPU& gcam,
+			       MRI *mri_dist,
+			       const int whalf,
+			       const double thresh ) const;
+
+      //! Main loop of Label term
+      void LabelMainLoop( Freesurfer::GCAmorphCPU& gcam,
+			  const MRI *mri,
+			  MRI *mri_dist,
+			  const double l_label,
+			  const double label_dist ) const;
+      
+      //! Variation on is_temporal_wm
+      static int IsTemporalWM( const MRI *mri,
+			       const GCA_NODE *gcan,
+			       float xf, float yf, float zf );
     };
 
   }
 }
+
+#endif
 
 #endif

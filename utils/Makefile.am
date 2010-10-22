@@ -231,8 +231,10 @@ libutils_main_SOURCES=\
 	mriio_nrrd.c \
 	mriio_nrrd_itk.cpp \
 	numerics.cpp \
-        chronometerpp.cpp\
-        gcamorphtestutils.cpp
+  chronometerpp.cpp \
+  gcamorphtestutils.cpp \
+	gcalinearnode.cpp \
+	gcalinearprior.cpp
 
 libutils_cephes_SOURCES=\
 	$(srcdir)/$(cephes_dir)/bdtr.c \
@@ -319,10 +321,14 @@ CUDA_DEPS = ../include/volumegpu.hpp\
             ../include/gcamorphgpu.hpp\
             ../include/mriconvolve_cuda.hpp\
             ../include/mrimean_cuda.hpp\
-            ../include/gcamorphenergy.hpp
+            ../include/gcamorphenergy.hpp\
+            ../include/gcalinearnode.hpp\
+            ../include/gcalinearprior.hpp\
+            ../include/minmax.hpp
 
 .cu.o:
-	$(NVCC) -o $@ -c $< $(NVCCFLAGS) $(NVCCINCLUDES) -DFS_CUDA -DCUDA_FORCE_SYNC -DCUDA_SHOW_TIMINGS
+	$(NVCC) -o $@ -c $< $(NVCCFLAGS) $(NVCCINCLUDES) -DFS_CUDA \
+	-DCUDA_FORCE_SYNC -DCUDA_SHOW_TIMINGS --compiler-options -O3
 
 noinst_LIBRARIES += libutils_cuda.a
 
@@ -330,19 +336,20 @@ libutils_cuda_a_SOURCES=\
 	$(libutils_main_SOURCES) \
 	$(libutils_cephes_SOURCES) \
 	$(libutils_nrrdio_SOURCES) \
-        mriframegpu.cu \
+	mriframegpu.cu \
 	devicemanagement.cu \
 	mriconvolve_cuda.cu \
-        mrivol2vol_cuda.cu \
+  mrivol2vol_cuda.cu \
 	mrisurf_cuda.cu \
-        affinegpu.cu\
-        mrimean_cuda.cu\
-        gcasgpu.cu\
-        cudatypeutils.cu\
-        gcamorphgpu.cu\
-        gcamorphenergygpu.cu\
-        gcamfots_cuda.cu\
-        gcamorphtermgpu.cu
+  affinegpu.cu\
+	mrimean_cuda.cu\
+	gcasgpu.cu\
+	cudatypeutils.cu\
+	gcamorphgpu.cu\
+  gcamorphenergygpu.cu\
+  gcamfots_cuda.cu\
+  gcamorphtermgpu.cu\
+	gcamorphcpu.cpp
 
 libutils_cuda_a_CFLAGS=-DFS_CUDA $(CUDA_CFLAGS)
 

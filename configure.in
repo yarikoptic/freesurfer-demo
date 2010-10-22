@@ -9,8 +9,8 @@
 #
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2010/09/22 17:13:35 $
-#    $Revision: 1.476.2.9 $
+#    $Date: 2010/10/22 22:40:13 $
+#    $Revision: 1.476.2.10 $
 #
 ########################################################################
 AC_PREREQ(2.57)
@@ -3031,6 +3031,7 @@ AC_SUBST(TESTS_ENVIRONMENT)
 AC_OUTPUT([Makefile
            check_siemens_dir/Makefile
            cudatest/Makefile
+           cudatest/gcatest/Makefile
            dicom/Makefile
            distribution/Makefile
            distribution/average/Makefile

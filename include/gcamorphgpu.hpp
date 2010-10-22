@@ -7,9 +7,9 @@
 /*
  * Original Author: Richard Edgar
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/06/04 13:54:17 $
- *    $Revision: 1.25 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:14 $
+ *    $Revision: 1.25.2.1 $
  *
  * Copyright (C) 2002-2008,
  * The General Hospital Corporation (Boston, MA). 
@@ -24,8 +24,12 @@
  *
  */
 
+#ifdef GCAMORPH_ON_GPU
+
 #ifndef GCA_MORPH_GPU_H
 #define GCA_MORPH_GPU_H
+
+#include <cuda_runtime.h>
 
 #include "gcamorph.h"
 
@@ -110,6 +114,9 @@ namespace GPU {
       //! Matches neg in GCAmorph
       int neg;
 
+      //! Matches GCA in GCAmorph (NASTY!!!)
+      GCA* gca;
+
       // -----------------------------------------------
       // Static host arrays for transfers
       static dim3 hostDims;
@@ -127,6 +134,7 @@ namespace GPU {
 
       static void AllocateHost( const GCAmorphGPU& gcam );
       static void ReleaseHost( void );
+      static void RandomiseHost( void );
       
 
       // -----------------------------------------
@@ -146,7 +154,8 @@ namespace GPU {
 			    d_mean(),
 			    d_variance(),
 			    exp_k(0),
-			    neg(0) {};
+			    neg(0),
+			    gca(NULL) {};
 
       //! Destructor
       ~GCAmorphGPU( void ) {};
@@ -164,6 +173,9 @@ namespace GPU {
 
       //! Releases all the GPU memory
       void ReleaseAll( void );
+
+      //! Zeros out all the memory
+      void ClearAll( void );
 
       // -------------------------------------------
       // Transfer routines
@@ -192,6 +204,14 @@ namespace GPU {
       //! Undoes a gradien application (gcamUndoGradient)
       void UndoGradient( void );
 
+      //! Adds a status flag to all nodes
+      void AddStatus( const int addState );
+
+      //! Removes a status flag from all nodes
+      void RemoveStatus( const int subtractState );
+
+      //! Removes two labels
+      void ResetLabelNodeStatus( void );
 
       // -------------------------------------------
       static void ShowTimings( void );
@@ -204,6 +224,7 @@ namespace GPU {
       static SciGPU::Utilities::Chronometer tRecvTot;
       static SciGPU::Utilities::Chronometer tRecvPack, tRecvTransfer;
       static SciGPU::Utilities::Chronometer tHostAlloc, tHostRelease;
+      static SciGPU::Utilities::Chronometer tHostRandomise;
 
       static SciGPU::Utilities::Chronometer tCMPtot;
       static SciGPU::Utilities::Chronometer tCMPcompute;
@@ -211,5 +232,8 @@ namespace GPU {
 
   }
 }
+
+#endif
+
 
 #endif

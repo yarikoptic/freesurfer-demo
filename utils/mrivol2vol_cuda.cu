@@ -7,9 +7,9 @@
 /*
  * Original Author: Richard Edgar
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/06/02 14:45:25 $
- *    $Revision: 1.20 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:14 $
+ *    $Revision: 1.20.2.1 $
  *
  * Copyright (C) 2002-2008,
  * The General Hospital Corporation (Boston, MA). 
@@ -391,7 +391,7 @@ namespace GPU {
       for( unsigned int iFrame=0; iFrame < src->nframes; iFrame++ ) {
 	// Get the next source frame
 	tVol2VolMRISendFrame.Start();
-	srcGPU.Send( src, iFrame, h_workspace );
+	srcGPU.SendFrame( src, iFrame, h_workspace );
 	tVol2VolMRISendFrame.Stop();
 	
 	// Put it into a CUDA array
@@ -406,7 +406,7 @@ namespace GPU {
 
 	// Get the results back
 	tVol2VolMRIRecvFrame.Start();
-	dstGPU.Recv( targ, iFrame, h_workspace );
+	dstGPU.RecvFrame( targ, iFrame, h_workspace );
 	tVol2VolMRIRecvFrame.Stop();
       }
 

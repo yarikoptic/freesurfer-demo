@@ -7,9 +7,9 @@
 /*
  * Original Author: Richard Edgar
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/04/20 15:56:36 $
- *    $Revision: 1.41 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:14 $
+ *    $Revision: 1.41.2.1 $
  *
  * Copyright (C) 2002-2008,
  * The General Hospital Corporation (Boston, MA). 
@@ -38,6 +38,7 @@
 #include "mri.h"
 
 #include "volumegpu.hpp"
+#include "affinegpu.hpp"
 
 #include "cudatypeutils.hpp"
 #include "cudacheck.h"
@@ -140,6 +141,7 @@ namespace GPU {
       }
 
       //! Utility function to convert float to the class' datatype
+      inline
       __device__ T ConvertFloat( const float in ) const {
 	/*!
 	  This template is specialised for each supported class.
@@ -198,7 +200,10 @@ namespace GPU {
 
       //! Default constructor does nothing
       MRIframeGPU<T>( void ) : VolumeGPU<T>(),
-			       thick(0) {};
+			       thick(0),
+			       sizes(make_float3(0,0,0)),
+			       d_i_to_r(),
+			       d_r_to_i() {};
 
       //! Conversion operator to MRIframeOnGPU
       operator MRIframeOnGPU<T>( void ) const {
@@ -208,16 +213,27 @@ namespace GPU {
       }
 
       // --------------------------------------------------------
+      // Public data (should probably be private)
+      
+      AffineTransformation d_i_to_r;
+      AffineTransformation d_r_to_i;
+
+      // --------------------------------------------------------
       // Data accessors
 
       //! Return information about the file version
       const char* VersionString( void ) const {
-	return "$Id: mriframegpu.hpp,v 1.41 2010/04/20 15:56:36 rge21 Exp $";
+	return "$Id: mriframegpu.hpp,v 1.41.2.1 2010/10/22 22:40:14 nicks Exp $";
       }
       
       //! Return the 'thick' field
       float GetThickness( void ) const {
 	return( this->thick );
+      }
+
+      //! Return the 'sizes' field
+      float3 GetSizes( void ) const {
+	return( this->sizes );
       }
 
       // --------------------------------------------------------
@@ -270,11 +286,31 @@ namespace GPU {
       // --------------------------------------------------------
       // Data transfer
       
-      //! Send the given MRI frame to the GPU
+      //! Sends the given MRI frame and the scalar data
       void Send( const MRI* src,
 		 const unsigned int iFrame,
 		 void* const h_work = NULL,
 		 const cudaStream_t stream = 0 ) {
+	
+	// Copy the scalars over
+	this->thick = src->thick;
+	
+	this->sizes = make_float3( src->xsize,
+				   src->ysize,
+				   src->zsize );
+
+	// Send the transforms
+	this->d_r_to_i.SetTransform( src->r_to_i__ );
+	this->d_i_to_r.SetTransform( src->i_to_r__ );
+	
+	this->SendFrame( src, iFrame, h_work, stream );
+      }
+
+      //! Send the given MRI frame to the GPU
+      void SendFrame( const MRI* src,
+		      const unsigned int iFrame,
+		      void* const h_work = NULL,
+		      const cudaStream_t stream = 0 ) {
 	/*!
 	  Sends the given MRI frame to the GPU.
 	  Optional arguments can be used to supply page-locked
@@ -302,10 +338,6 @@ namespace GPU {
 	  exit( EXIT_FAILURE );
 	}
 
-	// Copy the scalars over
-	this->thick = src->thick;
-
-	
 	// See if we need to allocate workspace
 	const size_t bSize = this->BufferSize();
 	// See if we were supplied with workspace
@@ -334,12 +366,26 @@ namespace GPU {
       
       // -----
       
-      
-      //! Receives the given MRI frame from the GPU
+      //! Receives the given MRI frame and the scalar data
       void Recv( MRI* dst,
 		 const unsigned int iFrame,
 		 void* const h_work = NULL,
 		 const cudaStream_t stream = 0 ) const {
+
+	// Retrieve the scalars
+	dst->thick = this->thick;
+	dst->xsize = this->sizes.x;
+	dst->ysize = this->sizes.y;
+	dst->zsize = this->sizes.z;
+
+	this->RecvFrame( dst, iFrame, h_work, stream );
+      }
+
+      //! Receives the given MRI frame from the GPU
+      void RecvFrame( MRI* dst,
+		      const unsigned int iFrame,
+		      void* const h_work = NULL,
+		      const cudaStream_t stream = 0 ) const {
 	/*!
 	  Retrieves the given MRI frame from the GPU.
 	  Optional arguments can be used to supply page-locked
@@ -361,8 +407,7 @@ namespace GPU {
 	  exit( EXIT_FAILURE );
 	}
 
-	// Retrieve the scalars
-	dst->thick = this->thick;
+	
 	
 	// See about buffers
 	const size_t bSize = this->BufferSize();
@@ -433,6 +478,9 @@ namespace GPU {
     
       //! Mirror of the 'thick' field of an MRI
       float thick;
+
+      //! Mirror of the {x|y|z}size fields (the voxel sizes)
+      float3 sizes;
 
       //! Function to sanity check dimensions
       bool CheckDims( const MRI* mri ) const {
@@ -630,18 +678,21 @@ namespace GPU {
    
 
     template<> __device__
+    inline
     unsigned char MRIframeOnGPU<unsigned char>::ConvertFloat( const float in ) const {
       // Copy 'nint' from utils.c
       return( static_cast<unsigned char>( in+0.5f ) );
     }
 
     template<> __device__
+    inline
     short MRIframeOnGPU<short>::ConvertFloat( const float in ) const {
       // Copy 'nint' from utils.c
       return( static_cast<short>( in+0.5f ) );
     }
 
     template<> __device__
+    inline
     float MRIframeOnGPU<float>::ConvertFloat( const float in ) const {
       return( in );
     }

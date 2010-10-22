@@ -8,9 +8,9 @@
 /*
  * Original Author: Richard Edgar
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/04/06 20:09:57 $
- *    $Revision: 1.38 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:14 $
+ *    $Revision: 1.38.2.1 $
  *
  * Copyright (C) 2002-2008,
  * The General Hospital Corporation (Boston, MA). 
@@ -24,6 +24,8 @@
  * General inquiries: freesurfer@nmr.mgh.harvard.edu
  *
  */
+
+#ifdef GCAMORPH_ON_GPU
 
 #include <thrust/device_new_allocator.h>
 #include <thrust/device_ptr.h>
@@ -1025,7 +1027,8 @@ namespace GPU {
       
 
     // --------------------------------------------------
-    
+ 
+#if 0   
     template<typename T>
     float GCAmorphEnergy::ComputeRMS( GPU::Classes::GCAmorphGPU& gcam,
 				      const GPU::Classes::MRIframeGPU<T>& mri,
@@ -1042,6 +1045,7 @@ namespace GPU {
       
       return( rms );
     }
+#endif
     
     template<typename T>
     float GCAmorphEnergy::RMSdispatch( GPU::Classes::GCAmorphGPU& gcam,
@@ -1252,3 +1256,6 @@ float gcamComputeRMSonGPU( GCA_MORPH *gcam,
 
   return( rms );
 }
+
+
+#endif

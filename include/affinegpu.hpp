@@ -7,9 +7,9 @@
 /*
  * Original Author: Richard Edgar
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/02/12 19:30:24 $
- *    $Revision: 1.8 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:13 $
+ *    $Revision: 1.8.2.1 $
  *
  * Copyright (C) 2002-2008,
  * The General Hospital Corporation (Boston, MA). 
@@ -51,6 +51,10 @@ namespace GPU {
 
       //! Constructor from MATRIX
       AffineTransformation( const MATRIX* src );
+
+
+      //! Set transform from MATRIX
+      void SetTransform( const MATRIX* src );
 
       //! RHS subscripting operator (no bounds check)
       __host__ __device__ float operator() ( const unsigned int i,
@@ -256,7 +260,7 @@ namespace GPU {
 
       //! Routine to multiply two matrices
       __device__ void Multiply( const AffineTransShared& a,
-			       const AffineTransShared& b ) {
+				const AffineTransShared& b ) {
 	/*!
 	  Performs the matrix-multiply a*b and stores the
 	  result in the current object.

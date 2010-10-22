@@ -10,9 +10,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/08/13 17:19:00 $
- *    $Revision: 1.190.2.3 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:14 $
+ *    $Revision: 1.190.2.4 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -29,18 +29,32 @@
 
 // Control which portions are done on the GPU
 #define SHOW_EXEC_LOC 0
-#ifdef FS_CUDA
-//#define GCAM_CMP_GPU
 
-//#define GCAM_LABEL_ENERGY_GPU
-//#define GCAM_LLENERGY_GPU
-//#define GCAM_JACOBENERGY_GPU
-//#define GCAM_COMPUTE_RMS_GPU
-//#define GCAM_SMOOTHNESS_ENERGY_GPU
+#ifdef FS_CUDA
+// GCAmorphGPU requires Fermi                                                                                                     
+#ifdef GCAMORPH_ON_GPU
+#define GCAM_CMP_GPU
+
+#define GCAM_LABEL_ENERGY_GPU
+#define GCAM_LLENERGY_GPU
+#define GCAM_JACOBENERGY_GPU
+#define GCAM_COMPUTE_RMS_GPU
+#define GCAM_SMOOTHNESS_ENERGY_GPU
 #define GCAM_FIND_OPTIMAL_TIMESTEP_GPU
 
-//#define GCAM_SMOOTH_TERM_GPU
-//#define GCAM_JACOB_TERM_GPU
+#define GCAM_SMOOTH_TERM_GPU
+#define GCAM_JACOB_TERM_GPU
+#define GCAM_LL_TERM_GPU
+
+#define GCAM_LABEL_TERM_MAINLOOP_GPU
+#define GCAM_LABEL_TERM_REMOVE_OUTLIERS_GPU
+#define GCAM_LABEL_TERM_COPYDELTAS_GPU
+#define GCAM_LABEL_TERM_POSTANT_GPU
+#define GCAM_LABEL_TERM_FINAL_GPU
+
+#else
+// Have to turn everything off                                                                                                    
+#endif
 #endif
 
 

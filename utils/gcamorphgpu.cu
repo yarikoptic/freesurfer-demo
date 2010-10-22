@@ -7,9 +7,9 @@
 /*
  * Original Author: Richard Edgar
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/06/04 13:54:19 $
- *    $Revision: 1.36 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:14 $
+ *    $Revision: 1.36.2.1 $
  *
  * Copyright (C) 2002-2008,
  * The General Hospital Corporation (Boston, MA). 
@@ -23,6 +23,8 @@
  * General inquiries: freesurfer@nmr.mgh.harvard.edu
  *
  */
+
+#ifdef GCAMORPH_ON_GPU
 
 #include "macros.h"
 
@@ -201,6 +203,43 @@ namespace GPU {
 
     }
 
+
+
+    void GCAmorphGPU::ClearAll( void ) {
+      this->d_rx.Zero();
+      this->d_ry.Zero();
+      this->d_rz.Zero();
+
+      this->d_dx.Zero();
+      this->d_dy.Zero();
+      this->d_dz.Zero();
+
+      this->d_odx.Zero();
+      this->d_ody.Zero();
+      this->d_odz.Zero();
+
+      this->d_origx.Zero();
+      this->d_origy.Zero();
+      this->d_origz.Zero();
+
+      this->d_origArea.Zero();
+      this->d_origArea1.Zero();
+      this->d_origArea2.Zero();
+
+      this->d_area.Zero();
+      this->d_area1.Zero();
+      this->d_area2.Zero();
+
+      this->d_invalid.Zero();
+      this->d_label.Zero();
+      this->d_status.Zero();
+      this->d_labelDist.Zero();
+
+      this->d_mean.Zero();
+      this->d_variance.Zero();
+    }
+
+
     // --------------------------------------------
 
     void GCAmorphGPU::SendAll( const GCAM* src ) {
@@ -231,7 +270,7 @@ namespace GPU {
       // Copy scalars
       this->exp_k = src->exp_k;
       this->neg = src->neg;
-
+      this->gca = src->gca;
 
       // Extract the dimensions
       const dim3 dims = make_uint3( src->width,
@@ -381,6 +420,9 @@ namespace GPU {
       // Copy scalars
       dst->exp_k = this->exp_k;
       dst->neg = this->neg;
+      std::cerr << __FUNCTION__
+		<< ": Did not reset gca in dst"
+		<< std::endl;
 
       // Extract the dimensions
       const dim3 dims = this->d_rx.GetDims();
@@ -420,7 +462,7 @@ namespace GPU {
       this->d_labelDist.RecvBuffer( GCAmorphGPU::h_labelDist );
 
       this->d_mean.RecvBuffer( GCAmorphGPU::h_mean );
-      this->d_variance.RecvBuffer(GCAmorphGPU:: h_variance );
+      this->d_variance.RecvBuffer( GCAmorphGPU:: h_variance );
       CUDA_SAFE_CALL( cudaThreadSynchronize() );
       GCAmorphGPU::tRecvTransfer.Stop();
 
@@ -936,6 +978,86 @@ namespace GPU {
       CUDA_CHECK_ERROR( "UndoGradientKernel failed!\n" );
     }
 
+    // --------------------------------------------
+
+    const unsigned int kAddStatusKernelSize = 16;
+
+    __global__
+    void AddStatusKernel( VolumeArgGPU<int> status, const int addState ) {
+      const unsigned int bx = ( blockIdx.x * blockDim.x );
+      const unsigned int by = ( blockIdx.y * blockDim.y );
+      const unsigned int ix = threadIdx.x + bx;
+      const unsigned int iy = threadIdx.y + by;
+      
+      for( unsigned int iz = 0; iz< status.dims.z; iz++ ) {
+	if( status.InVolume(ix,iy,iz) ) {
+	  status(ix,iy,iz) |= addState;
+	}
+      }
+    }
+
+    void GCAmorphGPU::AddStatus( const int addState ) {
+
+      this->CheckIntegrity();
+
+      // Run the computation
+      dim3 grid, threads;
+      
+      threads.x = threads.y = kAddStatusKernelSize;
+      threads.z = 1;
+
+      grid = this->d_status.CoverBlocks( kAddStatusKernelSize );
+      grid.z = 1;
+      
+      AddStatusKernel<<<grid,threads>>>( this->d_status, addState );
+      CUDA_CHECK_ERROR( "AddStatusKernel failed!" );
+    }
+
+
+    // --------------------------------------------
+
+    const unsigned int kRemoveStatusKernelSize = 16;
+
+    __global__
+    void RemoveStatusKernel( VolumeArgGPU<int> status, const int subtractState ) {
+      const unsigned int bx = ( blockIdx.x * blockDim.x );
+      const unsigned int by = ( blockIdx.y * blockDim.y );
+      const unsigned int ix = threadIdx.x + bx;
+      const unsigned int iy = threadIdx.y + by;
+      
+      const int invState = ~subtractState;
+
+      for( unsigned int iz = 0; iz< status.dims.z; iz++ ) {
+	if( status.InVolume(ix,iy,iz) ) {
+	  status(ix,iy,iz) &= invState;
+	}
+      }
+    }
+
+    void GCAmorphGPU::RemoveStatus( const int subtractState ) {
+
+      this->CheckIntegrity();
+
+      // Run the computation
+      dim3 grid, threads;
+      
+      threads.x = threads.y = kRemoveStatusKernelSize;
+      threads.z = 1;
+
+      grid = this->d_status.CoverBlocks( kRemoveStatusKernelSize );
+      grid.z = 1;
+      
+      RemoveStatusKernel<<<grid,threads>>>( this->d_status, subtractState );
+      CUDA_CHECK_ERROR( "AddStatusKernel failed!" );
+    }
+    
+    // --------------------------------------------
+
+    void GCAmorphGPU::ResetLabelNodeStatus( void ) {
+      this->RemoveStatus( GCAM_LABEL_NODE );
+      this->RemoveStatus( GCAM_IGNORE_LIKELIHOOD );
+    }
+    
 
     // ----------------------------------------------------
     void GCAmorphGPU::ShowTimings( void ) {
@@ -953,19 +1075,24 @@ namespace GPU {
       std::cout << "      Pack : " << GCAmorphGPU::tSendPack << std::endl;
       std::cout << "  Transfer : " << GCAmorphGPU::tSendTransfer << std::endl;
       std::cout << "Total      : " << GCAmorphGPU::tSendTot << std::endl;
+      std::cout << std::endl;
 
       std::cout << "Recv:" << std::endl;
       std::cout << "      Pack : " << GCAmorphGPU::tRecvPack << std::endl;
       std::cout << "  Transfer : " << GCAmorphGPU::tRecvTransfer << std::endl;
       std::cout << "Total      : " << GCAmorphGPU::tRecvTot << std::endl;
+      std::cout << std::endl;
 
       std::cout << "Host Memory:" << std::endl;
       std::cout << "     Alloc : " << GCAmorphGPU::tHostAlloc << std::endl;
-      std::cout << " Release   : " << GCAmorphGPU::tHostRelease << std::endl;
+      std::cout << "   Release : " << GCAmorphGPU::tHostRelease << std::endl;
+      std::cout << " Randomise : " << GCAmorphGPU::tHostRandomise << std::endl;
+      std::cout << std::endl;
 
       std::cout << "Compute Metric Properties:" << std::endl;
       std::cout << "   Compute : " << GCAmorphGPU::tCMPcompute << std::endl;
       std::cout << "Total      : " << GCAmorphGPU::tCMPtot << std::endl;
+      std::cout << std::endl;
 
       std::cout << "==================================" << std::endl;
 #endif
@@ -982,6 +1109,7 @@ namespace GPU {
     SciGPU::Utilities::Chronometer GCAmorphGPU::tRecvTransfer;
     SciGPU::Utilities::Chronometer GCAmorphGPU::tHostAlloc;
     SciGPU::Utilities::Chronometer GCAmorphGPU::tHostRelease;
+    SciGPU::Utilities::Chronometer GCAmorphGPU::tHostRandomise;
     SciGPU::Utilities::Chronometer GCAmorphGPU::tCMPtot;
     SciGPU::Utilities::Chronometer GCAmorphGPU::tCMPcompute;
 
@@ -1015,7 +1143,8 @@ namespace GPU {
 	return;
       }
 
-      std::cerr << __FUNCTION__ << ": Warning - not thread safe!" << std::endl;
+      std::cerr << __FUNCTION__
+		<< ": Warning - not thread safe!" << std::endl;
 
       // Get rid of the old allocation
       GCAmorphGPU::ReleaseHost();
@@ -1061,6 +1190,7 @@ namespace GPU {
 
     }
 
+
     
     void GCAmorphGPU::ReleaseHost( void ) {
 
@@ -1069,7 +1199,8 @@ namespace GPU {
 	return;
       }
 
-      std::cerr << __FUNCTION__ << ": Warning - not thread safe!" << std::endl;
+      std::cerr << __FUNCTION__
+		<< ": Warning - not thread safe!" << std::endl;
 
       GCAmorphGPU::tHostRelease.Start();
 
@@ -1111,6 +1242,71 @@ namespace GPU {
       GCAmorphGPU::tHostRelease.Stop();
     }
 
+
+    
+
+    template<typename T>
+    void RandomArray( T* arr, const size_t nVals ) {
+      
+      for( unsigned int i=0; i<nVals; i++ ) {
+	char randVal = std::rand() % std::numeric_limits<char>::max();
+	arr[i] = static_cast<T>(randVal);
+      }
+
+    }
+
+
+    void GCAmorphGPU::RandomiseHost( void ) {
+
+      // Sanity check
+      if( GCAmorphGPU::hostDims == make_uint3(0,0,0) ) {
+	return;
+      }
+
+      std::cerr << __FUNCTION__
+		<< ": Warning - not thread safe!" << std::endl;
+
+      GCAmorphGPU::tHostRandomise.Start();
+
+      size_t currSize = GCAmorphGPU::hostDims.x *
+	GCAmorphGPU::hostDims.y * GCAmorphGPU::hostDims.z;
+
+      RandomArray( GCAmorphGPU::h_rx, currSize );
+      RandomArray( GCAmorphGPU::h_ry, currSize );
+      RandomArray( GCAmorphGPU::h_rz, currSize );
+
+      
+      RandomArray( GCAmorphGPU::h_origx, currSize );
+      RandomArray( GCAmorphGPU::h_origy, currSize );
+      RandomArray( GCAmorphGPU::h_origz, currSize );
+
+      RandomArray( GCAmorphGPU::h_dx, currSize );
+      RandomArray( GCAmorphGPU::h_dy, currSize );
+      RandomArray( GCAmorphGPU::h_dz, currSize );
+
+      RandomArray( GCAmorphGPU::h_odx, currSize );
+      RandomArray( GCAmorphGPU::h_ody, currSize );
+      RandomArray( GCAmorphGPU::h_odz, currSize );
+
+      RandomArray( GCAmorphGPU::h_origArea, currSize );
+      RandomArray( GCAmorphGPU::h_origArea1, currSize );
+      RandomArray( GCAmorphGPU::h_origArea2, currSize );
+
+      RandomArray( GCAmorphGPU::h_area, currSize );
+      RandomArray( GCAmorphGPU::h_area1, currSize );
+      RandomArray( GCAmorphGPU::h_area2, currSize );
+
+      RandomArray( GCAmorphGPU::h_invalid, currSize );
+      RandomArray( GCAmorphGPU::h_status, currSize );
+      RandomArray( GCAmorphGPU::h_label, currSize );
+      RandomArray( GCAmorphGPU::h_labelDist, currSize );
+
+      RandomArray( GCAmorphGPU::h_mean, currSize );
+      RandomArray( GCAmorphGPU::h_variance, currSize );
+
+      
+      GCAmorphGPU::tHostRandomise.Stop();
+    }
 
   }
 }
@@ -1171,3 +1367,23 @@ void gcamUndoGradientGPU( GCA_MORPH *gcam ) {
 }
 
 
+void gcamAddStatusGPU( GCA_MORPH *gcam, const int statusFlags ) {
+
+  GPU::Classes::GCAmorphGPU gcamGPU;
+  
+  gcamGPU.SendAll( gcam );
+  gcamGPU.AddStatus( statusFlags );
+  gcamGPU.RecvAll( gcam );
+}
+
+
+void gcamRemoveStatusGPU( GCA_MORPH *gcam, const int statusFlags ) {
+
+  GPU::Classes::GCAmorphGPU gcamGPU;
+  
+  gcamGPU.SendAll( gcam );
+  gcamGPU.RemoveStatus( statusFlags );
+  gcamGPU.RecvAll( gcam );
+}
+
+#endif

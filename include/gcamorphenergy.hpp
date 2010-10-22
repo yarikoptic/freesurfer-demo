@@ -8,9 +8,9 @@
 /*
  * Original Author: Richard Edgar
  * CVS Revision Info:
- *    $Author: rge21 $
- *    $Date: 2010/06/04 13:53:44 $
- *    $Revision: 1.3 $
+ *    $Author: nicks $
+ *    $Date: 2010/10/22 22:40:14 $
+ *    $Revision: 1.3.2.1 $
  *
  * Copyright (C) 2002-2008,
  * The General Hospital Corporation (Boston, MA). 
@@ -24,6 +24,8 @@
  * General inquiries: freesurfer@nmr.mgh.harvard.edu
  *
  */
+
+#ifdef GCAMORPH_ON_GPU
 
 #ifndef GCA_MORPH_ENERGY_HPP
 #define GCA_MORPH_ENERGY_HPP
@@ -92,7 +94,21 @@ namespace GPU {
       template<typename T>
       float ComputeRMS( GPU::Classes::GCAmorphGPU& gcam,
 			const GPU::Classes::MRIframeGPU<T>& mri,
-			GCA_MORPH_PARMS *parms ) const;
+			GCA_MORPH_PARMS *parms ) const {
+	
+	float sse = this->ComputeSSE( gcam, mri, parms );
+	
+	const dim3 dims = gcam.d_rx.GetDims();
+	float nVoxels = dims.x;
+	nVoxels *= dims.y;
+	nVoxels *= dims.z;
+	
+	float rms = sqrtf( sse/nVoxels );
+	
+	return( rms );
+      }
+
+
 
       template<typename T>
       float RMSdispatch( GPU::Classes::GCAmorphGPU& gcam,
@@ -150,5 +166,7 @@ namespace GPU {
   }
 }
 
+
+#endif
 
 #endif

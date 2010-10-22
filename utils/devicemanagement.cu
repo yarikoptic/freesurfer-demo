@@ -68,7 +68,9 @@ void PrintGPUtimers( void ) {
   GPU::Algorithms::MRIconvolve::ShowTimings();
   GPU::Algorithms::MRImean::ShowTimings();
   GPU::Algorithms::MRIvol2vol::ShowTimings();
+#ifdef GCAMORPH_ON_GPU
   GPU::Classes::GCAmorphGPU::ShowTimings();
   GPU::Algorithms::GCAmorphEnergy::ShowTimings();
   GPU::Algorithms::GCAmorphTerm::ShowTimings();
+#endif
 }
