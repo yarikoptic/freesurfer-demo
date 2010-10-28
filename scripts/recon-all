@@ -7,9 +7,9 @@
 #
 # Original Author: Doug Greve
 # CVS Revision Info:
-#    $Author: nicks $
-#    $Date: 2010/10/27 21:44:23 $
-#    $Revision: 1.313.2.12 $
+#    $Author: mreuter $
+#    $Date: 2010/10/28 21:27:54 $
+#    $Revision: 1.313.2.13 $
 #
 # Copyright (C) 2002-2010,
 # The General Hospital Corporation (Boston, MA).
@@ -26,7 +26,7 @@
 #
 umask 002;
 
-set VERSION = '$Id: recon-all,v 1.313.2.12 2010/10/27 21:44:23 nicks Exp $';
+set VERSION = '$Id: recon-all,v 1.313.2.13 2010/10/28 21:27:54 mreuter Exp $';
 set ProgName = `basename $0`;
 
 set inputargs = ($argv);
@@ -1439,7 +1439,7 @@ skullstrip:
     set BMA = brainmask.auto.mgz
 
     set cmd=(mri_convert -T $subjdir/mri/transforms/$longbasetotpN_regfile)
-    set cmd=($cmd -rl T1.mgz)
+    set cmd=($cmd -rl T1.mgz -rt nearest)
     set cmd=($cmd ${longbasedir}/mri/${BM})
     set bmbase = brainmask_${longbaseid}.mgz
     set cmd=($cmd ${bmbase})
