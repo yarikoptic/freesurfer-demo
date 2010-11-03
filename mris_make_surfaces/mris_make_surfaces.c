@@ -12,8 +12,8 @@
  * Original Author: Bruce Fischl
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/04/08 19:42:02 $
- *    $Revision: 1.113 $
+ *    $Date: 2010/11/03 16:22:25 $
+ *    $Revision: 1.113.2.1 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -54,7 +54,7 @@
 #include "label.h"
 
 static char vcid[] =
-  "$Id: mris_make_surfaces.c,v 1.113 2010/04/08 19:42:02 nicks Exp $";
+  "$Id: mris_make_surfaces.c,v 1.113.2.1 2010/11/03 16:22:25 nicks Exp $";
 
 int main(int argc, char *argv[]) ;
 
@@ -241,13 +241,13 @@ main(int argc, char *argv[]) {
 
   make_cmd_version_string
   (argc, argv,
-   "$Id: mris_make_surfaces.c,v 1.113 2010/04/08 19:42:02 nicks Exp $",
+   "$Id: mris_make_surfaces.c,v 1.113.2.1 2010/11/03 16:22:25 nicks Exp $",
    "$Name:  $", cmdline);
 
   /* rkt: check for and handle version tag */
   nargs = handle_version_option
           (argc, argv,
-           "$Id: mris_make_surfaces.c,v 1.113 2010/04/08 19:42:02 nicks Exp $",
+           "$Id: mris_make_surfaces.c,v 1.113.2.1 2010/11/03 16:22:25 nicks Exp $",
            "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
@@ -751,6 +751,7 @@ main(int argc, char *argv[]) {
   if (aseg_name) {
     char fname[STRLEN] ;
     sprintf(fname, "%s/%s/mri/%s", sdir, sname, aseg_name) ;
+    fprintf(stderr, "reading volume %s...\n", fname) ;
     mri_aseg = MRIread(fname) ;
     if (mri_aseg == NULL)
       ErrorExit(ERROR_NOFILE, "%s: could not read segmentation volume %s",
@@ -1315,7 +1316,7 @@ get_option(int argc, char *argv[]) {
   char *option ;
 
   option = argv[1] + 1 ;            /* past '-' */
-  if (!stricmp(option, "-help"))
+  if (!stricmp(option, "-help")||!stricmp(option, "-usage"))
     print_help() ;
   else if (!stricmp(option, "-version"))
     print_version() ;
@@ -1632,6 +1633,7 @@ get_option(int argc, char *argv[]) {
       nargs = 1 ;
       break ;
     case '?':
+    case 'H':
     case 'U':
       print_usage() ;
       exit(1) ;
@@ -1732,7 +1734,6 @@ print_usage(void) {
 
 static void
 print_help(void) {
-  print_usage() ;
   fprintf(stderr,
           "\nThis program positions the tessellation of the cortical surface\n"
           "at the white matter surface, then the gray matter surface\n"
@@ -2143,6 +2144,7 @@ fix_midline(MRI_SURFACE *mris, MRI *mri_aseg, MRI *mri_brain, char *hemi,
   }
   MRISclearMarks(mris) ;
 
+#if 0
   if (mris->ct && CTABfindName(mris->ct, "unknown", &index) == NO_ERROR)
   {
     CTABannotationAtIndex(mris->ct, index, &annotation) ;
@@ -2157,10 +2159,13 @@ fix_midline(MRI_SURFACE *mris, MRI *mri_aseg, MRI *mri_brain, char *hemi,
         v->marked = 1 ;
     }
     MRISdilateMarked(mris, 3) ;
+#if 0
     MRISinvertMarks(mris) ;  // 1 -- means can't be unknown
+#endif
     MRIScopyMarkedToMarked2(mris) ;
     MRISclearMarks(mris) ;
   }
+#endif
   for (vno = 0 ; vno < mris->nvertices ; vno++) {
     v = &mris->vertices[vno] ;
     if (v->ripflag || v->marked2 > 0)
@@ -2190,6 +2195,14 @@ fix_midline(MRI_SURFACE *mris, MRI *mri_aseg, MRI *mri_brain, char *hemi,
           label == Right_Lateral_Ventricle ||
           ((label == Left_Accumbens_area ||
             label == Right_Accumbens_area) &&  // only for gray/white
+           which == GRAY_WHITE) ||
+          ((label == Left_Lesion ||
+            label == Right_Lesion ||
+            label == WM_hypointensities ||
+            label == Left_WM_hypointensities ||
+            label == Right_non_WM_hypointensities ||
+            label == Left_non_WM_hypointensities ||
+            label == Right_WM_hypointensities) &&  // only for gray/white
            which == GRAY_WHITE) ||
           label == Left_Caudate ||
           label == Right_Caudate ||
@@ -2387,6 +2400,31 @@ fix_midline(MRI_SURFACE *mris, MRI *mri_aseg, MRI *mri_brain, char *hemi,
       for (i = 0 ; i < labels[n]->n_points ; i++)
         mris->vertices[labels[n]->lv[i].vno].marked = 0 ;
     }
+    if (mris->ct && CTABfindName(mris->ct, "unknown", &index) == NO_ERROR)
+    {
+      double pct_unknown; 
+      int    i ;
+      CTABannotationAtIndex(mris->ct, index, &annotation) ;
+      
+      for (pct_unknown = 0.0, i = 0 ; i < labels[n]->n_points ; i++)
+      {
+        if (mris->vertices[labels[n]->lv[i].vno].annotation == annotation)
+          pct_unknown = pct_unknown + 1 ;
+      }
+      pct_unknown /= (double)labels[n]->n_points ;
+      if (pct_unknown < .6)
+      {
+        printf("deleting segment %d with %d points - only %2.2f%% unknown\n",n, 
+               labels[n]->n_points,100*pct_unknown) ;
+        for (i = 0 ; i < labels[n]->n_points ; i++)
+        {
+          mris->vertices[labels[n]->lv[i].vno].marked = 0 ;
+          if (labels[n]->lv[i].vno  == Gdiag_no)
+            printf("removing ripflag from v %d due to non-unknown aparc\n", Gdiag_no) ;
+        }
+      }
+    }
+
     LabelFree(&labels[n]) ;
   }
   free(labels) ;
