@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/09/22 17:13:36 $
- *    $Revision: 1.27.2.2 $
+ *    $Author: rpwang $
+ *    $Date: 2010/11/05 16:15:20 $
+ *    $Revision: 1.27.2.3 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -41,6 +41,7 @@ class wxTextCtrl;
 class wxColorIndicator;
 class wxColourPickerCtrl;
 class wxColourPickerEvent;
+class wxButton;
 class Layer;
 class LayerMRI;
 
@@ -125,6 +126,10 @@ private:
   void OnCheckUseImageColorMap  ( wxCommandEvent& event );
   void OnColorContour     ( wxColourPickerEvent& event );
   void OnCheckContourExtractAll ( wxCommandEvent& event );
+  void OnSliderContourSmooth    ( wxScrollEvent& event );
+  void OnSliderContourSmoothChanging( wxScrollEvent& event );
+  void OnTextContourSmooth      ( wxCommandEvent& event );
+  void OnButtonSaveContour      ( wxCommandEvent& event );
   
   void OnCheckHideInfo    ( wxCommandEvent& event );
 
@@ -188,6 +193,9 @@ private:
   wxCheckBox*     m_checkUseImageColorMap;
   wxCheckBox*     m_checkContourExtractAll;
   wxColourPickerCtrl* m_colorpickerContour;
+  wxSlider*       m_sliderContourSmooth;
+  wxTextCtrl*     m_textContourSmooth;
+  wxButton*       m_btnSaveContour;
   
   wxCheckBox*     m_checkHideInfo;
 

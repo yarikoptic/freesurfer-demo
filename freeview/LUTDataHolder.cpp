@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: rpwang $
- *    $Date: 2009/12/04 21:57:12 $
- *    $Revision: 1.11 $
+ *    $Date: 2010/11/05 16:15:19 $
+ *    $Revision: 1.11.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -29,17 +29,19 @@
 #include <iostream>
 #include "LUTDataHolder.h"
 #include <iostream>
+#include <wx/xrc/xmlres.h>
+#include <wx/file.h>
+#include "res/FreeSurferColorLUT.h"
 
 LUTDataHolder::LUTDataHolder()
 {
-  ColorTableData ctd;
+  ColorTableData ctd;  
   wxFileName fn = wxFileName::FileName
     ( _("$FREESURFER_HOME/FreeSurferColorLUT.txt") );
   fn.Normalize();
   ctd.filename = fn.GetFullPath().char_str();
   ctd.table = CTABreadASCII( ctd.filename.c_str() );
   ctd.name = "FreeSurferColorLUT";
-  ctd.filename = fn.GetFullPath().char_str();
   if ( ctd.table )
     m_tables.push_back( ctd );
 
@@ -49,7 +51,6 @@ LUTDataHolder::LUTDataHolder()
   ctd.filename = fn.GetFullPath().char_str();
   ctd.table = CTABreadASCII( ctd.filename.c_str() );
   ctd.name = "tkmeditParcColorsCMA";
-  ctd.filename = fn.GetFullPath().char_str();
   if ( ctd.table )
     m_tables.push_back( ctd );
 
@@ -59,9 +60,31 @@ LUTDataHolder::LUTDataHolder()
   ctd.filename = fn.GetFullPath().char_str();
   ctd.table = CTABreadASCII( ctd.filename.c_str() );
   ctd.name = "Simple_surface_labels2009";
-  ctd.filename = fn.GetFullPath().char_str();
   if ( ctd.table )
-    m_tables.push_back( ctd );
+  m_tables.push_back( ctd );
+  
+  // did not find any stock tables, load build-in one
+  if ( m_tables.size() == 0)
+  {
+
+    wxString tempfn = wxFileName::GetTempDir() + "/FreeSurferColorLUT.txt";
+    wxFile file;
+    if ( file.Open( tempfn, wxFile::write) )
+    {
+      file.Write( FreeSurferColorLUT_binary, FreeSurferColorLUT_binary_LEN );
+      file.Flush();
+      file.Close();
+      ctd.filename = "FreeSurferColorLUT.txt";
+      ctd.table = CTABreadASCII( tempfn.c_str() );
+      ctd.name = "FreeSurferColorLUT";
+      if ( ctd.table )
+        m_tables.push_back( ctd );
+    }
+    else
+    {
+      std::cerr << "Can not load any stock look up tables." << std::endl;
+    }
+  }
 }
 
 LUTDataHolder::~LUTDataHolder()
@@ -108,11 +131,12 @@ COLOR_TABLE* LUTDataHolder::GetColorTable( const char* name )
 COLOR_TABLE* LUTDataHolder::LoadColorTable( const char* filename )
 {
   // first trying to see if we've already loaded the lut from the same file
-  COLOR_TABLE* ct = GetColorTable( filename );
-  std::string filename_full = filename;
+  wxFileName fn = wxFileName::FileName( wxString::FromAscii(filename) );
+  fn.Normalize();
+  COLOR_TABLE* ct = GetColorTable( fn.GetFullPath().ToAscii() );
+  std::string filename_full = fn.GetFullPath().ToAscii();
   if ( !ct )
   {
-    wxFileName fn = wxFileName::FileName( wxString::FromAscii(filename) );
     if ( !fn.FileExists() )
       fn = wxFileName::FileName( wxString( _("$FREESURFER_HOME/") ) + wxString::FromAscii(filename) );
     fn.Normalize();

@@ -200,6 +200,8 @@ freeview_SOURCES=\
 	SurfaceOverlayProperties.h \
 	SurfaceRegion.cpp \
 	SurfaceRegion.h \
+	SurfaceRegionGroups.cpp \
+	SurfaceRegionGroups.h \
 	ToolWindowEdit.cpp \
 	ToolWindowEdit.h \
 	ToolWindowMeasure.cpp \
@@ -313,10 +315,6 @@ all:
 	@echo "Run configure with either --enable-wxw-apps or --with-wxwidgets-dir=DIR"
 
 endif
-
-TESTS=test_freeview
-
-EXTRA_DIST=test_freeview
 
 
 # Our release target. Include files to be excluded here. They will be

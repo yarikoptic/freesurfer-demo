@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/09/22 17:13:36 $
- *    $Revision: 1.5.2.2 $
+ *    $Author: rpwang $
+ *    $Date: 2010/11/05 16:15:20 $
+ *    $Revision: 1.5.2.3 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -33,6 +33,8 @@ class wxToolBar;
 class wxTextCtrl;
 class wxSpinCtrl;
 class wxSpinEvent;
+class wxColourPickerCtrl;
+class wxColourPickerEvent;
 class wxButton;
 class Region2D;
 class SurfaceRegion;
@@ -57,7 +59,7 @@ public:
   void OnActionMeasureSurfaceRegion         ( wxCommandEvent& event );
   void OnActionMeasureSurfaceRegionUpdateUI ( wxUpdateUIEvent& event );
   void OnActionMeasureLabel                ( wxCommandEvent& event );
-  void OnActionMeasureLabelUpdateUI ( wxUpdateUIEvent& event );
+  void OnActionMeasureLabelUpdateUI       ( wxUpdateUIEvent& event );
   
   void OnButtonCopy         ( wxCommandEvent& event );
   void OnButtonExport       ( wxCommandEvent& event );
@@ -66,6 +68,8 @@ public:
   void OnButtonLoad         ( wxCommandEvent& event );
   void OnButtonUpdate       ( wxCommandEvent& event );
   void OnSpinId             ( wxSpinEvent& evnet );
+  void OnSpinGroup          ( wxSpinEvent& evnet );
+  void OnColorGroup         ( wxColourPickerEvent& event );
   
   void UpdateWidgets();
   
@@ -91,6 +95,8 @@ protected:
   wxButton*       m_btnLoad;
   wxButton*       m_btnUpdate;
   wxSpinCtrl*     m_spinId;
+  wxSpinCtrl*     m_spinGroup;
+  wxColourPickerCtrl* m_colorPickerGroup;
   
   std::vector<wxWindow*>  m_widgets2D;    // widgets for 2D measurements
   std::vector<wxWindow*>  m_widgets3D;    // widgets for 3D measurements

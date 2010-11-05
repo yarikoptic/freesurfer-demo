@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/09/22 17:13:36 $
- *    $Revision: 1.19.2.2 $
+ *    $Author: rpwang $
+ *    $Date: 2010/11/05 16:15:19 $
+ *    $Revision: 1.19.2.3 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -96,7 +96,8 @@ public:
   static bool CalculateOptimalVolume( int* vox, int nsize1, int* vox2, int nsize2,
                                       std::vector<void*> input_volumes, long* output_volume, int vol_size );
 
-  static bool BuildContourActor( vtkImageData* data_in, double dTh1, double dTh2, vtkActor* actor_out, int* ext = NULL, bool bAllRegion = false );
+  static bool BuildContourActor( vtkImageData* data_in, double dTh1, double dTh2, vtkActor* actor_out, int nSmoothIterations = 0,
+                                 int* ext = NULL, bool bAllRegion = false );
 
   static bool BuildVolume( vtkImageData* data_in, double dTh1, double dTh2, vtkVolume* vol_out );
 

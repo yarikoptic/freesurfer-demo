@@ -7,8 +7,8 @@
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
  *    $Author: rpwang $
- *    $Date: 2010/06/08 17:43:26 $
- *    $Revision: 1.48 $
+ *    $Date: 2010/11/05 16:15:19 $
+ *    $Revision: 1.48.2.1 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -235,14 +235,15 @@ bool LayerSurface::LoadCurvatureFromFile( const char* filename )
 bool LayerSurface::LoadOverlayFromFile( const char* filename )
 {
   if ( !m_surfaceSource->LoadOverlay( filename ) )
-    return false;
+  {
+      return false;
+  }
   
   // create overlay
   SurfaceOverlay* overlay = new SurfaceOverlay( this ); 
   std::string fn = filename;
   overlay->SetName( fn.substr( fn.find_last_of("/\\")+1 ).c_str() );
-  m_overlays.push_back( overlay );
-  
+  m_overlays.push_back( overlay ); 
   SetActiveOverlay( m_overlays.size() - 1 );
   
   this->SendBroadcast( "LayerModified", this );
@@ -250,6 +251,22 @@ bool LayerSurface::LoadOverlayFromFile( const char* filename )
   return true; 
 }
 
+bool LayerSurface::LoadCorrelationFromFile( const char* filename )
+{
+  // create overlay
+  SurfaceOverlay* overlay = new SurfaceOverlay( this ); 
+  std::string fn = filename;
+  overlay->SetName( fn.substr( fn.find_last_of("/\\")+1 ).c_str() );
+  if ( !overlay->LoadCorrelationData( filename ) )
+    return false;
+  
+  m_overlays.push_back( overlay ); 
+  SetActiveOverlay( m_overlays.size() - 1 );
+  
+  this->SendBroadcast( "LayerModified", this );
+  this->SendBroadcast( "SurfaceOverlayAdded", this );
+  return true; 
+}
 
 bool LayerSurface::LoadAnnotationFromFile( const char* filename )
 {
@@ -451,8 +468,9 @@ void LayerSurface::UpdateVectorPointSize()
 {
   for ( int i = 0; i < 3; i++ )
   {
-    m_vectorActor->GetProperty()->SetPointSize( GetProperties()->GetVectorPointSize() );
+    m_vectorActor2D[i]->GetProperty()->SetPointSize( GetProperties()->GetVectorPointSize() );
   }
+  m_vectorActor->GetProperty()->SetPointSize( GetProperties()->GetVectorPointSize() );
 }
 
 void LayerSurface::UpdateColorMap()
@@ -466,6 +484,7 @@ void LayerSurface::UpdateColorMap()
     m_sliceActor3D[i]->GetProperty()->SetColor( GetProperties()->GetEdgeColor() );
     m_sliceActor2D[i]->GetMapper()->ScalarVisibilityOff();
     m_sliceActor3D[i]->GetMapper()->ScalarVisibilityOff();
+    m_vectorActor2D[i]->GetProperty()->SetColor( GetProperties()->GetVectorColor() );
   }
 
   m_mainActor->GetProperty()->SetColor( GetProperties()->GetBinaryColor() );
@@ -891,6 +910,22 @@ SurfaceOverlay* LayerSurface::GetOverlay( int n )
     return m_overlays[n];
   else
     return NULL;
+}
+
+void LayerSurface::UpdateCorrelationOverlayAtVertex( int nVertex )
+{
+  SurfaceOverlay* overlay = GetOverlay( m_nActiveOverlay );
+  if ( nVertex < 0 || !overlay || !overlay->HasCorrelationData() )
+    return;
+  
+  overlay->UpdateCorrelationAtVertex( nVertex );
+  UpdateOverlay( true );
+}
+
+void LayerSurface::UpdateCorrelationOverlay()
+{
+  int nVertex = GetVertexIndexAtTarget( GetSlicePosition(), NULL );
+  UpdateCorrelationOverlayAtVertex( nVertex );
 }
 
 void LayerSurface::UpdateOverlay( bool bAskRedraw )

@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/09/22 17:13:36 $
- *    $Revision: 1.71.2.3 $
+ *    $Author: rpwang $
+ *    $Date: 2010/11/05 16:15:19 $
+ *    $Revision: 1.71.2.4 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -56,6 +56,7 @@
 #include "vtkImageStencil.h"
 #include "vtkSimpleLabelEdgeFilter.h"
 #include "vtkImageResample.h"
+#include "vtkPolyDataWriter.h"
 
 #include "LayerPropertiesMRI.h"
 #include "MyUtils.h"
@@ -65,6 +66,7 @@
 #include "BuildContourThread.h"
 #include "Contour2D.h"
 #include "SurfaceRegion.h"
+#include "SurfaceRegionGroups.h"
 
 #ifndef max
 #define max(a,b)            (((a) > (b)) ? (a) : (b))
@@ -118,6 +120,7 @@ LayerMRI::LayerMRI( LayerMRI* ref ) : LayerVolumeBase(),
   m_propVolume = vtkSmartPointer<vtkVolume>::New();
   
   m_nThreadID = 0;
+  m_surfaceRegionGroups = new SurfaceRegionGroups( this );
   
   private_buf1_3x3 = new double*[3];
   private_buf2_3x3 = new double*[3];
@@ -149,6 +152,7 @@ LayerMRI::~LayerMRI()
     m_segActors[i].actor->Delete();
   }
   
+  delete m_surfaceRegionGroups;
   for ( size_t i = 0; i < m_surfaceRegions.size(); i++ )
   {
     delete m_surfaceRegions[i];
@@ -175,7 +179,6 @@ const char* LayerMRI::GetOrientationString()
   else
     return "RAS";
 }
-
 
 void LayerMRI::SetConform( bool bConform )
 {
@@ -517,6 +520,7 @@ void LayerMRI::UpdateContourActor( int nSegValue )
   // are different, it means a new thread is rebuilding the contour
   m_nThreadID++;
   BuildContourThread* thread = new BuildContourThread( MainWindow::GetMainWindowPointer() );
+  thread->SetSmoothFactor( GetProperties()->GetContourSmoothIterations() );
   thread->BuildContour( this, nSegValue, m_nThreadID );
 }
 
@@ -766,6 +770,8 @@ void LayerMRI::DoListenToMessage( std::string const iMessage, void* iData, void*
     UpdateUpSampleMethod();
     this->SendBroadcast( "LayerActorUpdated", this, this );
   }
+  else if ( iMessage == "SurfaceRegionColorChanged" )
+    this->SendBroadcast( iMessage, this, this );
   
   LayerVolumeBase::DoListenToMessage( iMessage, iData, sender );
 }
@@ -1814,10 +1820,16 @@ SurfaceRegion* LayerMRI::CreateNewSurfaceRegion( double* pt )
   r->AddPoint( pt );
   r->SetId( m_surfaceRegions.size() + 1 );
   m_surfaceRegions.push_back( r );
+  int nGroup = 1;
   if ( m_currentSurfaceRegion )
+  {
     m_currentSurfaceRegion->Highlight( false );
+    nGroup = m_currentSurfaceRegion->GetGroup();
+  }
   m_currentSurfaceRegion = r;
+  r->SetGroup( nGroup );
   this->SendBroadcast( "SurfaceRegionAdded", this );
+  r->AddListener( this );
   return r;
 }
   
@@ -1917,7 +1929,7 @@ bool LayerMRI::SaveAllSurfaceRegions( wxString& fn )
   return ret;
 }
 
-bool LayerMRI::LoadRegionSurfaces( wxString& fn )
+bool LayerMRI::LoadSurfaceRegions( wxString& fn )
 {
   FILE* fp = fopen( fn.c_str(), "r" );
   if ( !fp )
@@ -1941,6 +1953,7 @@ bool LayerMRI::LoadRegionSurfaces( wxString& fn )
       r->SetInput( vtkPolyData::SafeDownCast( m_actorContour->GetMapper()->GetInput() ) );
       m_surfaceRegions.push_back( r );
       r->Highlight( false );
+      r->AddListener( this );
     }
     else
     {
@@ -2095,4 +2108,30 @@ void LayerMRI::GetLabelStats( LayerMRI* label, int nPlane,
       stds.push_back( sd );     
     }
   }
+}
+
+bool LayerMRI::SaveContourToFile( const char* filename )
+{
+  MATRIX* mat = m_volumeSource->GetTargetToRASMatrix();
+  double m[16];
+  for ( int i = 0; i < 16; i++ )
+  {
+    m[i] = (double) *MATRIX_RELT((mat),(i/4)+1,(i%4)+1);
+  }
+  MatrixFree( &mat );
+  vtkSmartPointer<vtkMatrix4x4> vmat = vtkSmartPointer<vtkMatrix4x4>::New();
+  vmat->DeepCopy( m );
+  vtkSmartPointer<vtkTransform> tr = vtkSmartPointer<vtkTransform>::New();
+  tr->SetMatrix( vmat );
+  vtkSmartPointer<vtkTransformPolyDataFilter> filter = 
+      vtkSmartPointer<vtkTransformPolyDataFilter>::New();
+  filter->SetTransform( tr );
+  filter->SetInput( vtkPolyDataMapper::SafeDownCast( m_actorContour->GetMapper())->GetInput() );
+  filter->Update();
+  vtkPolyDataWriter* writer = vtkPolyDataWriter::New();
+  writer->SetInput( filter->GetOutput() );
+  writer->SetFileName( filename );
+  bool ret = writer->Write();
+  writer->Delete();
+  return ret;
 }

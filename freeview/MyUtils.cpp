@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/09/22 17:13:36 $
- *    $Revision: 1.37.2.2 $
+ *    $Author: rpwang $
+ *    $Date: 2010/11/05 16:15:19 $
+ *    $Revision: 1.37.2.3 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -647,7 +647,7 @@ bool MyUtils::BuildContourActor( vtkImageData* data_in,
 */
 bool MyUtils::BuildContourActor( vtkImageData* data_in, 
                                  double dTh1, double dTh2, 
-                                 vtkActor* actor_out, int* ext, bool bAllRegions )
+                                 vtkActor* actor_out, int nSmoothIterations, int* ext, bool bAllRegions )
 {
   double nValue = 1;
   int nSwell = 2;
@@ -700,19 +700,19 @@ bool MyUtils::BuildContourActor( vtkImageData* data_in,
     conn->SetInputConnection( contour->GetOutputPort() );
     conn->SetExtractionModeToLargestRegion();
     vtkSmartPointer<vtkSmoothPolyDataFilter> smoother = vtkSmartPointer<vtkSmoothPolyDataFilter>::New();
-    smoother->SetInputConnection( conn->GetOutputPort() );
-    smoother->SetNumberOfIterations( 20 );
-//    smoother->FeatureEdgeSmoothingOn();
-//    smoother->SetEdgeAngle( 90 );
-    vtkSmartPointer<vtkPolyDataNormals> normals = vtkSmartPointer<vtkPolyDataNormals>::New();
-    vtkSmartPointer<vtkStripper> stripper = vtkSmartPointer<vtkStripper>::New();
-    stripper->SetInputConnection( normals->GetOutputPort() );
     if ( bAllRegions )
-      normals->SetInputConnection( contour->GetOutputPort() );
+      smoother->SetInputConnection( contour->GetOutputPort() );
     else
-      normals->SetInputConnection( conn->GetOutputPort() );
+      smoother->SetInputConnection( conn->GetOutputPort() );
+    smoother->SetNumberOfIterations( nSmoothIterations );
+    smoother->FeatureEdgeSmoothingOn();
+    smoother->SetEdgeAngle( 90 );
+    vtkSmartPointer<vtkPolyDataNormals> normals = vtkSmartPointer<vtkPolyDataNormals>::New();
+    normals->SetInputConnection( smoother->GetOutputPort() );
 //    normals->SetInput( polydata );
     normals->SetFeatureAngle( 90 );
+    vtkSmartPointer<vtkStripper> stripper = vtkSmartPointer<vtkStripper>::New();
+    stripper->SetInputConnection( normals->GetOutputPort() );
     vtkPolyDataMapper* mapper = vtkPolyDataMapper::SafeDownCast( actor_out->GetMapper() );
     mapper->SetInputConnection( stripper->GetOutputPort() );
     mapper->ScalarVisibilityOn();

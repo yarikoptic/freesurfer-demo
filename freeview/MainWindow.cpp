@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/09/22 21:42:46 $
- *    $Revision: 1.119.2.3 $
+ *    $Author: rpwang $
+ *    $Date: 2010/11/05 16:15:19 $
+ *    $Revision: 1.119.2.4 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -671,6 +671,11 @@ void MainWindow::NewVolume()
   m_controlPanel->RaisePage( _("Volumes") );
 }
 
+wxString MainWindow::AutoSelectLastDir( wxString subdirectory )
+{
+  return AutoSelectLastDir( m_strLastDir, subdirectory );
+}
+
 wxString MainWindow::AutoSelectLastDir( wxString lastDir, wxString subdirectory )
 {
   wxFileName fn = wxFileName::FileName( lastDir );
@@ -972,7 +977,12 @@ void MainWindow::OnFileRecent( wxCommandEvent& event )
 {
   wxString fn( m_fileHistory->GetHistoryFile( event.GetId() - wxID_FILE1 ) );
   if ( !fn.IsEmpty() )
-    this->LoadVolumeFile( fn, _(""), m_bResampleToRAS, m_nDefaultSampleMethod, m_bDefaultConform );
+  {
+    bool bResample = m_bResampleToRAS;
+    if ( !GetLayerCollection( "Surface" )->IsEmpty() && GetLayerCollection( "MRI" )->IsEmpty() )
+      bResample = true;
+    this->LoadVolumeFile( fn, _(""), bResample, m_nDefaultSampleMethod, m_bDefaultConform );
+  }
 }
 
 LayerCollection* MainWindow::GetLayerCollection( std::string strType )
@@ -3438,7 +3448,7 @@ void MainWindow::CommandLoadIsoSurfaceRegion( const wxArrayString& sa )
   {  
     if ( sa.size() > 1 )
     {
-      if ( !mri->LoadRegionSurfaces( sa[1] ) )
+      if ( !mri->LoadSurfaceRegions( sa[1] ) )
       {
         cerr << "Can not load surfacer region(s) from " << sa[1].c_str() << endl;
       }
@@ -4923,7 +4933,12 @@ void MainWindow::LoadSurfaceOverlayFile( const wxString& filename )
   LayerSurface* layer = ( LayerSurface* )GetLayerCollection( "Surface" )->GetActiveLayer();
   if ( layer )
   {
-    layer->LoadOverlayFromFile( fn.char_str() );
+    if ( MyUtils::HasExtension( fn, "mgh" ) || MyUtils::HasExtension( fn, "mgz" ) ||
+         MyUtils::HasExtension( fn, "nii" ) || MyUtils::HasExtension( fn, "nii.gz" ) ||
+         MyUtils::HasExtension( fn, "mnc" ) || MyUtils::HasExtension( fn, "img" ) )
+      layer->LoadCorrelationFromFile( fn.char_str() );
+    else
+      layer->LoadOverlayFromFile( fn.char_str() );
 //    m_strLastDir = MyUtils::GetNormalizedPath( filename );
   }
 }
