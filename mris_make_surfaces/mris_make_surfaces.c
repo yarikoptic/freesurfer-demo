@@ -12,8 +12,8 @@
  * Original Author: Bruce Fischl
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/11/03 16:22:25 $
- *    $Revision: 1.113.2.1 $
+ *    $Date: 2010/11/09 17:14:09 $
+ *    $Revision: 1.113.2.2 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -54,7 +54,7 @@
 #include "label.h"
 
 static char vcid[] =
-  "$Id: mris_make_surfaces.c,v 1.113.2.1 2010/11/03 16:22:25 nicks Exp $";
+  "$Id: mris_make_surfaces.c,v 1.113.2.2 2010/11/09 17:14:09 nicks Exp $";
 
 int main(int argc, char *argv[]) ;
 
@@ -241,13 +241,13 @@ main(int argc, char *argv[]) {
 
   make_cmd_version_string
   (argc, argv,
-   "$Id: mris_make_surfaces.c,v 1.113.2.1 2010/11/03 16:22:25 nicks Exp $",
+   "$Id: mris_make_surfaces.c,v 1.113.2.2 2010/11/09 17:14:09 nicks Exp $",
    "$Name:  $", cmdline);
 
   /* rkt: check for and handle version tag */
   nargs = handle_version_option
           (argc, argv,
-           "$Id: mris_make_surfaces.c,v 1.113.2.1 2010/11/03 16:22:25 nicks Exp $",
+           "$Id: mris_make_surfaces.c,v 1.113.2.2 2010/11/09 17:14:09 nicks Exp $",
            "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
@@ -846,9 +846,9 @@ main(int argc, char *argv[]) {
   if (mri_aseg)
   {
     fix_midline(mris, mri_aseg, mri_T1, hemi, GRAY_CSF, fix_mtl) ;
-    edit_aseg_with_surfaces(mris, mri_aseg) ;
     if (write_aseg_fname)
     {
+      edit_aseg_with_surfaces(mris, mri_aseg) ;
       printf("writing corrected aseg to %s\n", write_aseg_fname) ;
       MRIwrite(mri_aseg, write_aseg_fname) ;
     }
