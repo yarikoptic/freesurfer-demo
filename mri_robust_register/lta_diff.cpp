@@ -8,8 +8,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/07/26 19:41:44 $
- *    $Revision: 1.11.2.4 $
+ *    $Date: 2010/11/11 22:31:02 $
+ *    $Revision: 1.11.2.5 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -56,8 +56,15 @@ extern "C"
 
 using namespace std;
 
-//static char vcid[] = "$Id: lta_diff.cpp,v 1.11.2.4 2010/07/26 19:41:44 mreuter Exp $";
+//static char vcid[] = "$Id: lta_diff.cpp,v 1.11.2.5 2010/11/11 22:31:02 mreuter Exp $";
 char *Progname = NULL;
+void writeVox2Vox(LTA * lta)
+{
+  cout << " convet to vox 2 vox" << endl;
+  LTAchangeType(lta,LINEAR_VOX_TO_VOX);
+  cout << " writing" << endl;
+  LTAwrite(lta,"test-vox2vox.lta");
+}
 
 double cornerdiff(LTA* lta1, LTA* lta2)
 {
@@ -110,8 +117,8 @@ double cornerdiff(LTA* lta1)
 
   VECTOR * v_X  = VectorAlloc(4, MATRIX_REAL) ;  /* input (src) coordinates */
   VECTOR * v_Y1 = VectorAlloc(4, MATRIX_REAL) ;  /* transformed (dst) coordinates */
-   VECTOR_ELT(v_X,4) = 1;	
-   VECTOR_ELT(v_Y1,4) = 1;	
+  VECTOR_ELT(v_X,4) = 1;	
+  VECTOR_ELT(v_Y1,4) = 1;	
 
   int y3,y2,y1;
   double d = 0;
@@ -482,7 +489,7 @@ int main(int argc, char *argv[])
   }
 
   if (invert1 )
-	{
+  {
     VOL_GEOM vgtmp;
     LT *lt;
     MATRIX *m_tmp = lta1->xforms[0].m_L ;

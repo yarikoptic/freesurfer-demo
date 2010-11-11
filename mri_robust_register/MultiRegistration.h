@@ -14,8 +14,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/07/22 18:00:14 $
- *    $Revision: 1.4.2.1 $
+ *    $Date: 2010/11/11 22:31:02 $
+ *    $Revision: 1.4.2.2 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -82,6 +82,7 @@ public:
 
    int loadMovables(const std::vector < std::string > mov);
 	 int loadLTAs(const std::vector < std::string > nltas);
+	 int loadIntensities(const std::vector < std::string > nintens);
 	 void clear();
 	 
   // Set parameters:
@@ -138,7 +139,7 @@ public:
 	  doubleprec = b;
   }
 	
-	bool averageSet(int itdebug = 0);
+	bool averageSet(int itdebug = 0, int interp = SAMPLE_TRILINEAR);
 	MRI * averageConformSet(int itdebug = 0);
 	
   static MRI* averageSet(const std::vector < MRI * >& set,
@@ -154,12 +155,13 @@ private:
 	// copy of input filenames
 	std::vector <std::string > mov;
 	std::vector <std::string > iltas;
+	std::vector <std::string > iintens;
 	
 	// copy of output filenames
   //std::string mean;
- // std::vector <std::string> nltas;
+  // std::vector <std::string> nltas;
   //std::vector <std::string> nweights;
- // std::vector <std::string> nwarps;
+  // std::vector <std::string> nwarps;
 	
 	// Parameter:
   std::string outdir;

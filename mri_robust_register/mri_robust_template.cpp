@@ -10,8 +10,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/08/31 20:44:35 $
- *    $Revision: 1.18.2.4 $
+ *    $Date: 2010/11/11 22:31:02 $
+ *    $Revision: 1.18.2.5 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -117,6 +117,9 @@ struct Parameters
 	string conform;
 	bool   doubleprec;
 	bool   oneminusweights;
+	vector < string > iscalein;
+	vector < string > iscaleout;
+	int    finalinterp;
 };
 
 // Initializations:
@@ -148,7 +151,10 @@ static struct Parameters P =
 	false,
 	"",
 	false,
-	false
+	false,
+  vector < string >(0),
+  vector < string >(0),
+	SAMPLE_TRILINEAR
 };
 
 
@@ -156,7 +162,7 @@ static void printUsage(void);
 static bool parseCommandLine(int argc, char *argv[],Parameters & P) ;
 
 static char vcid[] =
-"$Id: mri_robust_template.cpp,v 1.18.2.4 2010/08/31 20:44:35 mreuter Exp $";
+"$Id: mri_robust_template.cpp,v 1.18.2.5 2010/11/11 22:31:02 mreuter Exp $";
 char *Progname = NULL;
 
 //static MORPH_PARMS  parms ;
@@ -229,6 +235,10 @@ int main(int argc, char *argv[])
 	// load initial ltas if set:
 	assert (P.iltas.size () == 0 || P.iltas.size() == P.mov.size());
 	if (P.iltas.size() > 0) assert(MR.loadLTAs(P.iltas)==nin);
+	
+	// load initial iscales if set:
+	assert (P.iscalein.size () == 0 || P.iscalein.size() == P.mov.size());
+	if (P.iscalein.size() > 0) assert(MR.loadIntensities(P.iscalein)==nin);
 
 	if (P.noit) // no registration, only averaging
 	{
@@ -239,7 +249,7 @@ int main(int argc, char *argv[])
 		  MR.initialXforms(P.inittp,P.fixtp,0,5,0.01);
 	
 	  // create template:
-    MR.averageSet(0);
+    MR.averageSet(0,P.finalinterp);
 	   
 	}
   // run registrations
@@ -250,7 +260,7 @@ int main(int argc, char *argv[])
 		  MR.initialXforms(P.inittp,P.fixtp,0,5,0.01);
 
   	  // create template:
-      MR.averageSet(0);
+      MR.averageSet(0,P.finalinterp);
 	
 //	  // here default params are adjusted for just 2 images (if not passed):
 //	  if (P.iterate == -1) P.iterate = 5;
@@ -277,6 +287,9 @@ int main(int argc, char *argv[])
 		// P.iterate and P.epsit are used for terminating the template iterations
 		// while 5 and 0.01 are default for the individual registrations
     MR.computeTemplate(P.iterate,P.epsit,5,0.01);
+		// if final interp not trilinear (=default), then:
+    if (P.finalinterp == SAMPLE_NEAREST)
+		   MR.averageSet(0,P.finalinterp);
   }
 
   cout << "Writing final template: " << P.mean << endl;
@@ -287,24 +300,7 @@ int main(int argc, char *argv[])
   cout << "Writing final transforms (warps etc.)..." << endl;
 	if (P.nltas.size() > 0) MR.writeLTAs(P.nltas,P.lta_vox2vox,P.mean);
 	if (P.nwarps.size() >0) MR.writeWarps(P.nwarps);
-  if (P.iscale && P.nwarps.size() > 0)
-  {
-	  vector < string > nintens(P.nwarps.size());
-	  for (uint i = 0;i<P.nwarps.size();i++)
-		{
-      size_t  pos = P.nwarps[i].rfind(".");    // position of "." in str
-      if (pos!=string::npos)
-      {
-          nintens[i] = P.nwarps[i].substr(0,pos) + "-intensity.txt";
-      }
-      else
-      {
-        cerr << " output warp :  " <<
-          P.nwarps[i] << " should end with .mgz!" << endl;
-        exit (1);
-      }
-	  }
-  }
+  if (P.iscaleout.size() >0) MR.writeIntensities(P.iscaleout);
   if (!P.leastsquares && P.nweights.size() > 0) MR.writeWeights(P.nweights,P.oneminusweights);
 
   ///////////////////////////////////////////////////////////////
@@ -347,7 +343,9 @@ static void printUsage(void)
   cout << "  --fixtp                    map everthing to init TP# (init TP is not resampled)" << endl;
 	
 //  cout << "  -A, --affine (testmode)    find 12 parameter affine xform (default is 6-rigid)" << endl;
-  cout << "  --iscale                   allow also intensity scaling (default no)" << endl;
+  cout << "  --iscale                   allow also intensity scaling (default off)" << endl;
+  cout << "  --iscalein is1.txt ...     read in initial iscale values from txt files" << endl;
+	cout << "  --iscaleout is1.txt ...    output final iscale values (activates --iscale)" << endl;
   cout << "  --ixforms t1.lta t2.lta .. use initial transforms (lta) on source  ('id'=identity)" << endl;
   cout << "  --vox2vox                  output VOX2VOX lta file (default is RAS2RAS)" << endl;
   cout << "  --leastsquares             use least squares instead of robust M-estimator" << endl;
@@ -364,16 +362,20 @@ static void printUsage(void)
 //  cout << "      --maskmov mask.mgz     mask mov/src with mask.mgz" << endl;
 //  cout << "      --maskdst mask.mgz     mask dst/target with mask.mgz" << endl;
 //  cout << "  --conform conform.mgz      output conform template, 1mm vox (256^3)" << endl;
+  cout << "  --finalnearest             use nearest neighbor interpol. for final average" << endl;
   cout << "  --floattype                use float intensities (default keep intput type)" << endl; 
   cout << "  --debug                    show debug output (default no debug output)" << endl;
 //  cout << "      --test i mri         perform test number i on mri volume" << endl;
 
   cout << endl;
-  cout << "Important Note: The input images should all have the same intensity level!" << endl;
-  cout << "Good images are, for example, the T1.mgz and norm.mgz from the FreeSurfer stream." << endl;
-  cout << endl;
 
   cout << "Report bugs to: freesurfer@nmr.mgh.harvard.edu" << endl;
+
+	cout << endl << "References:" << endl<< endl;
+	cout << " Highly Accurate Inverse Consistent Registration: A Robust Approach," << endl;
+	cout << "   M. Reuter, H.D. Rosas, B. Fischl." << endl;
+	cout << "   NeuroImage 53 (4), pp. 1181-1196, 2010." << endl;
+	cout << "   http://reuter.mit.edu/lcount/click.php?id=13 " << endl;
 
   cout << endl;
 }
@@ -445,6 +447,39 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
     while (nargs+1 < argc && option[0] != '-');
     assert(nargs > 0);
     cout << "--lta: Will output LTA transforms" << endl;
+  }
+  else if (!strcmp(option, "ISCALEOUT")   )
+  {
+    nargs = 0;
+    do
+    {
+      option = argv[nargs+1];
+      if (option[0] != '-')
+      {
+        nargs++;
+        P.iscaleout.push_back(string(argv[nargs]));
+      }
+    }
+    while (nargs+1 < argc && option[0] != '-');
+    assert(nargs > 0);
+		P.iscale = true;
+    cout << "--iscaleout: Will perform intensity scaling and output results" << endl;
+  }
+  else if (!strcmp(option, "ISCALEIN")   )
+  {
+    nargs = 0;
+    do
+    {
+      option = argv[nargs+1];
+      if (option[0] != '-')
+      {
+        nargs++;
+        P.iscalein.push_back(string(argv[nargs]));
+      }
+    }
+    while (nargs+1 < argc && option[0] != '-');
+    assert(nargs > 0);
+    cout << "--iscalein: Will use init intensity scales" << endl;
   }
   else if (!strcmp(option, "IXFORMS")   )
   {
@@ -613,6 +648,12 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
      nargs = 0 ;
      cout << "--floattype: Use float images internally (independent of input)!" << endl;
  	}
+  else if (!strcmp(option, "FINALNEAREST") )
+  {
+     P.finalinterp = SAMPLE_NEAREST;
+     nargs = 0 ;
+     cout << "--finalnearest: Use nearest neighbor interpolation for final average!" << endl;
+ 	}
   else if (!strcmp(option, "INITTP") )
   {
     P.inittp = atoi(argv[1]);
@@ -633,7 +674,7 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
   }
   else
   {
-    cerr << "ERROR: Option " << argv[0] << " unknown !!! " << endl << endl;
+    cerr << endl << endl << "ERROR: Option " << argv[0] << " unknown !!! " << endl << endl;
     printUsage();
     exit(1);
   }
@@ -677,10 +718,31 @@ static bool parseCommandLine(int argc, char *argv[], Parameters & P)
          << endl;
     exit(1);
   }
+  if (P.iltas.size() > 0 && P.mov.size() != P.iltas.size())
+  {
+    ntest = false;
+    cerr << " No. of filnames for --ixforms should agree with no. of inputs!"
+         << endl;
+    exit(1);
+  }
   if (P.nweights.size() > 0 && P.mov.size() != P.nweights.size())
   {
     ntest = false;
     cerr << " No. of filnames for --weights should agree with no. of inputs!"
+         << endl;
+    exit(1);
+  }
+  if (P.iscalein.size() > 0 && P.iltas.size() != P.iscalein.size())
+  {
+    ntest = false;
+    cerr << " No. of filnames for --iscalein should agree with no. of init LTAs (--ixforms)!"
+         << endl;
+    exit(1);
+  }
+  if (P.iscaleout.size() > 0 && P.mov.size() != P.iscaleout.size())
+  {
+    ntest = false;
+    cerr << " No. of filnames for --iscaleout should agree with no. of inputs!"
          << endl;
     exit(1);
   }

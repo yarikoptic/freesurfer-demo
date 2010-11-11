@@ -10,8 +10,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/08/31 20:48:55 $
- *    $Revision: 1.31.2.2 $
+ *    $Date: 2010/11/11 22:31:02 $
+ *    $Revision: 1.31.2.3 $
  *
  * Copyright (C) 2008-2012
  * The General Hospital Corporation (Boston, MA).
@@ -131,7 +131,7 @@ static void printUsage(void);
 static bool parseCommandLine(int argc, char *argv[],Parameters & P) ;
 static void initRegistration(Registration & R, Parameters & P) ;
 
-static char vcid[] = "$Id: mri_robust_register.cpp,v 1.31.2.2 2010/08/31 20:48:55 mreuter Exp $";
+static char vcid[] = "$Id: mri_robust_register.cpp,v 1.31.2.3 2010/11/11 22:31:02 mreuter Exp $";
 char *Progname = NULL;
 
 //static MORPH_PARMS  parms ;
@@ -307,15 +307,16 @@ int main(int argc, char *argv[])
   getVolGeom(P.mri_dst, &lta->xforms[0].dst);
   LTAwriteEx(lta, reg) ;
 
-  if (R.isIscale() && Md.second >0)
+  if (R.isIscale() && Md.second >0 && P.iscaleout != "")
+//  if (R.isIscale() && Md.second >0)
   {
-    string fn;
-    if (P.iscaleout != "") fn = P.iscaleout;
-    else fn = R.getName() + "-intensity.txt";
-    ofstream f(fn.c_str(),ios::out);
+    //string fn;
+    //if (P.iscaleout != "") fn = P.iscaleout;
+    //else fn = R.getName() + "-intensity.txt";
+    //ofstream f(fn.c_str(),ios::out);
+    ofstream f(P.iscaleout.c_str(),ios::out);
     f << Md.second;
     f.close();
-
   }
 
   //  MatrixWriteTxt("xform.txt",Md.first);
@@ -436,6 +437,16 @@ int main(int argc, char *argv[])
       cout << " creating half-way movable ..." << endl;
       // take dst geometry info from lta:
       MRI* mri_Swarp = LTAtransform(P.mri_mov,NULL, m2hwlta);
+
+      //cout << " MOV       RAS: " << P.mri_mov->c_r << " , " <<	P.mri_mov->c_a << " , " <<	P.mri_mov->c_s << endl;
+      //cout << " DST       RAS: " << P.mri_dst->c_r << " , " <<	P.mri_dst->c_a << " , " <<	P.mri_dst->c_s << endl;
+      //cout << " weights   RAS: " << mri_weights->c_r << " , " <<	mri_weights->c_a << " , " <<	mri_weights->c_s << endl;
+      //cout << " Swarp_old RAS: " << mri_Swarp_old->c_r << " , " <<	mri_Swarp_old->c_a << " , " <<	mri_Swarp_old->c_s << endl;
+      //MRI* mri_Swarp = MRIalloc(mri_weights->width, mri_weights->height, mri_weights->depth, P.mri_mov->type);
+      //MRIcopyHeader(mri_weights,mri_Swarp);
+      //mri_Swarp->type = P.mri_mov->type;
+      //LTAtransform(P.mri_mov,mri_Swarp, m2hwlta);
+      //cout << " Swarp     RAS: " << mri_Swarp->c_r << " , " <<	mri_Swarp->c_a << " , " <<	mri_Swarp->c_s << endl;
 		  MRIcopyPulseParameters(P.mri_mov,mri_Swarp);
       MRIwrite(mri_Swarp,P.halfmov.c_str());
 
@@ -832,14 +843,21 @@ static void printUsage(void)
 	cout << "This program symmetrically aligns two volumes. It uses a method based on robust statistics to detect outliers and removes them from the registration. This leads to highly accurate registrations even with local changes in the image (e.g. jaw movement). The main purpose is to find the rigid registration (translation, rotation) of longitudinal data, but the method can be used to rigidly align different images. An additional optional intensity scale parameter can be used to adjust for global intensity differences. The extension to affine registration is being tested."<<endl;
   cout << endl;
   cout << "If the registration fails: " << endl;
-	cout << "The registration can fail because of several reasons, most likeley due to large intensity differences or non-linear differences in the image. You can try:"<< endl;
+	cout << "The registration can fail because of several reasons, most likely due to large intensity differences or non-linear differences in the image. You can try:"<< endl;
 	cout << " * Switch on intensity scaling (--iscale)." << endl;
 	cout << " * When specifying a manual saturation (--sat) too many voxels might be considered outlier early in the process. You can check this by outputing the weights (--weights ow.mgz) and by looking at them in:" << endl;
 	cout << "   > tkmedit -f dst.mgz -aux mov.mgz -overlay ow.mgz " << endl;
 	cout << "   If most of the brain is labeled outlier, try to set the saturation to a higher value (eg. --sat 12) or use --satit to automatically determine a good sat value." << endl;
-  cout << " * When using automatic saturation estimation (--satit) you can try specifying the sensitivity manually or twiddle around with --wlimit (which is around 0.16 by default). A lower wlimit should reduce the number of outlier voxels." << endl;
+  cout << " * When using automatic saturation estimation (--satit) you can try specifying the sensitivity manually or play around with --wlimit (which is around 0.16 by default). A lower wlimit should reduce the number of outlier voxels." << endl;
   cout << endl;
   cout << " Report bugs to: freesurfer@nmr.mgh.harvard.edu" << endl;
+
+	cout << endl << "References:" << endl<<endl;
+	cout << " Highly Accurate Inverse Consistent Registration: A Robust Approach," << endl;
+	cout << "   M. Reuter, H.D. Rosas, B. Fischl." << endl;
+	cout << "   NeuroImage 53 (4), pp. 1181-1196, 2010." << endl;
+	cout << "   http://reuter.mit.edu/lcount/click.php?id=13 " << endl;
+
   cout << endl;
 
 
@@ -865,6 +883,7 @@ static void initRegistration(Registration & R, Parameters & P)
   R.setInitOrient(P.initorient);
   R.setDoublePrec(P.doubleprec);
   R.setWLimit(P.wlimit);
+  R.setSymmetry(P.symmetry);
   //R.setOutputWeights(P.weights,P.weightsout);
 
 
@@ -941,6 +960,11 @@ static void initRegistration(Registration & R, Parameters & P)
     //cerr << Progname << " could not open MRI Target " << P.mov << endl;
     //exit(1);
   }
+	if (mri_mov->nframes != 1)
+	{
+    ErrorExit(ERROR_NOFILE, "%s: only pass single frame MRI source %s.\n",
+              Progname, P.mov.c_str()) ;	
+	}
   P.mri_mov = MRIcopy(mri_mov,P.mri_mov); // save dst mri
 
   if (P.maskmov != "")
@@ -965,6 +989,11 @@ static void initRegistration(Registration & R, Parameters & P)
     //cerr << Progname << " could not open MRI Target " << P.dst << endl;
     //exit(1);
   }
+	if (mri_dst->nframes != 1)
+	{
+    ErrorExit(ERROR_NOFILE, "%s: only pass single frame MRI target %s.\n",
+              Progname, P.dst.c_str()) ;	
+	}
   P.mri_dst = MRIcopy(mri_dst,P.mri_dst); // save dst mri
 
   if (P.maskdst != "")
@@ -1321,11 +1350,12 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
   {
     P.iscaleout = string(argv[1]);
     nargs = 1 ;
-    cout << "--iscaleout: Will ouput intensity scale to "<<P.iscaleout <<  endl;
+    P.iscale = true;
+    cout << "--iscaleout: Will do --iscale and ouput intensity scale to "<<P.iscaleout <<  endl;
   }
   else
   {
-    cerr << "Option: " << argv[0] << " unknown !! " << endl;
+    cerr << endl << endl << "ERROR: Option: " << argv[0] << " unknown !! " << endl << endl;
     exit(1);
   }
 
