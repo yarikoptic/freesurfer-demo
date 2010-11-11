@@ -98,6 +98,7 @@ MRISUBDIRS=\
 	mri_make_bem_surfaces \
 	mri_make_register \
 	mri_make_template \
+	mri_map_cpdat \
 	mri_mark_temporal_lobe \
 	mri_mask mri_ms_fitparms \
 	mri_mcsim \
