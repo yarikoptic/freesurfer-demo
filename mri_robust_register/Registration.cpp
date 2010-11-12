@@ -8,8 +8,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/11/11 22:31:02 $
- *    $Revision: 1.39.2.4 $
+ *    $Date: 2010/11/12 22:51:09 $
+ *    $Revision: 1.39.2.5 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -886,6 +886,18 @@ double Registration::findSaturation (MRI * mriS, MRI* mriT, const vnl_matrix < d
 		 {
 		   satmax = sat;
 			 wmax = wcheck;
+		 }
+		 
+		 // if sat low (sensitive) and still not many outliers
+		 // quit, to prevent long (infinite) search
+		 // e.g. if source and target are same image
+		 if (sat < 6 && wcheck < 0.04)
+		 {
+		    satmax = sat;
+				satmin = sat;
+				wmax= wcheck;
+				wmin= wcheck;
+				break;
 		 }
 	}
 	
