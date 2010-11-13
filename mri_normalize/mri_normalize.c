@@ -12,9 +12,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: fischl $
- *    $Date: 2010/01/11 17:15:27 $
- *    $Revision: 1.65 $
+ *    $Author: mreuter $
+ *    $Date: 2010/11/13 20:05:25 $
+ *    $Revision: 1.65.2.1 $
  *
  * Copyright (C) 2002-2007,
  * The General Hospital Corporation (Boston, MA). 
@@ -50,6 +50,9 @@
 
 static int remove_surface_outliers(MRI *mri_ctrl_src, MRI *mri_dist, MRI *mri_src, 
                                    MRI *mri_ctrl_dst) ;
+static MRI *MRIremoveWMOutliersAndRetainMedialSurface(MRI *mri_src,
+                                                      MRI *mri_src_ctrl,
+                                                      MRI *mri_dst_ctrl, int intensity_below) ;
 static MRI *MRIremoveWMOutliers(MRI *mri_src,
                                 MRI *mri_src_ctrl,
                                 MRI *mri_dst_ctrl, int intensity_below) ;
@@ -86,6 +89,8 @@ static float intensity_above = 25 ;
 static float intensity_below = 10 ;
 
 static char *control_point_fname ;
+static char *long_control_volume_fname = NULL ;
+static char *long_bias_volume_fname = NULL ;
 
 static char *aseg_fname = NULL ;
 //static int aseg_wm_labels[] =
@@ -99,6 +104,7 @@ static int aseg_wm_labels[] =
 static char *control_volume_fname = NULL ;
 static char *bias_volume_fname = NULL ;
 static int read_flag = 0 ;
+static int long_flag = 0 ;
 
 static int no1d = 0 ;
 static int file_only = 0 ;
@@ -120,14 +126,14 @@ main(int argc, char *argv[]) {
 
   make_cmd_version_string
   (argc, argv,
-   "$Id: mri_normalize.c,v 1.65 2010/01/11 17:15:27 fischl Exp $",
+   "$Id: mri_normalize.c,v 1.65.2.1 2010/11/13 20:05:25 mreuter Exp $",
    "$Name:  $",
    cmdline);
 
   /* rkt: check for and handle version tag */
   nargs = handle_version_option
           (argc, argv,
-           "$Id: mri_normalize.c,v 1.65 2010/01/11 17:15:27 fischl Exp $",
+           "$Id: mri_normalize.c,v 1.65.2.1 2010/11/13 20:05:25 mreuter Exp $",
            "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
@@ -248,6 +254,7 @@ main(int argc, char *argv[]) {
     mri_dst = MRIapplyBiasCorrectionSameGeometry
               (mri_src, mri_bias, mri_dst, 
                DEFAULT_DESIRED_WHITE_MATTER_VALUE) ;
+    printf("writing normalized volume to %s\n", out_fname) ;
     MRIwrite(mri_dst, out_fname) ;
     exit(0) ;
   }
@@ -291,6 +298,41 @@ main(int argc, char *argv[]) {
     exit(0) ;
   }
 
+  if (long_flag) {
+    MRI *mri_ctrl ;
+    double scale ;
+
+    mri_bias = MRIread(long_bias_volume_fname) ;
+    if (!mri_bias)
+      ErrorExit
+      (ERROR_BADPARM,
+       "%s: could not read bias volume %s", Progname, long_bias_volume_fname) ;
+    mri_ctrl = MRIread(long_control_volume_fname) ;
+    if (!mri_ctrl)
+      ErrorExit
+      (ERROR_BADPARM,
+       "%s: could not read control volume %s",
+       Progname, long_control_volume_fname) ;
+    MRIbinarize(mri_ctrl, mri_ctrl, 1, 0, CONTROL_MARKED) ;
+    if (mri_ctrl->type != MRI_UCHAR)
+    {
+      MRI *mri_tmp ;
+      mri_tmp = MRIchangeType(mri_ctrl, MRI_UCHAR, 0, 1,1);
+      MRIfree(&mri_ctrl) ; mri_ctrl = mri_tmp ;
+    }
+    scale = MRImeanInLabel(mri_src, mri_ctrl, CONTROL_MARKED) ;
+    printf("mean in wm is %2.0f, scaling by %2.2f\n", scale, 110/scale) ;
+    scale = DEFAULT_DESIRED_WHITE_MATTER_VALUE/scale ;
+    mri_dst = MRIscalarMul(mri_src, NULL, scale) ;
+    MRIremoveWMOutliers(mri_dst, mri_ctrl, mri_ctrl, intensity_below/2) ;
+    mri_bias = MRIbuildBiasImage(mri_dst, mri_ctrl, NULL, 0.0) ;
+    MRIsoapBubble(mri_bias, mri_ctrl, mri_bias, 25) ;
+    MRIapplyBiasCorrectionSameGeometry(mri_dst, mri_bias, mri_dst,
+                                       DEFAULT_DESIRED_WHITE_MATTER_VALUE);
+    //    MRIwrite(mri_dst, out_fname) ;
+    //    exit(0) ;
+  }
+
 #if 0
 #if 0
   if ((mri_src->type != MRI_UCHAR) ||
@@ -332,19 +374,21 @@ main(int argc, char *argv[]) {
 
   /* first do a gentle normalization to get
      things in the right intensity range */
-  if (control_point_fname != NULL)  /* do one pass with only
-                                       file control points first */
-    mri_dst =
-      MRI3dGentleNormalize(mri_src,
-                           NULL,
-                           DEFAULT_DESIRED_WHITE_MATTER_VALUE,
-                           NULL,
-                           intensity_above,
-                           intensity_below/2,1,
-                           bias_sigma);
-  else
-    mri_dst = MRIcopy(mri_src, NULL) ;
-
+  if (long_flag == 0)  // if long, then this will already have been done with base control points
+  {
+    if (control_point_fname != NULL)  /* do one pass with only
+                                         file control points first */
+      mri_dst =
+        MRI3dGentleNormalize(mri_src,
+                             NULL,
+                             DEFAULT_DESIRED_WHITE_MATTER_VALUE,
+                             NULL,
+                             intensity_above,
+                             intensity_below/2,1,
+                             bias_sigma);
+    else
+      mri_dst = MRIcopy(mri_src, NULL) ;
+  }
   if (mri_aseg) {
     MRI *mri_ctrl, *mri_bias ;
     int  i ;
@@ -353,7 +397,7 @@ main(int argc, char *argv[]) {
     for (i = 0 ; i < NWM_LABELS ; i++)
       MRIcopyLabel(mri_aseg, mri_ctrl, aseg_wm_labels[i]) ;
     fprintf(stderr,"removing outliers in the aseg WM...\n") ;
-    MRIremoveWMOutliers(mri_dst, mri_ctrl, mri_ctrl, intensity_below) ;
+    MRIremoveWMOutliersAndRetainMedialSurface(mri_dst, mri_ctrl, mri_ctrl, intensity_below) ;
     MRIbinarize(mri_ctrl, mri_ctrl, 1, CONTROL_NONE, CONTROL_MARKED) ;
     MRInormAddFileControlPoints(mri_ctrl, CONTROL_MARKED) ;
 
@@ -441,7 +485,7 @@ main(int argc, char *argv[]) {
                                                          DEFAULT_DESIRED_WHITE_MATTER_VALUE) ;
             MRIfree(&mri_ctrl) ;
           }
-          else  // no initial normalization specified
+          else if (long_flag == 0)  // no initial normalization specified
             mri_dst = MRIclone(mri_src, NULL) ;
         }
         else
@@ -480,6 +524,9 @@ main(int argc, char *argv[]) {
                      file_only, prune, bias_sigma, scan_type);
   }
 
+  if (control_volume_fname)
+    // this just setup writing control-point volume saving
+    MRI3dWriteControlPoints(control_volume_fname) ;
   if (bias_volume_fname) {
     mri_bias = compute_bias(mri_src, mri_dst, NULL) ;
     printf("writing bias field to %s....\n", bias_volume_fname) ;
@@ -515,7 +562,7 @@ get_option(int argc, char *argv[]) {
   char *option ;
 
   option = argv[1] + 1 ;            /* past '-' */
-  if (!stricmp(option, "-help")) {
+  if (!stricmp(option, "-help")||!stricmp(option, "-usage")) {
     usage_exit(0);
   } else if (!stricmp(option, "no1d")) {
     no1d = 1 ;
@@ -627,6 +674,15 @@ get_option(int argc, char *argv[]) {
       bias_volume_fname = argv[3] ;
       printf("reading bias field from %s and ctrl points from %s\n",
              bias_volume_fname, control_volume_fname) ;
+      break ;
+    case 'L':
+      long_flag = 1 ;
+      no1d = 1 ;
+      nargs = 2 ;
+      long_control_volume_fname = argv[2] ;
+      long_bias_volume_fname = argv[3] ;
+      printf("reading bias field from %s and ctrl points from %s\n",
+             long_bias_volume_fname, long_control_volume_fname) ;
       break ;
     case 'W':
       control_volume_fname = argv[2] ;
@@ -754,10 +810,10 @@ compute_bias(MRI *mri_src, MRI *mri_dst, MRI *mri_bias) {
 
 #if 1
 static MRI *
-MRIremoveWMOutliers(MRI *mri_src, MRI *mri_src_ctrl, MRI *mri_dst_ctrl,
+MRIremoveWMOutliersAndRetainMedialSurface(MRI *mri_src, MRI *mri_src_ctrl, MRI *mri_dst_ctrl,
                     int intensity_below) 
 {
-  MRI       *mri_bin, *mri_dist, *mri_dist_sup ;
+  MRI       *mri_bin, *mri_dist, *mri_dist_sup, *mri_outliers = NULL ;
   float     max, thresh, val;
   HISTOGRAM *histo, *hsmooth ;
   int       wm_peak, x, y, z, nremoved = 0, whalf = 5 ;
@@ -783,6 +839,8 @@ MRIremoveWMOutliers(MRI *mri_src, MRI *mri_src_ctrl, MRI *mri_dst_ctrl,
 
   HISTOfree(&histo) ;
   HISTOfree(&hsmooth) ;
+  if (Gdiag & DIAG_WRITE)
+    mri_outliers = MRIclone(mri_dst_ctrl, NULL) ;
   for (x = 0 ; x < mri_src->width ; x++) {
     for (y = 0 ; y < mri_src->height ; y++) {
       for (z = 0 ; z < mri_src->depth ; z++) {
@@ -794,6 +852,8 @@ MRIremoveWMOutliers(MRI *mri_src, MRI *mri_src_ctrl, MRI *mri_dst_ctrl,
         val = MRIgetVoxVal(mri_src, x, y, z, 0) ;
         if (val+intensity_below < max && val < thresh) {
           MRIsetVoxVal(mri_dst_ctrl, x, y, z, 0, 0) ;
+          if (mri_outliers)
+            MRIsetVoxVal(mri_outliers, x, y, z, 0, 128) ;
           nremoved++ ;
         }
       }
@@ -801,6 +861,12 @@ MRIremoveWMOutliers(MRI *mri_src, MRI *mri_src_ctrl, MRI *mri_dst_ctrl,
   }
 
   fprintf(stderr, "%d control points removed\n", nremoved) ;
+  if (mri_outliers)
+  {
+    fprintf(stderr, "writing out.mgz outlier volume\n") ;
+    MRIwrite(mri_outliers, "out.mgz") ; 
+    MRIfree(&mri_outliers) ;
+  }
   if (Gdiag & DIAG_WRITE && DIAG_VERBOSE_ON)
     MRIwrite(mri_dst_ctrl, "dc.mgz") ;
   MRIfree(&mri_bin) ;
@@ -808,9 +874,71 @@ MRIremoveWMOutliers(MRI *mri_src, MRI *mri_src_ctrl, MRI *mri_dst_ctrl,
   MRIfree(&mri_dist_sup);
   return(mri_dst_ctrl);
 }
-#else
 static MRI *
 MRIremoveWMOutliers(MRI *mri_src, MRI *mri_src_ctrl, MRI *mri_dst_ctrl,
+                    int intensity_below) 
+{
+  MRI       *mri_bin, *mri_outliers = NULL ;
+  float     max, thresh, val;
+  HISTOGRAM *histo, *hsmooth ;
+  int       wm_peak, x, y, z, nremoved = 0, whalf = 5, total  ;
+
+  if (Gdiag & DIAG_WRITE && DIAG_VERBOSE_ON)
+    MRIwrite(mri_src_ctrl, "sc.mgz") ;
+
+  if (mri_dst_ctrl == NULL)
+    mri_dst_ctrl = MRIcopy(mri_src_ctrl, NULL) ;
+  mri_bin = MRIbinarize(mri_src_ctrl, NULL, 1, 0, CONTROL_MARKED) ;
+  histo = MRIhistogramLabel(mri_src, mri_bin, 1, 256) ;
+  hsmooth = HISTOcopy(histo, NULL) ;
+  HISTOsmooth(histo, hsmooth, 2) ;
+  if (Gdiag & DIAG_WRITE && DIAG_VERBOSE_ON) {
+    HISTOplot(histo, "h.plt") ;
+    HISTOplot(hsmooth, "hs.plt") ;
+  }
+  wm_peak = HISTOfindHighestPeakInRegion(hsmooth, 1, hsmooth->nbins-1) ;
+  wm_peak = hsmooth->bins[wm_peak] ;
+  thresh = wm_peak-intensity_below ;
+
+  HISTOfree(&histo) ;
+  HISTOfree(&hsmooth) ;
+  if (Gdiag & DIAG_WRITE)
+    mri_outliers = MRIclone(mri_dst_ctrl, NULL) ;
+  for (total = x = 0 ; x < mri_src->width ; x++) {
+    for (y = 0 ; y < mri_src->height ; y++) {
+      for (z = 0 ; z < mri_src->depth ; z++) {
+        if (x == Gx && y == Gy && z == Gz)
+          DiagBreak() ;
+        if (nint(MRIgetVoxVal(mri_dst_ctrl, x, y, z, 0)) == 0)
+          continue ;
+        max = MRImaxInLabelInRegion(mri_src, mri_bin, 1, x, y, z, whalf);
+        val = MRIgetVoxVal(mri_src, x, y, z, 0) ;
+        total++ ;
+        if (val+intensity_below < max && val < thresh) {
+          MRIsetVoxVal(mri_dst_ctrl, x, y, z, 0, 0) ;
+          if (mri_outliers)
+            MRIsetVoxVal(mri_outliers, x, y, z, 0, 128) ;
+          nremoved++ ;
+        }
+      }
+    }
+  }
+
+  fprintf(stderr, "%d control points removed (%2.1f%%)\n", nremoved, 100.0*(double)nremoved/(double)total) ;
+  if (mri_outliers)
+  {
+    fprintf(stderr, "writing out.mgz outlier volume\n") ;
+    MRIwrite(mri_outliers, "out.mgz") ; 
+    MRIfree(&mri_outliers) ;
+  }
+  if (Gdiag & DIAG_WRITE && DIAG_VERBOSE_ON)
+    MRIwrite(mri_dst_ctrl, "dc.mgz") ;
+  MRIfree(&mri_bin) ;
+  return(mri_dst_ctrl);
+}
+#else
+static MRI *
+MRIremoveWMOutliersAndRetainMedialSurface(MRI *mri_src, MRI *mri_src_ctrl, MRI *mri_dst_ctrl,
                     int intensity_below) {
   MRI  *mri_inside, *mri_bin ;
   HISTOGRAM *histo, *hsmooth ;
