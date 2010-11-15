@@ -135,7 +135,6 @@ fsr-getxopts \
 rcbf-prep \
 rebuild_gca_atlas.csh \
 recon-all \
-recon-all.2005 \
 recon-all.makefile \
 reg-feat2anat \
 reg-mni305.2mm \
