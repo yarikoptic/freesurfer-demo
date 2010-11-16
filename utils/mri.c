@@ -6,9 +6,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/08/04 18:43:32 $
- *    $Revision: 1.459.2.2 $
+ *    $Author: greve $
+ *    $Date: 2010/11/16 23:17:50 $
+ *    $Revision: 1.459.2.3 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -24,7 +24,7 @@
  */
 
 extern const char* Progname;
-const char *MRI_C_VERSION = "$Revision: 1.459.2.2 $";
+const char *MRI_C_VERSION = "$Revision: 1.459.2.3 $";
 
 
 /*-----------------------------------------------------
@@ -5837,6 +5837,7 @@ MRIcopy(MRI *mri_src, MRI *mri_dst)
       break ;  /* in case someone removes the errorreturn */
     }
   }
+  strcpy(mri_dst->fname,mri_src->fname);
   return(mri_dst) ;
 }
 /*
@@ -9685,7 +9686,8 @@ MRIinterpolateIntoVolume(MRI *mri, double x, double y, double z, double val)
   xpd = (1.0f - xmd) ;
   ypd = (1.0f - ymd) ;
   zpd = (1.0f - zmd) ;
-
+  //  printf("MRIinterpolateIntoVolume: (xpd, ypd, zpd)%f, %f, %f\n", xpd, ypd, zpd) ; //LZ
+  //  printf("MRIinterpolateIntoVolume: (xmd, ymd, zmd)%f, %f, %f\n", xmd, ymd, zmd) ; //LZ
   switch (mri->type)
   {
   case MRI_UCHAR:
