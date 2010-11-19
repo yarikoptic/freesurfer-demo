@@ -11,9 +11,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: nicks $
- *    $Date: 2010/11/09 17:14:09 $
- *    $Revision: 1.113.2.2 $
+ *    $Author: mreuter $
+ *    $Date: 2010/11/19 23:05:57 $
+ *    $Revision: 1.113.2.3 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -54,7 +54,7 @@
 #include "label.h"
 
 static char vcid[] =
-  "$Id: mris_make_surfaces.c,v 1.113.2.2 2010/11/09 17:14:09 nicks Exp $";
+  "$Id: mris_make_surfaces.c,v 1.113.2.3 2010/11/19 23:05:57 mreuter Exp $";
 
 int main(int argc, char *argv[]) ;
 
@@ -241,13 +241,13 @@ main(int argc, char *argv[]) {
 
   make_cmd_version_string
   (argc, argv,
-   "$Id: mris_make_surfaces.c,v 1.113.2.2 2010/11/09 17:14:09 nicks Exp $",
+   "$Id: mris_make_surfaces.c,v 1.113.2.3 2010/11/19 23:05:57 mreuter Exp $",
    "$Name:  $", cmdline);
 
   /* rkt: check for and handle version tag */
   nargs = handle_version_option
           (argc, argv,
-           "$Id: mris_make_surfaces.c,v 1.113.2.2 2010/11/09 17:14:09 nicks Exp $",
+           "$Id: mris_make_surfaces.c,v 1.113.2.3 2010/11/19 23:05:57 mreuter Exp $",
            "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
@@ -745,7 +745,8 @@ main(int argc, char *argv[]) {
       MRIwrite(mri_T1, "white_masked.mgz") ;
   }
   if (mri_T1_white) {
-    MRIfree(&mri_T1);
+    if (mri_T1 != mri_T1_pial)
+      MRIfree(&mri_T1);
     mri_T1 = mri_T1_white ; // T1 and T1_white is swapped
   }
   if (aseg_name) {
@@ -842,17 +843,43 @@ main(int argc, char *argv[]) {
       break ;
   }
 
-  MRISunrip(mris) ;
-  if (mri_aseg)
+  if (!nowhite)
+    MRISunrip(mris) ;
+  else /* read in previously generated white matter surface */
+  {
+    if (orig_white)
+    {
+      sprintf(fname, "%s%s", orig_white, suffix) ;
+      if (MRISreadVertexPositions(mris, fname) != NO_ERROR)
+        ErrorExit(Gerror, "%s: could not read white matter surface.",
+                  Progname) ;
+    }
+    else // read default white (something needs to be read if nowhite was created)
+    {
+      // if you don't like the default, give an error message here and exit, 
+			// to force passing the -orig_white white
+      sprintf(fname, "%s%s", white_matter_name, suffix) ;
+      if (MRISreadVertexPositions(mris, fname) != NO_ERROR)
+        ErrorExit(Gerror, "%s: could not read white matter surface.",
+                  Progname) ;
+					
+    }
+    MRIScomputeMetricProperties(mris) ;
+  }
+
+	
+  if (mri_aseg) //update aseg using either generated or orig_white
   {
     fix_midline(mris, mri_aseg, mri_T1, hemi, GRAY_CSF, fix_mtl) ;
+    // the new aseg will be used below, even if not written out
+    edit_aseg_with_surfaces(mris, mri_aseg) ;
     if (write_aseg_fname)
     {
-      edit_aseg_with_surfaces(mris, mri_aseg) ;
       printf("writing corrected aseg to %s\n", write_aseg_fname) ;
       MRIwrite(mri_aseg, write_aseg_fname) ;
     }
   }
+	
   if (!nowhite) {
     sprintf(fname,
             "%s/%s/surf/%s.%s%s%s",
@@ -958,18 +985,7 @@ main(int argc, char *argv[]) {
 #endif
       MRISprintTessellationStats(mris, stderr) ;
     }
-  } else   /* read in previously generated white matter surface */
-  {
-    if (orig_white)
-    {
-      sprintf(fname, "%s%s", orig_white, suffix) ;
-      if (MRISreadVertexPositions(mris, fname) != NO_ERROR)
-        ErrorExit(Gerror, "%s: could not read white matter surfaces.",
-                  Progname) ;
-    }
-    MRIScomputeMetricProperties(mris) ;
   }
-
 
   if (white_only) {
     msec = TimerStop(&then) ;
@@ -1048,7 +1064,7 @@ main(int argc, char *argv[]) {
     printf("reading initial pial vertex positions from %s...\n", orig_pial) ;
 
     if (longitudinal) {
-      //save final white location
+      //save final white location into TMP_VERTICES
       MRISsaveVertexPositions(mris, TMP_VERTICES);
     }
 
@@ -1056,7 +1072,7 @@ main(int argc, char *argv[]) {
       ErrorExit(Gerror, "reading orig pial positions failed") ;
 
     if (longitudinal) {
-      //reset starting point to be in the middle of final white and orig pial
+      //reset starting point to be between final white and orig pial
       int vno;
       VERTEX *v;
       //reset the starting position to be
@@ -1065,6 +1081,7 @@ main(int argc, char *argv[]) {
         v = &mris->vertices[vno];
         if (v->ripflag)
           continue;
+        // where tx ty tz is the TMP_VERTICES (final white)
         v->x = 0.75*v->x + 0.25*v->tx;
         v->y = 0.75*v->y + 0.25*v->ty;
         v->z = 0.75*v->z + 0.25*v->tz;
