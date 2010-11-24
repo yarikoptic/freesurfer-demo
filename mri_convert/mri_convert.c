@@ -7,8 +7,8 @@
  * Original Author: Bruce Fischl (Apr 16, 1997)
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2010/11/24 01:22:38 $
- *    $Revision: 1.166.2.5 $
+ *    $Date: 2010/11/24 15:19:30 $
+ *    $Revision: 1.166.2.6 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA). 
@@ -195,7 +195,7 @@ int main(int argc, char *argv[]) {
 
   make_cmd_version_string
     (argc, argv,
-     "$Id: mri_convert.c,v 1.166.2.5 2010/11/24 01:22:38 nicks Exp $", 
+     "$Id: mri_convert.c,v 1.166.2.6 2010/11/24 15:19:30 nicks Exp $", 
      "$Name:  $",
      cmdline);
 
@@ -302,7 +302,7 @@ int main(int argc, char *argv[]) {
     handle_version_option
     (
       argc, argv,
-      "$Id: mri_convert.c,v 1.166.2.5 2010/11/24 01:22:38 nicks Exp $", 
+      "$Id: mri_convert.c,v 1.166.2.6 2010/11/24 15:19:30 nicks Exp $", 
       "$Name:  $"
       );
   if (nargs && argc - nargs == 1)
@@ -1336,7 +1336,7 @@ int main(int argc, char *argv[]) {
             "= --zero_ge_z_offset option ignored.\n");
   }
 
-  printf("$Id: mri_convert.c,v 1.166.2.5 2010/11/24 01:22:38 nicks Exp $\n");
+  printf("$Id: mri_convert.c,v 1.166.2.6 2010/11/24 15:19:30 nicks Exp $\n");
   printf("reading from %s...\n", in_name_only);
 
   if (in_volume_type == OTL_FILE) {
@@ -2982,8 +2982,6 @@ void usage(FILE *stream) {
          "cosines or orientation string,\n");
   printf("the ras_good_flag is set.\n");
   printf("\n");
-#endif // GREGT
-
 } /* end usage() */
 
 float findMinSize(MRI *mri, int *conform_width) {
