@@ -8,8 +8,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/11/11 22:31:02 $
- *    $Revision: 1.2.2.4 $
+ *    $Date: 2010/11/29 16:04:15 $
+ *    $Revision: 1.2.2.5 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -495,11 +495,15 @@ void RegistrationStep<T>::constructAb(MRI *mriS, MRI *mriT,vnl_matrix < T >& A,v
   if (verbose > 1) std::cout << "  need only: " << counti << std::endl;
 	if (counti == 0)
 	{
-	   cerr << std::endl;
-	   cerr << " ERROR: All entries are zero! Images do not overlap." << std::endl;
-		 cerr << "    Try calling with --noinit (if the original images are well aligned)" << std::endl;
-		 cerr << "    Or use --transform <init.lta> with an approximate alignment" <<endl;
-		 cerr << "    obtained from tkregister or another registration program." << std::endl << std::endl;
+	   std::cerr << std::endl;
+	   std::cerr << " ERROR: All entries are zero! Images do not overlap (anymore?)." << std::endl;
+     std::cerr << "    This can have several reasons (i.e. different modalities, different "<< std::endl;
+		 std::cerr << "    intensity scales, large non-linearities, too diff. voxel sizes ...)" << std::endl;
+		 //std::cerr << "    Try calling with --noinit (if the original images are well aligned)" << std::endl;
+		 std::cerr << "    Maybe use --transform <init.lta> with an approx. alignment" <<std::endl;
+		 std::cerr << "    obtained from tkregister or another registration program." << std::endl;
+		 std::cerr << "    Or do some prior intensity correction? " << std::endl;
+		 std::cerr << std::endl;
 		 exit(1);
 	}
    
