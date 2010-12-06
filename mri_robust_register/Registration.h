@@ -8,8 +8,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/08/31 20:46:28 $
- *    $Revision: 1.23.2.2 $
+ *    $Date: 2010/12/06 21:01:58 $
+ *    $Revision: 1.23.2.3 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -186,8 +186,9 @@ public:
 
   double computeSatEstimate (int reslevel, int n,double epsit, MRI * mriS=NULL, MRI* mriT=NULL, MATRIX* mi=NULL, double scaleinit=1.0 );
 
-  const std::vector < double > & getCentroidS(){return centroidS;};
-  const std::vector < double > & getCentroidT(){return centroidT;};
+  // return centroid (of input, not of resampled internal version)
+  std::vector < double > getCentroidS();
+  std::vector < double > getCentroidT();
 	
 
 protected:
@@ -247,7 +248,7 @@ protected:
 private:
 
   // construct Ab and R:
-  MATRIX* constructR(MATRIX* p);
+  //MATRIX* constructR(MATRIX* p);
   //std::pair < MATRIX*, VECTOR* > constructAb(MRI *mriS, MRI *mriT);
   //std::pair < vnl_matrix <double>, vnl_vector <double> > constructAb(MRI *mriS, MRI *mriT);
 //  void constructAb(MRI *mriS, MRI *mriT, vnl_matrix < double > &A, vnl_vector < double > &b);
@@ -263,7 +264,7 @@ private:
   void findSatMultiRes(const vnl_matrix < double > &mi, double scaleinit );
 
   // gaussian pyramid:
-  std::vector < MRI* > buildGaussianPyramid (MRI * mri_in, int n);
+  std::vector < MRI* > buildGaussianPyramid (MRI * mri_in, int min = 16);
   void freeGaussianPyramid(std::vector< MRI* >& p);
 
   MRI * mri_weights;

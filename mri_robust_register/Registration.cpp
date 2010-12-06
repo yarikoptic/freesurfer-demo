@@ -8,8 +8,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/11/29 16:04:15 $
- *    $Revision: 1.39.2.6 $
+ *    $Date: 2010/12/06 21:01:58 $
+ *    $Revision: 1.39.2.7 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -507,12 +507,12 @@ pair < MATRIX*, double > Registration::computeIterativeRegSat( int n,double epsi
 //   if (mriS != mri_source)
 //   {
 //     if (gpS.size() > 0) freeGaussianPyramid(gpS);
-//     gpS = buildGaussianPyramid(mriS,100);
+//     gpS = buildGaussianPyramid(mriS,100); OLD!!!
 //   }
 //   if (mriT != mri_target)
 //   {
 //     if (gpT.size() > 0) freeGaussianPyramid(gpT);
-//     gpT = buildGaussianPyramid(mriT,100);
+//     gpT = buildGaussianPyramid(mriT,100); OLD!!!
 //   }
 // 
 //   if (gpS.size() ==0) gpS = buildGaussianPyramid(mriS,100);
@@ -540,7 +540,7 @@ pair < MATRIX*, double > Registration::computeIterativeRegSat( int n,double epsi
 //   }
 // 
 //   // adjust md.first to current (lowest) resolution:
-//   int rstart = 2;
+//   int rstart = 2; OLD!!!
 //   for (int r = 1; r<=resolution-rstart; r++)
 //     for (int rr = 0;rr<3;rr++)
 //       md.first[rr][3]  = 0.5 *  md.first[rr][3];
@@ -677,13 +677,14 @@ void Registration::findSatMultiRes(const vnl_matrix < double > &mi, double scale
      ErrorExit(ERROR_BADFILE, "Input images must be larger than 16^3.\n") ;
 	}
   int resolution = gpS.size();
-	assert(resolution >= 2); // otherwise we should have exited above
-  int rstart = 2;  // at least 16^3
-	// stop if we get larger than 64^3
+	assert(resolution >= 1); // otherwise we should have exited above
+  int rstart = 1;  // at least 16^3
+	
+	// stop if we get larger than 64^3 or if we reach highest resolution:
 	int stopres;
 	for (stopres = resolution-rstart; stopres>0; stopres--)
 	{
-	   if (gpS[stopres]->width >= 64 && gpS[stopres]->height >= 64 && gpS[stopres]->depth >= 64) break;
+	   if (gpS[stopres]->width >= 64 || gpS[stopres]->height >= 64 || gpS[stopres]->depth >= 64) break;
 	}
 		
 //  bool iscaletmp = iscale;
@@ -691,7 +692,12 @@ void Registration::findSatMultiRes(const vnl_matrix < double > &mi, double scale
 
   for (int r = resolution-rstart;r>=stopres;r--)
   {
-    if (verbose >1 ) cout << endl << "Resolution: " << r << endl;
+    if (verbose >1 ) 
+		{ 
+		  cout << endl << "Resolution: " << r << endl;
+		  cout << " gpS ( " << gpS[r]->width <<" , " << gpS[r]->height << " , " << gpS[r]->depth << " )" << endl;
+		  cout << " gpT ( " << gpT[r]->width <<" , " << gpT[r]->height << " , " << gpT[r]->depth << " )" << endl;
+		}
 
 //    if (r==2) iscale = iscaletmp; // set iscale if set by user
 
@@ -777,8 +783,6 @@ void Registration::findSatMultiRes(const vnl_matrix < double > &mi, double scale
     }
   } // resolution loop
 	
-
-
 }
 
 double Registration::findSaturation (MRI * mriS, MRI* mriT, const vnl_matrix < double > & mi , double scaleinit )
@@ -791,35 +795,47 @@ double Registration::findSaturation (MRI * mriS, MRI* mriT, const vnl_matrix < d
   if (mriS != mri_source)
   {
     if (gpS.size() > 0) freeGaussianPyramid(gpS);
-    gpS = buildGaussianPyramid(mriS,100);
+    gpS = buildGaussianPyramid(mriS,16);
   }
   if (mriT != mri_target)
   {
     if (gpT.size() > 0) freeGaussianPyramid(gpT);
-    gpT = buildGaussianPyramid(mriT,100);
+    gpT = buildGaussianPyramid(mriT,16);
   }
 
-  if (gpS.size() ==0) gpS = buildGaussianPyramid(mriS,100);
-  if (gpT.size() ==0) gpT = buildGaussianPyramid(mriT,100);
-  assert(gpS.size() == gpT.size());
+  if (gpS.size() ==0) gpS = buildGaussianPyramid(mriS,16);
+  if (gpT.size() ==0) gpT = buildGaussianPyramid(mriT,16);
+  //assert(gpS.size() == gpT.size());
   if ( gpS[0]->width < 16 || gpS[0]->height < 16 || gpS[0]->depth < 16)
 	{
      ErrorExit(ERROR_BADFILE, "Input images must be larger than 16^3.\n") ;
 	}
+  if ( gpT[0]->width < 16 || gpT[0]->height < 16 || gpT[0]->depth < 16)
+	{
+     ErrorExit(ERROR_BADFILE, "Input images must be larger than 16^3.\n") ;
+	}	
+	
   int resolution = gpS.size();
-	assert(resolution >= 2); // otherwise we should have exited above
-  int rstart = 2;  // at least 16^3
+	if ((int)gpT.size() < resolution) resolution = gpT.size();
+	gpS.resize(resolution);
+	gpT.resize(resolution);
+	
+	assert(resolution >= 1); // otherwise we should have exited above
+  int rstart = 1;  // at least 16^3, last and most coarse image
+	
 	// stop if we get larger than 64^3
+	// should be as close as possible to 64
+	// the problem is that on other scales the wcheck limit gets meaningless
 	int stopres;
 	for (stopres = resolution-rstart; stopres>0; stopres--)
 	{
-	   if (gpS[stopres]->width >= 64 && gpS[stopres]->height >= 64 && gpS[stopres]->depth >= 64) break;
+	   if (gpS[stopres]->width >= 64 || gpS[stopres]->height >= 64 || gpS[stopres]->depth >= 64) break;
 	}
 	
-  if ( gpS[stopres]->width < 64 || gpS[stopres]->height < 64 || gpS[stopres]->depth < 64)
+  if ( gpS[stopres]->width < 32 || gpS[stopres]->height < 32 || gpS[stopres]->depth < 32)
 	{
 	   cout << endl<< " ========================================================================" << endl;
-     cout << " WARNING: image might be too small for --satit to work." << endl;
+     cout << " WARNING: image might be too small (or ill shaped) for --satit to work." << endl;
 		 cout << "          Try to manually specify --sat # if not satisfied with result! " << endl;
 	   cout << " ========================================================================" << endl << endl;;
 	}
@@ -940,20 +956,30 @@ void Registration::computeMultiresRegistration (int stopres, int n,double epsit,
   else
   {
     if (gpS.size() > 0) freeGaussianPyramid(gpS);
-    gpS = buildGaussianPyramid(mriS,100);
+    gpS = buildGaussianPyramid(mriS,16);
   }
   if (!mriT) mriT = mri_target;
   else
   {
     if (gpT.size() > 0) freeGaussianPyramid(gpT);
-    gpT = buildGaussianPyramid(mriT,100);
+    gpT = buildGaussianPyramid(mriT,16);
   }
 
-  if (gpS.size() ==0) gpS = buildGaussianPyramid(mriS,100);
-  if (gpT.size() ==0) gpT = buildGaussianPyramid(mriT,100);
-  assert(gpS.size() == gpT.size());
-
+  if (gpS.size() ==0) gpS = buildGaussianPyramid(mriS,16);
+  if (gpT.size() ==0) gpT = buildGaussianPyramid(mriT,16);
+  if ( gpT[0]->width < 16 || gpT[0]->height < 16 || gpT[0]->depth < 16)
+	{
+     ErrorExit(ERROR_BADFILE, "Input images must be larger than 16^3.\n") ;
+	}	
+  if ( gpS[0]->width < 16 || gpS[0]->height < 16 || gpS[0]->depth < 16)
+	{
+     ErrorExit(ERROR_BADFILE, "Input images must be larger than 16^3.\n") ;
+	}	
   int resolution = gpS.size();
+	if ((int) gpT.size() < resolution) resolution = gpT.size();
+	gpS.resize(resolution);
+	gpT.resize(resolution);
+
 
 // debug : save pyramid
 //  for (uint i = 0;i<gpS.size();i++)
@@ -992,7 +1018,7 @@ void Registration::computeMultiresRegistration (int stopres, int n,double epsit,
   }
 
   // adjust minit to current (lowest) resolution:
-  int rstart = 2;
+  int rstart = 1;
   for (int r = 1; r<=resolution-rstart; r++)
     for (int rr = 0;rr<3;rr++)
       md.first[rr][3]  = 0.5 *  md.first[rr][3];
@@ -2804,79 +2830,79 @@ pair < MATRIX*, VECTOR* > Registration::constructAb2(MRI *mriS, MRI *mriT)
 // 
 // }
 
-
-MATRIX* Registration::constructR(MATRIX* p)
-// Construct restriction matrix (to restrict the affine problem to less parameters)
-// if p->rows == 6 use only rigid
-// if p->rows == 7 use also intensity scale
-// if p->rows == 3 use only trans
-// if p->rows == 4 use only trans + intensity
-{
-  assert(p != NULL);
-  assert((p->rows == 6 || p->rows==7) && p->cols ==1);
-
-  int adim = 12;
-  if (iscale)
-  {
-    assert(p->rows == 7 || p->rows ==4);
-    adim++;
-  }
-  MATRIX* R = MatrixAlloc(p->rows,adim,MATRIX_REAL);
-  MatrixClear(R);
-
-
-  // translation p1,p2,p3 map to m4,m8,m12
-  *MATRIX_RELT(R, 1,  4) = 1.0;
-  *MATRIX_RELT(R, 2,  8) = 1.0;
-  *MATRIX_RELT(R, 3, 12) = 1.0;
-
-  // iscale (p7 -> m13)
-  if (p->rows ==7) *MATRIX_RELT(R, 7, 13) = 1.0;
-  if (p->rows ==4) *MATRIX_RELT(R, 4, 13) = 1.0;
-
-  if (p->rows <=4) return R;
-
-  // rotation derivatives (dm_i/dp_i)
-  double s4 = sin(*MATRIX_RELT(p, 4, 1));
-  double c4 = cos(*MATRIX_RELT(p, 4, 1));
-  double s5 = sin(*MATRIX_RELT(p, 5, 1));
-  double c5 = cos(*MATRIX_RELT(p, 5, 1));
-  double s6 = sin(*MATRIX_RELT(p, 6, 1));
-  double c6 = cos(*MATRIX_RELT(p, 6, 1));
-
-  *MATRIX_RELT(R, 5,  1) = -s5*c6;
-  *MATRIX_RELT(R, 6,  1) = -c5*s6;
-
-  *MATRIX_RELT(R, 5,  2) = -s5*s6;
-  *MATRIX_RELT(R, 6,  2) =  c5*c6;
-
-  *MATRIX_RELT(R, 5,  3) = -c5;
-
-  *MATRIX_RELT(R, 4,  5) =  c4*s5*c6+s4*s6;
-  *MATRIX_RELT(R, 5,  5) =  s4*c5*c6;
-  *MATRIX_RELT(R, 6,  5) = -s4*s5*s6-c4*c6;
-
-  *MATRIX_RELT(R, 4,  6) =  c4*s5*s6-s4*c6;
-  *MATRIX_RELT(R, 5,  6) =  s4*c5*s6;
-  *MATRIX_RELT(R, 6,  6) =  s4*s5*c6-c4*s6;
-
-  *MATRIX_RELT(R, 4,  7) =  c4*c5;
-  *MATRIX_RELT(R, 5,  7) = -s4*s5;
-
-  *MATRIX_RELT(R, 4,  9) = -s4*s5*c6+c4*s6;
-  *MATRIX_RELT(R, 5,  9) =  c4*c5*c6;
-  *MATRIX_RELT(R, 6,  9) = -c4*s5*s6+s4*c6;
-
-  *MATRIX_RELT(R, 4, 10) = -s4*s5*s6-c4*c6;
-  *MATRIX_RELT(R, 5, 10) =  c4*c5*s6;
-  *MATRIX_RELT(R, 6, 10) =  c4*s5*c6+s4*s6;
-
-  *MATRIX_RELT(R, 4, 11) = -s4*c5;
-  *MATRIX_RELT(R, 5, 11) = -c4*s5;
-
-  return R;
-}
-
+// (mr) moved to RegistrationStep and converted to vnl_matrix
+// MATRIX* Registration::constructR(MATRIX* p)
+// // Construct restriction matrix (to restrict the affine problem to less parameters)
+// // if p->rows == 6 use only rigid
+// // if p->rows == 7 use also intensity scale
+// // if p->rows == 3 use only trans
+// // if p->rows == 4 use only trans + intensity
+// {
+//   assert(p != NULL);
+//   assert((p->rows == 6 || p->rows==7) && p->cols ==1);
+// 
+//   int adim = 12;
+//   if (iscale)
+//   {
+//     assert(p->rows == 7 || p->rows ==4);
+//     adim++;
+//   }
+//   MATRIX* R = MatrixAlloc(p->rows,adim,MATRIX_REAL);
+//   MatrixClear(R);
+// 
+// 
+//   // translation p1,p2,p3 map to m4,m8,m12
+//   *MATRIX_RELT(R, 1,  4) = 1.0;
+//   *MATRIX_RELT(R, 2,  8) = 1.0;
+//   *MATRIX_RELT(R, 3, 12) = 1.0;
+// 
+//   // iscale (p7 -> m13)
+//   if (p->rows ==7) *MATRIX_RELT(R, 7, 13) = 1.0;
+//   if (p->rows ==4) *MATRIX_RELT(R, 4, 13) = 1.0;
+// 
+//   if (p->rows <=4) return R;
+// 
+//   // rotation derivatives (dm_i/dp_i)
+//   double s4 = sin(*MATRIX_RELT(p, 4, 1));
+//   double c4 = cos(*MATRIX_RELT(p, 4, 1));
+//   double s5 = sin(*MATRIX_RELT(p, 5, 1));
+//   double c5 = cos(*MATRIX_RELT(p, 5, 1));
+//   double s6 = sin(*MATRIX_RELT(p, 6, 1));
+//   double c6 = cos(*MATRIX_RELT(p, 6, 1));
+// 
+//   *MATRIX_RELT(R, 5,  1) = -s5*c6;
+//   *MATRIX_RELT(R, 6,  1) = -c5*s6;
+// 
+//   *MATRIX_RELT(R, 5,  2) = -s5*s6;
+//   *MATRIX_RELT(R, 6,  2) =  c5*c6;
+// 
+//   *MATRIX_RELT(R, 5,  3) = -c5;
+// 
+//   *MATRIX_RELT(R, 4,  5) =  c4*s5*c6+s4*s6;
+//   *MATRIX_RELT(R, 5,  5) =  s4*c5*c6;
+//   *MATRIX_RELT(R, 6,  5) = -s4*s5*s6-c4*c6;
+// 
+//   *MATRIX_RELT(R, 4,  6) =  c4*s5*s6-s4*c6;
+//   *MATRIX_RELT(R, 5,  6) =  s4*c5*s6;
+//   *MATRIX_RELT(R, 6,  6) =  s4*s5*c6-c4*s6;
+// 
+//   *MATRIX_RELT(R, 4,  7) =  c4*c5;
+//   *MATRIX_RELT(R, 5,  7) = -s4*s5;
+// 
+//   *MATRIX_RELT(R, 4,  9) = -s4*s5*c6+c4*s6;
+//   *MATRIX_RELT(R, 5,  9) =  c4*c5*c6;
+//   *MATRIX_RELT(R, 6,  9) = -c4*s5*s6+s4*c6;
+// 
+//   *MATRIX_RELT(R, 4, 10) = -s4*s5*s6-c4*c6;
+//   *MATRIX_RELT(R, 5, 10) =  c4*c5*s6;
+//   *MATRIX_RELT(R, 6, 10) =  c4*s5*c6+s4*s6;
+// 
+//   *MATRIX_RELT(R, 4, 11) = -s4*c5;
+//   *MATRIX_RELT(R, 5, 11) = -c4*s5;
+// 
+//   return R;
+// }
+// 
 
 MATRIX * Registration::rt2mat(MATRIX * r, MATRIX * t, MATRIX *outM)
 // converts rot vector (3x1) and translation vector (3x1)
@@ -3124,18 +3150,20 @@ pair < MATRIX*, double > Registration::convertP2MATRIXd(MATRIX* p)
 
 
 
-vector < MRI* > Registration::buildGaussianPyramid (MRI * mri_in, int n)
+vector < MRI* > Registration::buildGaussianPyramid (MRI * mri_in, int min)
+// min: no dimension should get smaller than min voxels, default 16
 {
 
   if (verbose >0) cout << "   - Gaussian Pyramid " << endl;
 
+	int n=mri_in->depth; // choose n too large and adjust below
+	
   vector <MRI* > p (n);
   MRI * mri_tmp;
 // if (mri_in->type == MRI_UCHAR) cout << " MRI_UCHAR" << endl;
 // else cout << " type: " << mri_in->type << endl;
 
-
-
+  // smoothing kernel:
   MRI *mri_kernel ;
   mri_kernel = MRIgaussian1d(1.08, 5) ;
   //mri_kernel = MRIalloc(5,1,1, MRI_FLOAT);
@@ -3146,10 +3174,12 @@ vector < MRI* > Registration::buildGaussianPyramid (MRI * mri_in, int n)
   MRIFvox(mri_kernel, 4, 0, 0) =  0.0625 ;
 
   mri_tmp = mri_in;
-  int i;
-  int min = 16; // stop when we are smaller than min
+   
+	// smooth high res:
   p[0] = MRIconvolveGaussian(mri_in, NULL, mri_kernel);
+	
 	//cout << " w[0]: " << p[0]->width << endl;
+  int i;
   for (i = 1;i<n;i++)
   {
     if (p[i-1]->width < min || p[i-1]->height <min || p[i-1]->depth <min)
@@ -3161,7 +3191,8 @@ vector < MRI* > Registration::buildGaussianPyramid (MRI * mri_in, int n)
     mri_tmp = p[i];
 	  //cout << " w[" << i<<"]: " << p[i]->width << endl;
   }
-  if (i<n) p.resize(i);
+  if (i<n) p.resize(i-1);
+	else assert(1==2); // should never get here as n should be large enough
 
   MRIfree(&mri_kernel);
 
@@ -3748,6 +3779,35 @@ Registration::makeIsotropic(MRI *mri, MRI *out, double vsize, int xdim, int ydim
   return std::pair < MRI *,vnl_matrix_fixed < double, 4, 4> >(out,Rm);
 
 
+}
+
+std::vector < double > Registration::getCentroidS()
+// map centroid back to original space
+{
+	vnl_vector_fixed < double, 4 > ncenter;
+	for (uint ii = 0; ii<3;ii++)
+	   ncenter[ii] = centroidS[ii];
+  ncenter[3] = 1.0;
+	ncenter = Rsrc * ncenter;
+  vector < double > cs (3);
+	for (uint ii = 0; ii<3;ii++)
+	   cs[ii] = ncenter[ii];
+	
+  return cs;
+}
+
+std::vector < double > Registration::getCentroidT()
+// map centroid back to original space
+{
+	vnl_vector_fixed < double, 4 > ncenter;
+	for (uint ii = 0; ii<3;ii++)
+	   ncenter[ii] = centroidT[ii];
+  ncenter[3] = 1.0;
+	ncenter = Rtrg * ncenter;
+  vector < double > ct (3);
+	for (uint ii = 0; ii<3;ii++)
+	   ct[ii] = ncenter[ii];
+  return ct;
 }
 
 vnl_matrix_fixed <double, 4, 4> Registration::getFinalVox2Vox()
