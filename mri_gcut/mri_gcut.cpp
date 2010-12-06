@@ -76,6 +76,7 @@ extern "C"
 #include "error.h"
 #include "diag.h"
 #include "version.h"
+#include "utils.h"
 }
 
 #include "pre_pro.cpp"
@@ -83,13 +84,13 @@ extern "C"
 
 const char *Progname;
 static char vcid[] =
-  "$Id: mri_gcut.cpp,v 1.7 2010/02/18 19:50:06 nicks Exp $";
+  "$Id: mri_gcut.cpp,v 1.7.2.1 2010/12/06 14:12:58 nicks Exp $";
 static char in_filename[STRLEN];
 static char out_filename[STRLEN];
 static char mask_filename[STRLEN];
 static bool bNeedPreprocessing = 1;
 static bool bNeedMasking = 0;
-static double _t = 0.36;
+static double _t = 0.40;
 
 static const char help[] =
   {
@@ -114,7 +115,7 @@ static const char help[] =
     "  -T <value>: set threshold to value (%) of WM intensity, the value\n"
     "  should be >0 and <1; larger values would correspond to cleaner\n"
     "  skull-strip but higher chance of brain erosion. Default is set\n"
-    "  conservatively at 0.36, which provide approx. the same negligible\n"
+    "  conservatively at 0.40, which provide approx. the same negligible\n"
     "  level of brain erosion as 'mri_watershed'.\n"
     "\n"
     "The memory needed to process a standard 256*256*256 .mgz file\n"
@@ -143,7 +144,6 @@ static const char help[] =
     "[1] S.A. Sadananthan, W. Zheng, M.W.L. Chee, and V. Zagorodnov,\n"
     "'Skull Stripping Using Graph Cuts', Neuroimage, 2009\n"
   };
-
 
 bool matrix_alloc(int ****pointer, int z, int y, int x)
 {
@@ -180,7 +180,12 @@ bool matrix_free(int ***pointer, int z, int y, int x)
 
 static void print_help(void)
 {
+  char *name= (char*)malloc(strlen(Progname));
+  strcpy(name,Progname);
+  free(name);
+  
   printf("%s",help);
+
   exit(1);
 }
 
@@ -218,7 +223,7 @@ static int parse_commandline(int argc, char **argv)
 
     nargsused = 0;
 
-    if (!strcasecmp(option, "--help")) print_help() ;
+    if (!strcasecmp(option, "--help")||!strcasecmp(option, "--usage")) print_help() ;
     else if (!strcasecmp(option, "--version")) print_version() ;
     else if (!strcmp(option, "-110") || !strcmp(option, "--110"))
     {
@@ -281,7 +286,7 @@ int main(int argc, char *argv[])
   /* check for and handle version tag */
   int nargs = handle_version_option
               (argc, argv,
-               "$Id: mri_gcut.cpp,v 1.7 2010/02/18 19:50:06 nicks Exp $",
+               "$Id: mri_gcut.cpp,v 1.7.2.1 2010/12/06 14:12:58 nicks Exp $",
                "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
