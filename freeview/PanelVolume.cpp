@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/11/05 16:15:20 $
- *    $Revision: 1.48.2.3 $
+ *    $Author: krish $
+ *    $Date: 2010/12/08 23:41:46 $
+ *    $Revision: 1.48.2.4 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -676,7 +676,7 @@ void PanelVolume::DoUpdateUI()
     return;
   
 	bool bHasVolume = ( m_listBoxLayers->GetSelection() != wxNOT_FOUND );
-	wxWindowList children = GetChildren();
+  wxWindowList children = XRCCTRL( *this, "ID_SCROLL_WINDOW", wxScrolledWindow )->GetChildren();
 	wxWindowList::iterator it = children.begin(), end = children.end();
 	for (; it != end; it++) 
 	{
@@ -901,7 +901,21 @@ void PanelVolume::DoUpdateUI()
 
 void PanelVolume::UpdateTextValue( wxTextCtrl* ctrl, double dvalue )
 {
-  wxString value_strg = ( (wxString)_("") << dvalue );
+  double val;
+  if ( ctrl->GetValue().ToDouble(&val) && val == dvalue )
+    return;
+  
+  wxString value_strg;
+  if (dvalue < 1)
+    value_strg = ( (wxString)_("") << dvalue );
+  else
+  {
+    value_strg.Printf(_("%f"), dvalue);
+    while(value_strg[value_strg.Length()-1] == '0')
+      value_strg = value_strg.Left(value_strg.Length()-1);
+    if (value_strg[value_strg.Length()-1] == '.')
+      value_strg = value_strg.Left(value_strg.Length()-1);
+  }
   if ( value_strg != ctrl->GetValue() && (value_strg + _(".")) != ctrl->GetValue() )
     ctrl->ChangeValue( value_strg );
 }

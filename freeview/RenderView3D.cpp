@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/11/05 16:15:20 $
- *    $Revision: 1.39.2.3 $
+ *    $Author: krish $
+ *    $Date: 2010/12/08 23:41:46 $
+ *    $Revision: 1.39.2.4 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -176,6 +176,9 @@ void RenderView3D::SetInteractionMode( int nMode )
 
 void RenderView3D::RefreshAllActors()
 {
+  if ( m_bDisabled)
+    return;
+  
   LayerCollectionManager* lcm = MainWindow::GetMainWindowPointer()->GetLayerCollectionManager();
 
   m_renderer->RemoveAllViewProps();

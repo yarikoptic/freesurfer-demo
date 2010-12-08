@@ -6,9 +6,9 @@
 /*
  * Original Author: Ruopeng Wang
  * CVS Revision Info:
- *    $Author: rpwang $
- *    $Date: 2010/11/05 16:15:19 $
- *    $Revision: 1.119.2.4 $
+ *    $Author: krish $
+ *    $Date: 2010/12/08 23:41:45 $
+ *    $Revision: 1.119.2.5 $
  *
  * Copyright (C) 2008-2009,
  * The General Hospital Corporation (Boston, MA).
@@ -952,7 +952,7 @@ void MainWindow::OnFileExit( wxCommandEvent& event )
 
 void MainWindow::OnActivate( wxActivateEvent& event )
 {
-#ifdef __WXGTK__
+#if defined(__WXGTK__) || defined(__WXMAC__)
   NeedRedraw( 2 );
 #endif
   event.Skip();
@@ -960,7 +960,7 @@ void MainWindow::OnActivate( wxActivateEvent& event )
 
 void MainWindow::OnIconize( wxIconizeEvent& event )
 {
-#ifdef __WXGTK__
+#if defined(__WXGTK__) || defined(__WXMAC__)
 //#if wxCHECK_VERSION(2,9,0)
 #if wxVERSION_NUMBER > 2900  
   if ( !event.IsIconized() )
@@ -2230,7 +2230,7 @@ void MainWindow::OnInternalIdle()
 {
   wxFrame::OnInternalIdle();
 
-#ifdef __WXGTK__
+#if defined(__WXGTK__) || defined(__WXMAC__)
   if ( IsShown() && m_nRedrawCount > 0 )
   {
     for ( int i = 0; i < 4; i++ )
@@ -2516,7 +2516,13 @@ void MainWindow::OnWorkerThreadResponse( wxCommandEvent& event )
         }
         else
           lc_surface->AddLayer( layer );
-
+        
+        if ( !sf->HasVolumeGeometry() )
+        {
+          wxMessageDialog dlg( this, _("Surface does not contain valid volume geometry information. It may not align with volumes and other surfaces."), 
+                               _("Warning"), wxOK );
+          dlg.ShowModal();
+        }
         // m_fileHistory->AddFileToHistory( MyUtils::GetNormalizedFullPath( layer->GetFileName() ) );
 
         m_controlPanel->RaisePage( _("Surfaces") );
@@ -2538,8 +2544,21 @@ void MainWindow::OnWorkerThreadResponse( wxCommandEvent& event )
       m_bResampleToRAS = false;
       m_layerCollectionManager->RefreshSlices();
     }
+   
+    m_controlPanel->UpdateUI( true ); 
 
-    m_controlPanel->UpdateUI();
+#ifdef __WXMAC__
+    // On Mac OS X (Carbon) with wxWidgets 2.8.10 we are seeing a problem where
+    // after loading a volume, the PanelVolume widgets do not get laid out     
+    // properly.  Resizing the window fixes the problem.  This *HACK* fix
+    // is to set the size to a different size, and then set it back to
+    // its old size, which seems to force a resize event and works around the
+    // problem - DRG
+    int width, height;
+    GetSize(&width, &height);
+    SetSize(width, height-1);
+    SetSize(width, height);
+#endif
 
     RunScript();
   }
@@ -2659,7 +2678,8 @@ void MainWindow::DoListenToMessage ( std::string const iMsg, void* iData, void* 
   
   // Update world geometry
   LayerCollection* mri_col = GetLayerCollection( "MRI" );
-  if ( !mri_col )
+  LayerCollection* surf_col = GetLayerCollection( "Surface" );
+  if ( !mri_col || !surf_col )
     return;
   Layer* mri = mri_col->GetActiveLayer();
   double new_origin[3], new_ext[3];
@@ -2699,6 +2719,9 @@ void MainWindow::DoListenToMessage ( std::string const iMsg, void* iData, void* 
     mri_col->SetWorldOrigin( new_origin );
     mri_col->SetWorldSize( new_ws );
     mri_col->SetWorldVoxelSize( voxel_size );
+    surf_col->SetWorldOrigin( new_origin );
+    surf_col->SetWorldSize( new_ws );
+    surf_col->SetWorldVoxelSize( voxel_size );
   }
 }
 
@@ -2902,6 +2925,10 @@ void MainWindow::RunScript()
   {
     CommandSetDisplayIsoSurface( sa );
   }
+  else if ( sa[0] == _("setisosurfacecolor") )
+  {
+    CommandSetIsoSurfaceColor( sa );
+  }
   else if ( sa[0] == _("loadisosurfaceregion") )
   {
     CommandLoadIsoSurfaceRegion( sa );
@@ -3079,6 +3106,13 @@ void MainWindow::CommandLoadVolume( const wxArrayString& sa )
         {
           script.Add( argus[1] );
         }
+        m_scripts.insert( m_scripts.begin(), script );
+      }
+      else if (subOption == _("color"))
+      {
+        wxArrayString script;
+        script.Add( _("setisosurfacecolor") );
+        script.Add(subArgu);
         m_scripts.insert( m_scripts.begin(), script );
       }
       else if ( subOption == _("surface_region") || subOption == _("surface_regions") )
@@ -3441,6 +3475,37 @@ void MainWindow::CommandSetDisplayIsoSurface( const wxArrayString& sa )
   ContinueScripts();
 }
 
+void MainWindow::CommandSetIsoSurfaceColor( const wxArrayString& cmd )
+{
+  LayerMRI* mri = (LayerMRI*)GetLayerCollection( "MRI" )->GetActiveLayer();
+  if ( mri )
+  { 
+    wxColour color( cmd[1] );
+    if ( !color.IsOk() )      
+    {
+      long rgb[3];
+      wxArrayString rgb_strs = MyUtils::SplitString( cmd[1], _(",") );
+      if ( rgb_strs.GetCount() < 3 || 
+           !rgb_strs[0].ToLong( &(rgb[0]) ) ||
+           !rgb_strs[1].ToLong( &(rgb[1]) ) ||
+           !rgb_strs[2].ToLong( &(rgb[2]) ) )
+      {
+        cerr << "Invalid isosurface color name or value " << cmd[1] << endl;
+      }
+      else
+      {
+        color.Set( rgb[0], rgb[1], rgb[2] );
+      }
+    }
+      
+    if ( color.IsOk() )
+      mri->GetProperties()->SetContourColor( color.Red()/255.0, color.Green()/255.0, color.Blue()/255.0 );
+    else
+      cerr << "Invalid isosurface color name or value " << cmd[1] << endl;  
+  }
+  ContinueScripts();
+}
+
 void MainWindow::CommandLoadIsoSurfaceRegion( const wxArrayString& sa )
 {
   LayerMRI* mri = (LayerMRI*)GetLayerCollection( "MRI" )->GetActiveLayer();
@@ -3760,7 +3825,7 @@ void MainWindow::CommandLoadSurface( const wxArrayString& cmd )
       else if ( subOption == _("lock") )
       {
         wxArrayString script;
-        script.Add( _("lock") );
+        script.Add( _("locklayer") );
         script.Add( _("Surface") );
         script.Add( subArgu );
         m_scripts.insert( m_scripts.begin(), script );
