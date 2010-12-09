@@ -6,8 +6,8 @@
 # Original Author: Doug Greve
 # CVS Revision Info:
 #    $Author: greve $
-#    $Date: 2010/11/15 17:39:55 $
-#    $Revision: 1.35.2.4 $
+#    $Date: 2010/12/09 21:07:51 $
+#    $Revision: 1.35.2.5 $
 #
 # Copyright (C) 2002-2010,
 # The General Hospital Corporation (Boston, MA).
@@ -22,7 +22,7 @@
 #
 
 #
-set VERSION = '$Id: bbregister,v 1.35.2.4 2010/11/15 17:39:55 greve Exp $';
+set VERSION = '$Id: bbregister,v 1.35.2.5 2010/12/09 21:07:51 greve Exp $';
 set inputargs = ($argv);
 
 set subject = ();
@@ -756,7 +756,7 @@ echo "   --template-out template : save template (good with --frame)"
 echo "   --o outvol : resample mov and save as outvol"
 echo "   --s-from-reg reg : get subject name from regfile"
 echo "   --rms rmsfile : RMS change in cortical surface position"
-echo "   --fsl flirt.mtx : output an FSL FLIRT matrix"
+echo "   --fslmat flirt.mtx : output an FSL FLIRT matrix"
 echo "   --fsl-swap-trans : allow swapdim for det>0. Init with xyztrans"
 echo ""
 echo "   --lh-only : only use left hemi"
