@@ -6,9 +6,9 @@
 /*
  * Original Author: Bruce Fischl
  * CVS Revision Info:
- *    $Author: greve $
- *    $Date: 2010/10/19 15:43:23 $
- *    $Revision: 1.678.2.1 $
+ *    $Author: nicks $
+ *    $Date: 2010/12/09 23:08:48 $
+ *    $Revision: 1.678.2.2 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA).
@@ -720,7 +720,7 @@ int (*gMRISexternalReduceSSEIncreasedGradients)(MRI_SURFACE *mris,
   ---------------------------------------------------------------*/
 const char *MRISurfSrcVersion(void)
 {
-  return("$Id: mrisurf.c,v 1.678.2.1 2010/10/19 15:43:23 greve Exp $");
+  return("$Id: mrisurf.c,v 1.678.2.2 2010/12/09 23:08:48 nicks Exp $");
 }
 
 /*-----------------------------------------------------
@@ -15196,6 +15196,88 @@ MRISusePrincipalCurvature(MRI_SURFACE *mris)
 
   mris->min_curv = mris->Hmin ;
   mris->max_curv = mris->Hmax ;
+  return(NO_ERROR) ;
+}
+int
+MRISuseK1Curvature(MRI_SURFACE *mris) {
+  int    vno ;
+  VERTEX *vertex ;
+
+  float  f_min =  mris->vertices[0].curv;
+  float  f_max = f_min;
+
+  for (vno = 0 ; vno < mris->nvertices ; vno++) {
+    vertex = &mris->vertices[vno] ;
+    if (vertex->ripflag)
+      continue ;
+    vertex->curv = vertex->k1 ;
+    if (vertex->curv < f_min) f_min = vertex->curv;
+    if (vertex->curv > f_max) f_max = vertex->curv;
+  }
+
+  mris->min_curv = f_min ;
+  mris->max_curv = f_max;
+  return(NO_ERROR) ;
+}
+
+int
+MRISuseK2Curvature(MRI_SURFACE *mris) {
+  int    vno ;
+  VERTEX *vertex ;
+
+  float  f_min =  mris->vertices[0].curv;
+  float  f_max = f_min;
+
+  for (vno = 0 ; vno < mris->nvertices ; vno++) {
+    vertex = &mris->vertices[vno] ;
+    if (vertex->ripflag)
+      continue ;
+    vertex->curv = vertex->k2 ;
+    if (vertex->curv < f_min) f_min = vertex->curv;
+    if (vertex->curv > f_max) f_max = vertex->curv;
+  }
+
+  mris->min_curv = f_min ;
+  mris->max_curv = f_max;
+  return(NO_ERROR) ;
+}
+
+int 
+MRISusePrincipalCurvatureFunction(
+	MRI_SURFACE*		pmris, 
+	float 			(*f)(float k1, float k2)) {
+  //
+  // PRECONDITIONS
+  //	o The principal curvatures k1 and k2 for each vertex point on the 
+  //	  surface have been defined.
+  //
+  // POSTCONDITIONS
+  // 	o Each vertex 'curv' value is replaced with the result from the
+  //	  the (*f)(k1, k2) function.
+  //	o Surface min and max values are set appropriately.
+  //
+
+  int    	vno ;
+  VERTEX*	pvertex ;
+  float		f_k1;
+  float		f_k2;
+
+  float  	f_min           =  pmris->vertices[0].curv;
+  float  	f_max           = f_min;
+
+  for (vno = 0 ; vno < pmris->nvertices ; vno++) {
+    pvertex = &pmris->vertices[vno] ;
+    if (pvertex->ripflag)
+      continue ;
+    f_k1		= pvertex->k1;
+    f_k2		= pvertex->k2;
+    pvertex->curv 	= (*f)(f_k1, f_k2);
+    if (pvertex->curv < f_min) f_min = pvertex->curv;
+    if (pvertex->curv > f_max) f_max = pvertex->curv;
+  }
+
+  pmris->min_curv = f_min ;
+  pmris->max_curv = f_max;
   return(NO_ERROR) ;
 }
 /*-----------------------------------------------------
