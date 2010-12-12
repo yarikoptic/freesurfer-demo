@@ -10,8 +10,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/11/11 22:31:02 $
- *    $Revision: 1.18.2.5 $
+ *    $Date: 2010/12/12 20:21:18 $
+ *    $Revision: 1.18.2.6 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -162,7 +162,7 @@ static void printUsage(void);
 static bool parseCommandLine(int argc, char *argv[],Parameters & P) ;
 
 static char vcid[] =
-"$Id: mri_robust_template.cpp,v 1.18.2.5 2010/11/11 22:31:02 mreuter Exp $";
+"$Id: mri_robust_template.cpp,v 1.18.2.6 2010/12/12 20:21:18 mreuter Exp $";
 char *Progname = NULL;
 
 //static MORPH_PARMS  parms ;
@@ -336,7 +336,7 @@ static void printUsage(void)
   cout << "Optional arguments" << endl << endl;
 //  cout << "      --outdir               output directory (default ./ )" << endl;
   cout << "  --lta tp1.lta tp2.lta ...  output xforms to template (for each input)" << endl;
-  cout << "  --warp warp1.mgz ...       map each input to template" << endl;
+  cout << "  --mapmov align1.mgz ...    map and resample each input to template" << endl;
   cout << "  --weights weights1.mgz ... output weights in target space" << endl;
   cout << "  --average #                construct template from: 0 Mean, 1 Median (default)" << endl;
   cout << "  --inittp #                 use TP# for spatial init (default 1), 0: no init" << endl;
@@ -605,7 +605,7 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
     assert(nargs > 0);
     cout << "--weights: Will output weights in target space" << endl;
   }
-  else if (!strcmp(option, "WARP") || !strcmp(option, "W") )
+  else if (!strcmp(option, "WARP") || !strcmp(option, "MAPMOV") )
   {
     nargs = 0;
     do
@@ -620,7 +620,7 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
     }
     while (nargs+1 < argc && option[0] != '-');
     assert(nargs > 0);
-    cout << "--warp: Will save mapped sources !" << endl;
+    cout << "--mapmov: Will save mapped movables/sources !" << endl;
   }
   else if (!strcmp(option, "TEST"))
   {
@@ -707,49 +707,49 @@ static bool parseCommandLine(int argc, char *argv[], Parameters & P)
   if (P.nwarps.size() > 0 && P.mov.size() != P.nwarps.size())
   {
     ntest = false;
-    cerr << " No. of filnames for --warp should agree with no. of inputs!"
+    cerr << "ERROR: No. of filnames for --warp should agree with no. of inputs!"
          << endl;
     exit(1);
   }
   if (P.nltas.size() > 0 && P.mov.size() != P.nltas.size())
   {
     ntest = false;
-    cerr << " No. of filnames for --lta should agree with no. of inputs!"
+    cerr << "ERROR: No. of filnames for --lta should agree with no. of inputs!"
          << endl;
     exit(1);
   }
   if (P.iltas.size() > 0 && P.mov.size() != P.iltas.size())
   {
     ntest = false;
-    cerr << " No. of filnames for --ixforms should agree with no. of inputs!"
+    cerr << "ERROR: No. of filnames for --ixforms should agree with no. of inputs!"
          << endl;
     exit(1);
   }
   if (P.nweights.size() > 0 && P.mov.size() != P.nweights.size())
   {
     ntest = false;
-    cerr << " No. of filnames for --weights should agree with no. of inputs!"
+    cerr << "ERROR: No. of filnames for --weights should agree with no. of inputs!"
          << endl;
     exit(1);
   }
   if (P.iscalein.size() > 0 && P.iltas.size() != P.iscalein.size())
   {
     ntest = false;
-    cerr << " No. of filnames for --iscalein should agree with no. of init LTAs (--ixforms)!"
+    cerr << "ERROR: No. of filnames for --iscalein should agree with no. of init LTAs (--ixforms)!"
          << endl;
     exit(1);
   }
   if (P.iscaleout.size() > 0 && P.mov.size() != P.iscaleout.size())
   {
     ntest = false;
-    cerr << " No. of filnames for --iscaleout should agree with no. of inputs!"
+    cerr << "ERROR: No. of filnames for --iscaleout should agree with no. of inputs!"
          << endl;
     exit(1);
   }
   if (n>0 &&!P.satit &&  P.sat <= 0 && ! ( P.noit && P.iltas.size() > 0))
   {
     ntest = false;
-    cerr << " Specify either --satit or set sensitivity manually with --sat <real> !"
+    cerr << "ERROR: Specify either --satit or set sensitivity manually with --sat <real> !"
          << endl;
     exit(1);
   }
