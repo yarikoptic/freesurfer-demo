@@ -149,7 +149,7 @@ check_PROGRAMS=foo testIDTracker testBroadcaster testUtilities \
 	testSurfaceCollection testScubaLayers testScubaLayer2DMRI \
 	testScubaView testScubaFrame \
 	testScubaTransform testScubaColorLUT testScubaROI testScubaROIVolume \
-	testVectorOps testRASToVoxel testCoordTimer \
+	testVectorOps testRASToVoxel \
 	testSegmentationVolumeReport testScubaKeyCombo testTclScubaKeyCombo \
 	testVolumeCollection testTclChartWindow
 endif
@@ -173,7 +173,7 @@ TESTS=testSetup.csh \
 	testScubaFrame \
 	testScubaTransform testScubaColorLUT testScubaROI \
 	testScubaROIVolume \
-	testVectorOps testRASToVoxel testCoordTimer \
+	testVectorOps testRASToVoxel \
 	testSegmentationVolumeReport testScubaKeyCombo \
 	testTclScubaKeyCombo \
 	testCleanup.csh
@@ -254,10 +254,10 @@ testUndoManager_SOURCES=test_UndoManager.cpp \
 testUndoManager_LDADD=$(LIBS_TCL_OPENGL) \
 	$(addprefix $(top_builddir)/, $(LIBS_MGH))
 
-testCoordTimer_SOURCES= test_CoordTimer.cpp \
-	$(UTILITIES_SRCS) $(BASIC_SRCS) $(FSDATA_SRCS) $(GUI_SRCS)
-testCoordTimer_LDADD=$(LIBS_TCL_OPENGL) \
-	$(addprefix $(top_builddir)/, $(LIBS_MGH))
+#testCoordTimer_SOURCES= test_CoordTimer.cpp \
+#	$(UTILITIES_SRCS) $(BASIC_SRCS) $(FSDATA_SRCS) $(GUI_SRCS)
+#testCoordTimer_LDADD=$(LIBS_TCL_OPENGL) \
+#	$(addprefix $(top_builddir)/, $(LIBS_MGH))
 
 testDataCollection_SOURCES=test_DataCollection.cpp \
 	$(UTILITIES_SRCS) $(BASIC_SRCS) $(FSDATA_SRCS)
