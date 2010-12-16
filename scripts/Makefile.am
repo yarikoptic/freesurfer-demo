@@ -77,6 +77,7 @@ label_subject \
 label_subject_flash \
 label_subject_mixed \
 labels_union \
+labels_disjoint \
 labels_intersect \
 lpcregister \
 make_average_surface \
