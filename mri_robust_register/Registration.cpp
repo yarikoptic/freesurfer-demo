@@ -8,8 +8,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/12/12 20:21:17 $
- *    $Revision: 1.39.2.8 $
+ *    $Date: 2010/12/17 23:37:38 $
+ *    $Revision: 1.39.2.9 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -706,7 +706,7 @@ void Registration::findSatMultiRes(const vnl_matrix < double > &mi, double scale
     if (verbose >2 ) cout << "   - compute new iterative registration" << endl;
 		
 		int n = 3;
-		if (r==2) n = 1;
+		if (r==stopres) n = 1;
 		int vv = verbose;
 		if (verbose == 1) verbose = 0;
 		computeIterativeRegistration(n,0.05,gpS[r],gpT[r],md.first,md.second);
@@ -733,7 +733,7 @@ void Registration::findSatMultiRes(const vnl_matrix < double > &mi, double scale
       cout << " equiv trans on highres: " << tx << " " << ty << " " << tz << endl;
     }
 		
-// 		if (r == 2)
+// 		if (r == stopres)
 // 		{
 // 			 if (debug)
 // 			 {
@@ -766,11 +766,14 @@ void Registration::findSatMultiRes(const vnl_matrix < double > &mi, double scale
         cmd.first[rr][3] = 2.0 * cmd.first[rr][3];
       }
     }
-    if (r == 2) // passed the test, adjust to highest
+    if (r == stopres) // passed the test, adjust to highest
     {
-      for (int rr = 0; rr<3; rr++)
+      for (; r>1; r--) // adjusted once already in the lines above
       {
-        cmd.first[rr][3] = 4.0 * cmd.first[rr][3];
+        for (int rr = 0; rr<3; rr++)
+        {
+          cmd.first[rr][3] = 4.0 * cmd.first[rr][3];
+        }
       }
     }
 		md.first = cmd.first;
@@ -1054,8 +1057,13 @@ void Registration::computeMultiresRegistration (int stopres, int n,double epsit,
 //    MRIwrite(gpS[r],"mriS-smooth.mgz");
 //    MRIwrite(gpT[r],"mriT-smooth.mgz");
 
-    if (verbose >0 ) cout << endl << "Resolution: " << r << endl;
-
+    if (verbose >0 )
+		{
+		  cout << endl << "Resolution: " << r;
+		  cout <<  "  S( " << gpS[r]->width << " "<< gpS[r]->height << " " << gpS[r]->depth << " )";
+		  cout <<  "  T( " << gpT[r]->width << " "<< gpT[r]->height << " " << gpT[r]->depth << " )"<< endl;
+    }
+		
     if (r<=1) iscale = iscaletmp; // set iscale if set by user
 
 //        if (transonly)
@@ -1132,7 +1140,11 @@ void Registration::computeMultiresRegistration (int stopres, int n,double epsit,
     if (verbose >1 ) cout << "- compute new iterative registration" << endl;
     //if (cmd.first) MatrixFree(&cmd.first);
 		int m = n;
-		if (r == 0 && highit == 0) break;
+		if (r == 0 && highit == 0)
+		{
+		  cout << "  skipping (highit == 0) ..." << endl;
+		  break;
+		}
 		if (r == 0 && highit > 0) m = highit;
     computeIterativeRegistration(m,epsit,gpS[r],gpT[r],md.first,md.second);
 		cmd.first = Mfinal;
@@ -1158,35 +1170,35 @@ void Registration::computeMultiresRegistration (int stopres, int n,double epsit,
       cout << " equiv trans on highres: " << tx << " " << ty << " " << tz << endl;
     }
 		
-		if (r == 2)
-		{
-       // write out wcheck
-			 if (debug)
-			 {
-			   string fn = getName() + "-wcheck.txt";
-         ofstream f(fn.c_str(),ios::out);
-         f << sat << " " << wcheck << endl;
-         f.close();  
-			   string fn2 = getName() + "-wchecksqrt.txt";
-         ofstream f2(fn.c_str(),ios::out);
-         f2 << sat << " " << wchecksqrt << endl;
-         f2.close();  
-			 }
-			 if (verbose > 1)
-			 {
-			   cout << " wcheck : " << wcheck << "  wchecksqrt: " << wchecksqrt << endl;
-			 }
-			 
-// 			 if (wcheck > 0.3)
+// 		if (r == 2) // r==stopres (but stopres not determined here), better do this output in saturationestimation routine
+// 		{
+//        // write out wcheck
+// 			 if (debug)
 // 			 {
-// 			    sat = sat+1;
-// 					MatrixFree(&md.first);
-// 					md.first = MatrixCopy(firstbackup,NULL);
-// 					md.second = scaleinit;
-// 					r = resolution-rstart+1;
-// 					continue;
-// 			}
-		}
+// 			   string fn = getName() + "-wcheck.txt";
+//          ofstream f(fn.c_str(),ios::out);
+//          f << sat << " " << wcheck << endl;
+//          f.close();  
+// 			   string fn2 = getName() + "-wchecksqrt.txt";
+//          ofstream f2(fn.c_str(),ios::out);
+//          f2 << sat << " " << wchecksqrt << endl;
+//          f2.close();  
+// 			 }
+// 			 if (verbose > 1)
+// 			 {
+// 			   cout << " wcheck : " << wcheck << "  wchecksqrt: " << wchecksqrt << endl;
+// 			 }
+// 			 
+// // 			 if (wcheck > 0.3)
+// // 			 {
+// // 			    sat = sat+1;
+// // 					MatrixFree(&md.first);
+// // 					md.first = MatrixCopy(firstbackup,NULL);
+// // 					md.second = scaleinit;
+// // 					r = resolution-rstart+1;
+// // 					continue;
+// // 			}
+// 		}
 
     if (r !=0) // adjust matrix to higher resolution level
     {

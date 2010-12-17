@@ -10,8 +10,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/12/12 20:21:18 $
- *    $Revision: 1.18.2.6 $
+ *    $Date: 2010/12/17 23:37:39 $
+ *    $Revision: 1.18.2.7 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -120,6 +120,7 @@ struct Parameters
 	vector < string > iscalein;
 	vector < string > iscaleout;
 	int    finalinterp;
+	int    highit;
 };
 
 // Initializations:
@@ -137,7 +138,7 @@ static struct Parameters P =
 	false,
 	false,
 	false,
-	-1,
+	5,
 	-1.0,
 	SAT,
 	vector < string >(0),
@@ -154,7 +155,8 @@ static struct Parameters P =
 	false,
   vector < string >(0),
   vector < string >(0),
-	SAMPLE_TRILINEAR
+	SAMPLE_TRILINEAR,
+	-1
 };
 
 
@@ -162,7 +164,7 @@ static void printUsage(void);
 static bool parseCommandLine(int argc, char *argv[],Parameters & P) ;
 
 static char vcid[] =
-"$Id: mri_robust_template.cpp,v 1.18.2.6 2010/12/12 20:21:18 mreuter Exp $";
+"$Id: mri_robust_template.cpp,v 1.18.2.7 2010/12/17 23:37:39 mreuter Exp $";
 char *Progname = NULL;
 
 //static MORPH_PARMS  parms ;
@@ -226,6 +228,7 @@ int main(int argc, char *argv[])
 	MR.setAverage(P.average);
 	MR.setDoublePrec(P.doubleprec);
 	MR.setSubsamplesize(P.subsamplesize);
+	MR.setHighit(P.highit);
 
 	// init MultiRegistration and load movables
 	int nin = (int) P.mov.size();
@@ -351,6 +354,7 @@ static void printUsage(void)
   cout << "  --leastsquares             use least squares instead of robust M-estimator" << endl;
   cout << "  --noit                     do not iterate, just create first template" << endl;
   cout << "  --maxit <#>                iterate max # times (if #tp>2 default 6, else 5 for 2tp reg.)"  << endl;
+  cout << "  --highit <#>               iterate max # times on highest resol. (default "<<P.iterate<<")"  << endl;
   cout << "  --epsit <real>             stop iterations when all tp changes below <float> "<< endl;
 	cout << "                                (if #tp>2 default 0.03, else 0.01 for 2tp reg.)" << endl;
 //  cout << "      --nomulti              work on highest resolution (no multiscale)" << endl;
@@ -537,6 +541,12 @@ static int parseNextCommand(int argc, char *argv[], Parameters & P)
     nargs = 1 ;
     cout << "--maxit: Performing maximal " << P.iterate <<
       " iterations on each resolution" << endl;
+  }
+  else if (!strcmp(option, "HIGHIT")  )
+  {
+    P.highit = atoi(argv[1]);
+    nargs = 1 ;
+    cout << "--highit: Performing maximal " << P.highit << " iterations on highest resolution" << endl;
   }
   else if (!strcmp(option, "EPSIT") )
   {

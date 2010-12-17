@@ -14,8 +14,8 @@
  * Original Author: Martin Reuter
  * CVS Revision Info:
  *    $Author: mreuter $
- *    $Date: 2010/11/11 22:31:02 $
- *    $Revision: 1.4.2.2 $
+ *    $Date: 2010/12/17 23:37:38 $
+ *    $Revision: 1.4.2.3 $
  *
  * Copyright (C) 2008-2009
  * The General Hospital Corporation (Boston, MA).
@@ -55,40 +55,40 @@ extern "C"
 class MultiRegistration
 {
 public:
-   MultiRegistration():outdir("./"),transonly(false),rigid(true),robust(true),sat(4.685),satit(false),
-	                     debug(0),iscale(false),subsamplesize(-1),fixvoxel(false),
+  MultiRegistration():outdir("./"),transonly(false),rigid(true),robust(true),sat(4.685),satit(false),
+	                     debug(0),iscale(false),subsamplesize(-1),highit(-1),fixvoxel(false),
 											 keeptype(false),average(1),doubleprec(false),mri_mean(NULL)
 		{};
-	 MultiRegistration(const std::vector < std::string > mov):outdir("./"),transonly(false),
+  MultiRegistration(const std::vector < std::string > mov):outdir("./"),transonly(false),
 	                     rigid(true),robust(true),sat(4.685),satit(false),debug(0),iscale(false),
-											 subsamplesize(-1),fixvoxel(false),keeptype(false),average(1),doubleprec(false),
+											 subsamplesize(-1),highit(-1),fixvoxel(false),keeptype(false),average(1),doubleprec(false),
 											 mri_mean(NULL)
-	  { loadMovables(mov);};
+  { loadMovables(mov);};
 		
-	 ~MultiRegistration()
-	  {clear();};
+  ~MultiRegistration()
+  {clear();};
 	 
-   bool initialXforms(int tpi, bool fixtp, int regmaxres, int regitmax, double regeps);
-   bool computeTemplate(int avitmax, double aveps, int regitmax, double regeps);
-   bool halfWayTemplate(int regmaxres, int regitmax, double regeps, bool vox2vox);
+  bool initialXforms(int tpi, bool fixtp, int regmaxres, int regitmax, double regeps);
+  bool computeTemplate(int avitmax, double aveps, int regitmax, double regeps);
+  bool halfWayTemplate(int regmaxres, int regitmax, double regeps, bool vox2vox);
 
-	 bool writeMean(const std::string& mean);
-	 bool writeConformMean(const std::string& cmean);
-	 bool writeLTAs(const std::vector < std::string > & nltas, bool vox2vox, const std::string & mean);
-	 bool writeWarps(const std::vector <  std::string >& nwarps);
-	 bool writeIntensities(const std::vector < std::string >& nintens);
-	 bool writeWeights(const std::vector < std::string >& nweights, bool oneminusweights);
+  bool writeMean(const std::string& mean);
+  bool writeConformMean(const std::string& cmean);
+  bool writeLTAs(const std::vector < std::string > & nltas, bool vox2vox, const std::string & mean);
+  bool writeWarps(const std::vector <  std::string >& nwarps);
+  bool writeIntensities(const std::vector < std::string >& nintens);
+  bool writeWeights(const std::vector < std::string >& nweights, bool oneminusweights);
 
 
-   int loadMovables(const std::vector < std::string > mov);
-	 int loadLTAs(const std::vector < std::string > nltas);
-	 int loadIntensities(const std::vector < std::string > nintens);
-	 void clear();
+  int loadMovables(const std::vector < std::string > mov);
+  int loadLTAs(const std::vector < std::string > nltas);
+  int loadIntensities(const std::vector < std::string > nintens);
+  void clear();
 	 
   // Set parameters:
-	void setOutdir(const std::string & s)
-	{
-	  outdir = s;
+  void setOutdir(const std::string & s)
+  {
+    outdir = s;
   }; 
   void setTransonly(bool r)
   {
@@ -134,13 +134,17 @@ public:
   {
     subsamplesize = sss;
   };
-	void setDoublePrec(bool b)
-	{
-	  doubleprec = b;
+  void setHighit (int hit)
+  {
+    highit = hit;
+  };
+  void setDoublePrec(bool b)
+  {
+    doubleprec = b;
   }
 	
-	bool averageSet(int itdebug = 0, int interp = SAMPLE_TRILINEAR);
-	MRI * averageConformSet(int itdebug = 0);
+  bool averageSet(int itdebug = 0, int interp = SAMPLE_TRILINEAR);
+  MRI * averageConformSet(int itdebug = 0);
 	
   static MRI* averageSet(const std::vector < MRI * >& set,
                        MRI* mean, int method, double sat);
@@ -150,36 +154,37 @@ public:
 
 private:
   
-	void initRegistration(Registration & R);
+  void initRegistration(Registration & R);
   
-	// copy of input filenames
-	std::vector <std::string > mov;
-	std::vector <std::string > iltas;
-	std::vector <std::string > iintens;
+  // copy of input filenames
+  std::vector <std::string > mov;
+  std::vector <std::string > iltas;
+  std::vector <std::string > iintens;
 	
-	// copy of output filenames
+  // copy of output filenames
   //std::string mean;
   // std::vector <std::string> nltas;
   //std::vector <std::string> nweights;
   // std::vector <std::string> nwarps;
 	
-	// Parameter:
+  // Parameter:
   std::string outdir;
   bool   transonly;
   bool   rigid;
   bool   robust;
   double sat;
-	bool   satit;
+  bool   satit;
   int    debug;
   bool   iscale;
-	int    subsamplesize;
+  int    subsamplesize;
+  int    highit;
 	
   bool   fixvoxel;
   bool   keeptype;
   int    average;
-	bool   doubleprec;
+  bool   doubleprec;
 	
-	// DATA
+  // DATA
   std::vector < MRI* > mri_mov;
   std::vector < LTA* > ltas;
   std::vector < MRI* > mri_warps;
