@@ -24,13 +24,13 @@ $stop = time;
 $elapsed = int( $stop-$start );
 
 $hours = $elapsed / 3600;
-$elapsed = $elapsed % 3600;
+my $elapsed2 = $elapsed % 3600;
 
-$mins = $elapsed / 60;
-$secs = $elapsed % 60;
+$mins = $elapsed2 / 60;
+$secs = $elapsed2 % 60;
 
 
 # Print output
-$outString = sprintf( "\ntime:: %02d:%02d:%02d   elapsed:: %d   cmd:: $ARGV[0]\n", $hours, $mins, $secs, $elapsed );
+$outString = sprintf( "\ntime:: %02d:%02d:%02d   elapsed:: %05d   cmd:: $ARGV[0]\n", $hours, $mins, $secs, $elapsed );
 
 printf STDERR $outString;
