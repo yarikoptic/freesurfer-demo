@@ -7,8 +7,8 @@
 # Original Author: Doug Greve
 # CVS Revision Info:
 #    $Author: greve $
-#    $Date: 2011/01/05 16:13:09 $
-#    $Revision: 1.49.2.7 $
+#    $Date: 2011/01/18 17:08:22 $
+#    $Revision: 1.49.2.8 $
 #
 # Copyright (C) 2002-2007,
 # The General Hospital Corporation (Boston, MA). 
@@ -23,7 +23,7 @@
 # Bug reports: analysis-bugs@nmr.mgh.harvard.edu
 #
 
-set VERSION = '$Id: mkanalysis-sess,v 1.49.2.7 2011/01/05 16:13:09 greve Exp $';
+set VERSION = '$Id: mkanalysis-sess,v 1.49.2.8 2011/01/18 17:08:22 greve Exp $';
 
 set analysis = ();
 set TR = ();
@@ -289,7 +289,7 @@ while( $#argv != 0 )
     case "-timewindow":
     case "-tw":
       if($#argv < 1) goto arg1err;
-      set IdealFIRTimeWindow = $argv[1]; shift;
+      set IdealTimeWindow = $argv[1]; shift;
       breaksw
 
     case "-delay":
