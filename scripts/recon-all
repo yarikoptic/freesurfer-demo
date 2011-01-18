@@ -8,8 +8,8 @@
 # Original Author: Doug Greve
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2011/01/05 18:02:02 $
-#    $Revision: 1.313.2.34 $
+#    $Date: 2011/01/18 19:37:10 $
+#    $Revision: 1.313.2.35 $
 #
 # Copyright (C) 2002-2010,
 # The General Hospital Corporation (Boston, MA).
@@ -26,7 +26,7 @@
 #
 umask 002;
 
-set VERSION = '$Id: recon-all,v 1.313.2.34 2011/01/05 18:02:02 nicks Exp $';
+set VERSION = '$Id: recon-all,v 1.313.2.35 2011/01/18 19:37:10 nicks Exp $';
 set ProgName = `basename $0`;
 
 set inputargs = ($argv);
@@ -1808,6 +1808,9 @@ skullstrip:
   if($DoGcut) then
     set BMA = brainmask.auto.mgz
     set BGC = brainmask.gcuts.mgz
+    set cmd = (rm -f $BGC)
+    echo "\n $cmd \n"|& tee -a $LF |& tee -a $CF
+    if($RunIt) $cmd |& tee -a $LF
     set xopts = `fsr-getxopts mri_gcut $XOptsFile`;
     set cmd = (mri_gcut $xopts -110 -mult $BMA T1.mgz $BMA $BGC)
     echo "\n $cmd \n"|& tee -a $LF |& tee -a $CF
@@ -1815,10 +1818,12 @@ skullstrip:
     if($status) goto error_exit;
     # binarize the gcuts file, setting vals to label 999 which appears as red
     # when loaded as a segmentation
-    set cmd = (mri_binarize --i $BGC --o $BGC --binval 999 --min 1)
-    echo "\n $cmd \n"|& tee -a $LF |& tee -a $CF
-    if($RunIt) $fs_time $cmd |& tee -a $LF
-    if($status) goto error_exit;
+    if ( -e $BGC) then
+      set cmd = (mri_binarize --i $BGC --o $BGC --binval 999 --min 1)
+      echo "\n $cmd \n"|& tee -a $LF |& tee -a $CF
+      if($RunIt) $fs_time $cmd |& tee -a $LF
+      if($status) goto error_exit;
+    endif
   endif
 
   skipped_skullstrip:
