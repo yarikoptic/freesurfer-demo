@@ -7,8 +7,8 @@
  * Original Author: Douglas N. Greve
  * CVS Revision Info:
  *    $Author: greve $
- *    $Date: 2010/07/19 20:50:41 $
- *    $Revision: 1.63.2.1 $
+ *    $Date: 2011/01/19 16:33:37 $
+ *    $Revision: 1.63.2.2 $
  *
  * Copyright (C) 2002-2010,
  * The General Hospital Corporation (Boston, MA).
@@ -2967,6 +2967,8 @@ MRI *MRIvol2surfVSM(MRI *SrcVol, MATRIX *Rtk, MRI_SURFACE *TrgSurf,
 	     TrgVol->width,TrgSurf->nvertices,TrgVol->nframes,SrcVol->nframes);
       return(NULL);
     }
+    // make sure all values are zero
+    MRIconst(TrgVol->width,TrgVol->height,TrgVol->depth,1,0,TrgVol); 
   }
   // Dims here are meaningless, but setting to 1 means "volume" will be 
   // number of vertices.
