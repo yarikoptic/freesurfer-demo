@@ -115,6 +115,7 @@ FSF_FILES=\
 	tkmedit-sess \
 	tkregister-sess \
 	tksurfer-sess \
+	vlrmerge \
 	zpadfmri
 
 OTHER_EXCLUDE=\
