@@ -7,10 +7,10 @@
  * Original Authors: Sebastien Gicquel and Douglas Greve, 06/04/2001
  * CVS Revision Info:
  *    $Author: nicks $
- *    $Date: 2009/10/05 18:39:38 $
- *    $Revision: 1.128 $
+ *    $Date: 2011/01/25 15:44:42 $
+ *    $Revision: 1.128.2.1 $
  *
- * Copyright (C) 2002-2009,
+ * Copyright (C) 2002-2011,
  * The General Hospital Corporation (Boston, MA). 
  * All rights reserved.
  *
@@ -20,7 +20,6 @@
  * https://surfer.nmr.mgh.harvard.edu/fswiki/FreeSurferOpenSourceLicense
  *
  * General inquiries: freesurfer@nmr.mgh.harvard.edu
- * Bug reports: analysis-bugs@nmr.mgh.harvard.edu
  *
  */
 
@@ -2437,7 +2436,7 @@ int sdfiAssignRunNo2(SDCMFILEINFO **sdfi_list, int nlist)
 {
   SDCMFILEINFO *sdfi, *sdfitmp, *sdfi0;
   int nthfile, NRuns, nthrun, nthslice, nthframe;
-  int nfilesperrun, firstpass, nframes;
+  int nfilesperrun=0, firstpass, nframes;
   char *FirstFileName = 0;
   int *RunList=0, *RunNoList=0;
 
@@ -4650,9 +4649,17 @@ MRI *DICOMRead2(const char *dcmfile, int LoadVolume)
   printf("nslices = %d\n",nslices);
   printf("ndcmfiles = %d\n",ndcmfiles);
   if (nslices*nframes != ndcmfiles) {
-    printf("ERROR: the number of frames * number of slices does\n"
-           "not equal the number of dicom files.\n");
-    return(NULL);
+    if ((nslices*nframes <= ndcmfiles) &&
+        (getenv("IGNORE_FRAME_COUNT_CHECK"))){
+      printf("WARNING: the number of frames * number of slices is less than\n"
+           "the number of dicom files.\n");
+      // dont error exit, because we have enough files to complete the deal
+    }
+    else {
+      printf("ERROR: the number of frames * number of slices does\n"
+             "not equal the number of dicom files.\n");
+      return(NULL);
+    }
   }
   // update reference
   memmove(&RefDCMInfo,dcminfo[0],sizeof(DICOMInfo));
