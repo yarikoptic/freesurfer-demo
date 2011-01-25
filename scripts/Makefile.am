@@ -195,6 +195,7 @@ usbtree \
 vno_match_check \
 vtk_setup \
 wfilemask \
+wm-anat-snr \
 xhemireg \
 xsanatreg
 
