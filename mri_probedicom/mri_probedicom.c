@@ -16,8 +16,8 @@
  * Original Author: Doug Greve
  * CVS Revision Info:
  *    $Author: greve $
- *    $Date: 2011/01/03 19:26:32 $
- *    $Revision: 1.29.2.1 $
+ *    $Date: 2011/02/01 15:56:31 $
+ *    $Revision: 1.29.2.2 $
  *
  * Copyright (C) 2002-2007,
  * The General Hospital Corporation (Boston, MA). 
@@ -65,7 +65,7 @@
 
 int main(int argc, char *argv[]) ;
 
-static char vcid[] = "$Id: mri_probedicom.c,v 1.29.2.1 2011/01/03 19:26:32 greve Exp $";
+static char vcid[] = "$Id: mri_probedicom.c,v 1.29.2.2 2011/02/01 15:56:31 greve Exp $";
 char *Progname = NULL;
 
 static int  parse_commandline(int argc, char **argv);
@@ -141,7 +141,7 @@ int main(int argc, char **argv) {
   int nargs;
 
   /* rkt: check for and handle version tag */
-  nargs = handle_version_option (argc, argv, "$Id: mri_probedicom.c,v 1.29.2.1 2011/01/03 19:26:32 greve Exp $", "$Name:  $");
+  nargs = handle_version_option (argc, argv, "$Id: mri_probedicom.c,v 1.29.2.2 2011/02/01 15:56:31 greve Exp $", "$Name:  $");
   if (nargs && argc - nargs == 1)
     exit (0);
   argc -= nargs;
@@ -188,7 +188,6 @@ int main(int argc, char **argv) {
     fprintf(stderr,"ERROR: cannot determine file type\n");
     exit(1);
   }/*--------------------------------------------------------------*/
-
   if(!IsDICOM(dicomfile)) {
     setenv("FS_DICOM_DEBUG","1",1);
     IsDICOM(dicomfile);
@@ -579,6 +578,13 @@ static void check_options(void) {
   }
 
   if(DoPartialDump) {
+    if(!IsDICOM(dicomfile)) {
+      printf("\nERROR: %s is not a dicom file or some other problem\n\n",dicomfile);
+      setenv("FS_DICOM_DEBUG","1",1);
+      IsDICOM(dicomfile);
+      printf("\nERROR: %s is not a dicom file or some other problem\n\n",dicomfile);
+      exit(1);
+    }
     PartialDump(dicomfile,stdout);
     DumpSiemensASCII(dicomfile, stdout);
     if(DoAltDump) DumpSiemensASCIIAlt(dicomfile, stdout);
