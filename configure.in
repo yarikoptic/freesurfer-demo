@@ -9,8 +9,8 @@
 #
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2010/12/09 15:56:48 $
-#    $Revision: 1.476.2.15 $
+#    $Date: 2011/03/03 16:23:58 $
+#    $Revision: 1.476.2.16 $
 #
 ########################################################################
 AC_PREREQ(2.57)
@@ -3266,7 +3266,6 @@ AC_OUTPUT([Makefile
            mri_label_volume/Makefile
            mri_linear_register/Makefile
            mri_compute_structure_transforms/Makefile
-           mri_make_bem_surfaces/Makefile
            mri_make_density_map/Makefile
            mri_make_register/Makefile
            mri_make_template/Makefile
@@ -3312,7 +3311,6 @@ AC_OUTPUT([Makefile
            mri_segstats/Makefile
            mri_stats2seg/Makefile
            mri_strip_nonwhite/Makefile
-           mri_strip_skull/Makefile
            mri_strip_subject_info/Makefile
            mri_surf2surf/Makefile
            mri_surf2vol/Makefile
@@ -3450,7 +3448,6 @@ AC_OUTPUT([Makefile
            connectgraph/Makefile
            spherical_stats/Makefile
            stat_normalize/Makefile
-           stim/Makefile
            stim_polar/Makefile
            svm-lib/Makefile
            talairach_afd/Makefile

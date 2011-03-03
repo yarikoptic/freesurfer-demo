@@ -14,7 +14,6 @@ GLSUBDIRS=\
 	mris2rgb \
 	nmovie \
 	mris_show \
-	stim \
 	stim_polar \
 	tkmedit \
 	tkregister2 \
@@ -95,7 +94,6 @@ MRISUBDIRS=\
 	mri_label2label \
 	mri_label2vol \
 	mri_linear_register \
-	mri_make_bem_surfaces \
 	mri_make_register \
 	mri_make_template \
 	mri_map_cpdat \
@@ -126,7 +124,6 @@ MRISUBDIRS=\
 	mri_segment \
 	mri_seghead \
 	mri_surfacemask \
-	mri_strip_skull \
 	mri_strip_subject_info \
 	mri_strip_nonwhite \
 	mri_surf2surf \
