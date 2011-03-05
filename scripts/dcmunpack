@@ -2,7 +2,7 @@
 # dcmunpack
 # 
 
-set VERSION = '$Id: dcmunpack,v 1.10.2.1 2010/07/12 14:25:16 greve Exp $';
+set VERSION = '$Id: dcmunpack,v 1.10.2.2 2011/03/05 21:23:45 nicks Exp $';
 
 set SeriesInfo = ();
 
@@ -201,7 +201,7 @@ if($#SeriesInfo == 0) then
   if($#TargetDir) then
     set SeriesInfo = $TargetDir/series-info.dat
   else
-    set SeriesInfo = /tmp/series-info.dat
+    set SeriesInfo = /tmp/series-info-$$.dat
   endif
 endif
 rm -f $SeriesInfo
