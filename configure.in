@@ -9,12 +9,12 @@
 #
 # CVS Revision Info:
 #    $Author: nicks $
-#    $Date: 2011/03/14 16:59:55 $
-#    $Revision: 1.476.2.17 $
+#    $Date: 2011/03/19 17:11:18 $
+#    $Revision: 1.476.2.18 $
 #
 ########################################################################
 AC_PREREQ(2.57)
-AC_INIT(Freesurfer, stable5_0_0), freesurfer@nmr.mgh.harvard.edu)
+AC_INIT(Freesurfer, stable5_0_0, freesurfer@nmr.mgh.harvard.edu)
 # if $FREESURFER_HOME is defined, then use that as default install dir:
 if test ! "x${FREESURFER_HOME}" = "x"; then
   ac_default_prefix=${FREESURFER_HOME}
